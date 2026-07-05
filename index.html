@@ -51,8 +51,12 @@
   #appRoot { background: #F7F8FC; }
   #appRoot table tbody tr { transition: background-color .12s ease; }
   #appRoot table tbody tr:hover { background-color: #f8fafc; }
-  #tableGrid > div { transition: transform .15s ease, opacity .15s ease; }
-  #tableGrid > div:hover { transform: scale(1.05); }
+  .mesa-item { display: flex; flex-direction: column; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
+  .mesa-chairs { position: relative; width: 76px; height: 76px; margin: 0 auto; }
+  .mesa-top { position: absolute; inset: 9px; border-radius: 50%; border-width: 3px; border-style: solid; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; transition: transform .15s ease; }
+  .mesa-item:hover .mesa-top { transform: scale(1.08); }
+  .chair { position: absolute; width: 13px; height: 8px; border-radius: 3px; background: #cbd5e1; }
+  .mesa-label { font-size: 11px; font-weight: 600; }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) scale(.9); background: #0f2146; color: #fff; font-size: 13px; font-weight: 600; padding: 10px 18px; border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 200; opacity: 0; pointer-events: none; transition: opacity .25s cubic-bezier(.34,1.56,.64,1), transform .25s cubic-bezier(.34,1.56,.64,1); }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px) scale(1); }
 </style>
@@ -1138,6 +1142,13 @@
 
 <div id="toast" class="toast"></div>
 
+<!-- Public menu (opened by scanning a table QR) -->
+<div id="publicMenuRoot" class="min-h-screen font-sans text-navy antialiased" style="display:none; background:#F7F8FC">
+  <div class="max-w-lg mx-auto px-5 py-10">
+    <div id="publicMenuBody" class="text-center text-slate-400 text-sm">Cargando menú…</div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const modalContent = {
@@ -1469,6 +1480,12 @@
   // ---- Mesas ----
   const mesaCycle = ['Libre','Ocupada','Reservada'];
   const stateColor = { 'Sin definir':'bg-slate-100 text-slate-400 border-slate-200', Libre:'bg-emerald-50 text-emerald-600 border-emerald-200', Ocupada:'bg-rose-50 text-rose-500 border-rose-200', Reservada:'bg-amber-50 text-amber-600 border-amber-200' };
+  const mesaStateStyle = {
+    'Sin definir': { border:'#cbd5e1', bg:'#f8fafc', text:'#94a3b8' },
+    Libre: { border:'#34d399', bg:'#ecfdf5', text:'#059669' },
+    Ocupada: { border:'#fb7185', bg:'#fff1f2', text:'#e11d48' },
+    Reservada: { border:'#fbbf24', bg:'#fffbeb', text:'#d97706' },
+  };
   function renderMesas() {
     const acc = getCurrentAccount();
     const estados = acc.data.mesaEstados;
@@ -1486,12 +1503,65 @@
     document.getElementById('mesasResumen').textContent = sinDefinir
       ? 'Toca cada mesa para indicar su estado (' + sinDefinir + ' sin definir todavía).'
       : ocupadas + '/' + estados.length + ' mesas ocupadas ahora mismo.';
-    document.getElementById('tableGrid').innerHTML = estados.map((s,i) => `
-      <div onclick="cycleMesa(${i})" class="cursor-pointer select-none rounded-lg border ${stateColor[s]} p-3 text-center hover:opacity-80 transition">
-        <p class="text-sm font-semibold">Mesa ${i+1}</p>
-        <p class="text-[11px] mt-1">${s}</p>
+    document.getElementById('tableGrid').innerHTML = estados.map((s,i) => {
+      const st = mesaStateStyle[s];
+      return `
+      <div class="mesa-item" onclick="openMesaDetalle(${i})">
+        <div class="mesa-chairs">
+          <span class="chair" style="top:-2px;left:50%;transform:translateX(-50%);"></span>
+          <span class="chair" style="bottom:-2px;left:50%;transform:translateX(-50%);"></span>
+          <span class="chair" style="left:-2px;top:50%;transform:translateY(-50%) rotate(90deg);"></span>
+          <span class="chair" style="right:-2px;top:50%;transform:translateY(-50%) rotate(90deg);"></span>
+          <div class="mesa-top" style="border-color:${st.border};background:${st.bg};color:${st.text};">${i+1}</div>
+        </div>
+        <p class="mesa-label" style="color:${st.text}">${s}</p>
+      </div>`;
+    }).join('');
+  }
+  function findPedidoDeMesa(numero) {
+    const acc = getCurrentAccount();
+    const target = ('mesa ' + numero).toLowerCase();
+    return acc.data.pedidos.find(p => (p.mesa || '').trim().toLowerCase() === target);
+  }
+  function openMesaDetalle(i) {
+    const acc = getCurrentAccount();
+    const estado = acc.data.mesaEstados[i];
+    const numero = i + 1;
+    const st = mesaStateStyle[estado];
+    const pedido = findPedidoDeMesa(numero);
+    const pedidoHtml = pedido
+      ? `<div class="mt-3 rounded-lg border border-slate-200 p-3 text-left">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold text-navy">Pedido actual</p>
+            <span class="text-xs rounded-full px-2 py-0.5 font-medium ${pedido.estado === 'Listo' ? 'bg-emerald-50 text-emerald-600' : pedido.estado === 'En cocina' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}">${pedido.estado}</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1.5">${pedido.items}</p>
+          <p class="text-sm font-semibold text-navy mt-2">${pedido.total.toFixed(2).replace('.', ',')}€</p>
+        </div>`
+      : `<div class="mt-3 rounded-lg border border-dashed border-slate-200 p-3 text-center">
+          <p class="text-xs text-slate-400">Esta mesa no tiene ningún pedido activo ahora mismo.</p>
+        </div>`;
+    const qrUrl = location.origin + location.pathname + '?cuenta=' + encodeURIComponent(acc.userId) + '&mesa=' + numero;
+    const qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(qrUrl);
+    document.getElementById('modalBody').innerHTML = `
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-bold text-navy">Mesa ${numero}</h3>
+        <span onclick="cycleMesaFromDetalle(${i})" class="cursor-pointer text-xs font-semibold rounded-full px-3 py-1" style="background:${st.bg};color:${st.text};border:1px solid ${st.border}" title="Toca para cambiar el estado">${estado}</span>
       </div>
-    `).join('');
+      <p class="text-xs text-slate-400 mt-1">Toca el estado para cambiarlo.</p>
+      ${pedidoHtml}
+      <div class="mt-4 rounded-lg border border-slate-200 p-4 text-center">
+        <p class="text-sm font-semibold text-navy mb-3">QR de la mesa</p>
+        <img src="${qrImg}" width="140" height="140" class="mx-auto rounded-md" alt="QR de la Mesa ${numero}">
+        <p class="text-xs text-slate-400 mt-3">Escanéalo desde el móvil para ver el menú de esta mesa.</p>
+      </div>
+      <button onclick="closeModal()" class="mt-5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>
+    `;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function cycleMesaFromDetalle(i) {
+    cycleMesa(i);
+    openMesaDetalle(i);
   }
   function crearMesas() {
     const n = parseInt(document.getElementById('mesasSetupCount').value, 10);
@@ -2002,7 +2072,49 @@
     });
   }
 
+  async function renderPublicMenu(cuentaId, mesaNumero) {
+    document.getElementById('landingRoot').style.display = 'none';
+    document.getElementById('publicMenuRoot').style.display = 'block';
+    const body = document.getElementById('publicMenuBody');
+    const { data, error } = await supabaseClient.rpc('get_public_menu', { p_user_id: cuentaId });
+    if (error || !data) {
+      body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar el menú. Prueba a escanear el QR de nuevo.</p>`;
+      return;
+    }
+    const nombre = data.restaurant_name || 'Restaurante';
+    const menu = Array.isArray(data.menu) ? data.menu : [];
+    const itemsHtml = menu.length
+      ? menu.map(m => {
+          const disponible = m.estado === 'Disponible';
+          const foto = m.foto ? `<img src="${m.foto}" class="w-14 h-14 rounded-lg object-cover shrink-0">` : `<div class="w-14 h-14 rounded-lg bg-slate-100 shrink-0"></div>`;
+          return `<div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 ${disponible ? '' : 'opacity-50'}">
+            ${foto}
+            <div class="min-w-0 flex-1 text-left">
+              <p class="text-sm font-semibold text-navy truncate">${m.nombre}</p>
+              <p class="text-xs text-slate-400 mt-0.5">${disponible ? 'Disponible' : 'Agotado'}</p>
+            </div>
+            <p class="text-sm font-semibold text-navy shrink-0">${m.precio}</p>
+          </div>`;
+        }).join('')
+      : `<p class="text-sm text-slate-400 mt-6">Este restaurante todavía no ha publicado su menú.</p>`;
+    body.innerHTML = `
+      <div class="text-left">
+        <p class="text-xs font-semibold text-accent">Mesa ${mesaNumero}</p>
+        <h1 class="text-2xl font-extrabold text-navy mt-1">${nombre}</h1>
+        <p class="text-sm text-slate-500 mt-1">Carta del restaurante</p>
+        <div class="mt-6 space-y-3">${itemsHtml}</div>
+      </div>
+    `;
+  }
+
   (async function initAuth() {
+    const params = new URLSearchParams(location.search);
+    const cuentaId = params.get('cuenta');
+    const mesaNumero = params.get('mesa');
+    if (cuentaId && mesaNumero) {
+      renderPublicMenu(cuentaId, mesaNumero);
+      return;
+    }
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session && session.user) {
       await cargarCuentaDesdeServidor(session.user);
