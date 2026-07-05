@@ -981,17 +981,25 @@
           <p class="text-xs text-slate-400 mt-1">Recomendaciones basadas en tus datos.</p>
         </div>
       </div>
-      <div id="iaChat" class="mt-4 space-y-2 max-w-2xl"></div>
-      <div class="mt-4 max-w-2xl flex gap-2">
-        <input id="iaInput" type="text" placeholder="Pregúntale algo a tu asistente…" onkeydown="if(event.key==='Enter'){event.preventDefault();askIA();}" class="flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
-        <button onclick="askIA()" class="rounded-lg bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-4">Enviar</button>
-      </div>
-      <div id="iaSugerencias" class="mt-3 max-w-2xl flex flex-wrap gap-2">
-        <button type="button" onclick="preguntarSugerencia(this)" class="text-xs font-medium text-navy bg-slate-100 hover:bg-slate-200 transition rounded-full px-3 py-1.5">¿Cuánto hemos facturado hoy?</button>
-        <button type="button" onclick="preguntarSugerencia(this)" class="text-xs font-medium text-navy bg-slate-100 hover:bg-slate-200 transition rounded-full px-3 py-1.5">¿Qué plato se ha vendido más?</button>
-        <button type="button" onclick="preguntarSugerencia(this)" class="text-xs font-medium text-navy bg-slate-100 hover:bg-slate-200 transition rounded-full px-3 py-1.5">¿Qué reservas hay hoy?</button>
-        <button type="button" onclick="preguntarSugerencia(this)" class="text-xs font-medium text-navy bg-slate-100 hover:bg-slate-200 transition rounded-full px-3 py-1.5">¿Quién trabaja hoy?</button>
-        <button type="button" onclick="preguntarSugerencia(this)" class="text-xs font-medium text-navy bg-slate-100 hover:bg-slate-200 transition rounded-full px-3 py-1.5">¿Cuántas mesas están ocupadas?</button>
+      <div class="mt-4 flex gap-5 items-start">
+        <aside class="w-56 shrink-0 rounded-xl border border-slate-200 bg-white p-2">
+          <button onclick="nuevaConversacionIA()" class="w-full rounded-lg bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-3 py-2 mb-2">+ Nueva conversación</button>
+          <div id="iaConversacionesList" class="space-y-1 max-h-96 overflow-y-auto"></div>
+        </aside>
+        <div class="flex-1 min-w-0 max-w-2xl">
+          <div id="iaChat" class="space-y-2"></div>
+          <div class="mt-4 flex gap-2">
+            <input id="iaInput" type="text" placeholder="Pregúntale algo a tu asistente…" onkeydown="if(event.key==='Enter'){event.preventDefault();askIA();}" class="flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+            <button onclick="askIA()" class="rounded-lg bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-4">Enviar</button>
+          </div>
+          <div id="iaSugerencias" class="mt-3 flex flex-wrap gap-2">
+            <button type="button" onclick="preguntarSugerencia(this)" class="text-xs font-medium text-navy bg-slate-100 hover:bg-slate-200 transition rounded-full px-3 py-1.5">¿Cuánto hemos facturado hoy?</button>
+            <button type="button" onclick="preguntarSugerencia(this)" class="text-xs font-medium text-navy bg-slate-100 hover:bg-slate-200 transition rounded-full px-3 py-1.5">¿Qué plato se ha vendido más?</button>
+            <button type="button" onclick="preguntarSugerencia(this)" class="text-xs font-medium text-navy bg-slate-100 hover:bg-slate-200 transition rounded-full px-3 py-1.5">¿Qué reservas hay hoy?</button>
+            <button type="button" onclick="preguntarSugerencia(this)" class="text-xs font-medium text-navy bg-slate-100 hover:bg-slate-200 transition rounded-full px-3 py-1.5">¿Quién trabaja hoy?</button>
+            <button type="button" onclick="preguntarSugerencia(this)" class="text-xs font-medium text-navy bg-slate-100 hover:bg-slate-200 transition rounded-full px-3 py-1.5">¿Cuántas mesas están ocupadas?</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1387,7 +1395,7 @@
       personal: [],
       inventario: [],
       integraciones: { square: false, glovo: false, uber: false, justeat: false, notifs: false },
-      iaChatHistory: [],
+      iaConversaciones: [],
     };
   }
   function normalizeAccountData(data) {
@@ -1419,7 +1427,11 @@
     data.integraciones.uber = !!data.integraciones.uber;
     data.integraciones.justeat = !!data.integraciones.justeat;
     data.integraciones.notifs = !!data.integraciones.notifs;
-    data.iaChatHistory = Array.isArray(data.iaChatHistory) ? data.iaChatHistory : [];
+    data.iaConversaciones = Array.isArray(data.iaConversaciones) ? data.iaConversaciones : [];
+    if (Array.isArray(data.iaChatHistory) && data.iaChatHistory.length) {
+      data.iaConversaciones.push({ id: 'migrada-' + Date.now(), titulo: data.iaChatHistory[0].content, mensajes: data.iaChatHistory, creada: new Date().toISOString() });
+    }
+    delete data.iaChatHistory;
     return data;
   }
   function getCurrentAccount() {
@@ -1603,6 +1615,7 @@
     document.getElementById('cuentaIban').value = c.iban || '';
     document.getElementById('cuentaIdioma').value = c.idioma || 'es';
     document.getElementById('cuentaMoneda').value = c.moneda || 'EUR';
+    iaConversacionActualId = null;
     renderIAChat();
     notifications = [];
     notifUnread = 0;
@@ -1837,20 +1850,54 @@
     setTimeout(() => t.classList.remove('show'), 1800);
   }
 
+  let iaConversacionActualId = null;
   function iaMsgHtml(role, texto) {
     if (role === 'user') {
       return `<div style="display:flex;justify-content:flex-end;"><div class="text-sm text-white bg-accent rounded-2xl px-4 py-2.5" style="max-width:80%; white-space:pre-wrap;">${texto}</div></div>`;
     }
     return `<div class="flex items-start gap-2.5"><span class="w-7 h-7 rounded-full bg-accent/10 text-accent flex items-center justify-center shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L20 9.5l-6.1 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.9L12 2z"/></svg></span><div class="rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-600" style="max-width:80%; white-space:pre-wrap;">${texto}</div></div>`;
   }
-  function renderIAChat() {
+  function getConversacionIAActual() {
     const acc = getCurrentAccount();
-    const historial = acc.data.iaChatHistory || [];
+    if (!iaConversacionActualId) return null;
+    return acc.data.iaConversaciones.find(c => c.id === iaConversacionActualId) || null;
+  }
+  function renderIAConversacionesList() {
+    const acc = getCurrentAccount();
+    const list = acc.data.iaConversaciones.slice().reverse();
+    const cont = document.getElementById('iaConversacionesList');
+    if (!cont) return;
+    if (!list.length) {
+      cont.innerHTML = '<p class="text-xs text-slate-400 px-2 py-3 text-center">Sin conversaciones anteriores</p>';
+      return;
+    }
+    cont.innerHTML = list.map(c => {
+      const activa = c.id === iaConversacionActualId;
+      const titulo = (c.titulo || 'Conversación').slice(0, 40);
+      return `<button onclick="abrirConversacionIA('${c.id}')" class="w-full text-left text-xs px-2.5 py-2 rounded-lg transition truncate ${activa ? 'bg-violet-50 text-navy font-semibold' : 'text-slate-500 hover:bg-slate-50'}">${titulo}</button>`;
+    }).join('');
+  }
+  function nuevaConversacionIA() {
+    iaConversacionActualId = null;
+    renderIAChat();
+    renderIAConversacionesList();
+    const input = document.getElementById('iaInput');
+    if (input) input.focus();
+  }
+  function abrirConversacionIA(id) {
+    iaConversacionActualId = id;
+    renderIAChat();
+    renderIAConversacionesList();
+  }
+  function renderIAChat() {
+    const conv = getConversacionIAActual();
+    const mensajes = conv ? conv.mensajes : [];
     const chat = document.getElementById('iaChat');
-    chat.innerHTML = historial.map(m => iaMsgHtml(m.role, m.content)).join('');
+    chat.innerHTML = mensajes.map(m => iaMsgHtml(m.role, m.content)).join('');
     chat.scrollTop = chat.scrollHeight;
     const sugerencias = document.getElementById('iaSugerencias');
-    if (sugerencias) sugerencias.style.display = historial.length ? 'none' : 'flex';
+    if (sugerencias) sugerencias.style.display = mensajes.length ? 'none' : 'flex';
+    renderIAConversacionesList();
   }
   function preguntarSugerencia(btn) {
     document.getElementById('iaInput').value = btn.textContent;
@@ -1875,7 +1922,13 @@
     const pregunta = input.value.trim();
     if (!pregunta) return;
     const acc = getCurrentAccount();
-    acc.data.iaChatHistory.push({ role: 'user', content: pregunta });
+    let conv = getConversacionIAActual();
+    if (!conv) {
+      conv = { id: 'conv-' + Date.now(), titulo: pregunta, mensajes: [], creada: new Date().toISOString() };
+      acc.data.iaConversaciones.push(conv);
+      iaConversacionActualId = conv.id;
+    }
+    conv.mensajes.push({ role: 'user', content: pregunta });
     input.value = '';
     renderIAChat();
     const chat = document.getElementById('iaChat');
@@ -1886,14 +1939,14 @@
     chat.appendChild(pensando);
     chat.scrollTop = chat.scrollHeight;
     try {
-      const historialPrevio = acc.data.iaChatHistory.slice(0, -1).slice(-20);
+      const historialPrevio = conv.mensajes.slice(0, -1).slice(-20);
       const { data, error } = await supabaseClient.functions.invoke('ia-asistente', {
         body: { pregunta, historial: historialPrevio, datos: construirDatosParaIA() },
       });
       const respuesta = (!error && data && data.respuesta) ? data.respuesta : 'No he podido responder ahora mismo. Inténtalo de nuevo en un momento.';
-      acc.data.iaChatHistory.push({ role: 'assistant', content: respuesta });
+      conv.mensajes.push({ role: 'assistant', content: respuesta });
     } catch (e) {
-      acc.data.iaChatHistory.push({ role: 'assistant', content: 'No he podido responder ahora mismo. Inténtalo de nuevo en un momento.' });
+      conv.mensajes.push({ role: 'assistant', content: 'No he podido responder ahora mismo. Inténtalo de nuevo en un momento.' });
     }
     saveCurrentAccountData(acc.data);
     renderIAChat();
