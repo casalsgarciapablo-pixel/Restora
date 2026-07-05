@@ -1284,6 +1284,7 @@
       perfil: { nombre: nombre, direccion: '', mesas: '', telefono: '' },
       cuenta: { titular: '', telefono: '', bancoTitular: '', iban: '', idioma: 'es', moneda: 'EUR' },
       mesaEstados: [],
+      mesaNombres: [],
       reservas: [],
       pedidos: [],
       menu: [],
@@ -1307,6 +1308,7 @@
     data.cuenta.idioma = data.cuenta.idioma || 'es';
     data.cuenta.moneda = data.cuenta.moneda || 'EUR';
     data.mesaEstados = Array.isArray(data.mesaEstados) ? data.mesaEstados : [];
+    data.mesaNombres = Array.isArray(data.mesaNombres) ? data.mesaNombres : [];
     data.reservas = Array.isArray(data.reservas) ? data.reservas : [];
     data.pedidos = Array.isArray(data.pedidos) ? data.pedidos : [];
     data.menu = Array.isArray(data.menu) ? data.menu : [];
@@ -1514,9 +1516,22 @@
           <span class="chair" style="right:-2px;top:50%;transform:translateY(-50%) rotate(90deg);"></span>
           <div class="mesa-top" style="border-color:${st.border};background:${st.bg};color:${st.text};">${i+1}</div>
         </div>
-        <p class="mesa-label" style="color:${st.text}">${s}</p>
+        <p class="mesa-label" style="color:${st.text}" onclick="event.stopPropagation(); cycleMesa(${i})" title="Toca para cambiar el estado">${s}</p>
       </div>`;
     }).join('');
+  }
+  function getMesaNombre(i) {
+    const acc = getCurrentAccount();
+    return (acc.data.mesaNombres[i] && acc.data.mesaNombres[i].trim()) || ('Mesa ' + (i + 1));
+  }
+  function renameMesa(i) {
+    const acc = getCurrentAccount();
+    const nuevo = prompt('Nombre de la mesa', getMesaNombre(i));
+    if (nuevo === null) return;
+    acc.data.mesaNombres[i] = nuevo.trim();
+    saveCurrentAccountData(acc.data);
+    renderMesas();
+    openMesaDetalle(i);
   }
   function findPedidoDeMesa(numero) {
     const acc = getCurrentAccount();
@@ -1545,7 +1560,12 @@
     const qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(qrUrl);
     document.getElementById('modalBody').innerHTML = `
       <div class="flex items-center justify-between">
-        <h3 class="text-xl font-bold text-navy">Mesa ${numero}</h3>
+        <div class="flex items-center gap-2">
+          <h3 class="text-xl font-bold text-navy">${getMesaNombre(i)}</h3>
+          <button onclick="renameMesa(${i})" class="text-slate-300 hover:text-navy transition" title="Cambiar nombre">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.5-9.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+        </div>
         <span onclick="cycleMesaFromDetalle(${i})" class="cursor-pointer text-xs font-semibold rounded-full px-3 py-1" style="background:${st.bg};color:${st.text};border:1px solid ${st.border}" title="Toca para cambiar el estado">${estado}</span>
       </div>
       <p class="text-xs text-slate-400 mt-1">Toca el estado para cambiarlo.</p>
@@ -1568,12 +1588,14 @@
     if (!n || n < 1) return;
     const acc = getCurrentAccount();
     acc.data.mesaEstados = Array.from({ length: n }, () => 'Sin definir');
+    acc.data.mesaNombres = Array.from({ length: n }, () => '');
     saveCurrentAccountData(acc.data);
     renderMesas();
   }
   function mesasSetupReset() {
     const acc = getCurrentAccount();
     acc.data.mesaEstados = [];
+    acc.data.mesaNombres = [];
     saveCurrentAccountData(acc.data);
     renderMesas();
   }
