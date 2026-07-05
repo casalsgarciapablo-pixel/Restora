@@ -2056,7 +2056,7 @@
       return;
     }
     try {
-      const { data, error } = await supabaseClient.functions.invoke('informe-semanal', {
+      const { data, error } = await supabaseClient.functions.invoke('dynamic-task', {
         body: {
           restaurantName: acc.restaurantName,
           inicio: fmtFechaCorta(inicio),
