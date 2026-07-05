@@ -104,6 +104,7 @@
       <a href="#blog" class="hover:text-navy transition">Blog</a>
     </nav>
     <div class="flex items-center gap-3">
+      <a href="javascript:void(0)" onclick="openModal('staff-login')" class="hidden sm:inline text-slate-400 hover:text-navy transition text-sm font-medium px-2">Entrar como trabajador</a>
       <a href="javascript:void(0)" onclick="openModal('login')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Iniciar sesión</a>
       <a href="javascript:void(0)" onclick="openModal('signup')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5 whitespace-nowrap">Prueba gratis -></a>
     </div>
@@ -1028,7 +1029,7 @@
       </div>
       <div id="personalTableWrap" class="mt-5 rounded-xl border border-slate-200 overflow-hidden bg-white">
         <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-slate-500 text-xs"><tr><th class="text-left font-medium px-4 py-2.5">Nombre</th><th class="text-left font-medium px-4 py-2.5">Rol</th><th class="text-left font-medium px-4 py-2.5">Turno</th><th class="text-left font-medium px-4 py-2.5">Estado</th><th class="px-4 py-2.5 w-10"></th></tr></thead>
+          <thead class="bg-slate-50 text-slate-500 text-xs"><tr><th class="text-left font-medium px-4 py-2.5">Nombre</th><th class="text-left font-medium px-4 py-2.5">Rol</th><th class="text-left font-medium px-4 py-2.5">Turno</th><th class="text-left font-medium px-4 py-2.5">Código</th><th class="text-left font-medium px-4 py-2.5">Estado</th><th class="px-4 py-2.5 w-10"></th></tr></thead>
           <tbody id="personalBody" class="divide-y divide-slate-100"></tbody>
         </table>
       </div>
@@ -1215,12 +1216,25 @@
       <p class="mt-4 text-center text-sm text-slate-500">¿Ya tienes cuenta? <a href="javascript:void(0)" onclick="openModal('login')" class="text-accent font-semibold hover:underline">Inicia sesión</a></p>
     `;
   }
+  function staffLoginFormHtml() {
+    return `
+      <h3 class="text-xl font-bold text-navy">Entrar como trabajador</h3>
+      <p class="mt-1.5 text-sm text-slate-500">Usa el correo y el código que te ha dado tu encargado.</p>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Correo (Gmail)</label>
+      <input id="staffEmail" type="email" required placeholder="tu@gmail.com" onkeydown="if(event.key==='Enter'){event.preventDefault();handleStaffLogin();}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Código</label>
+      <input id="staffCodigo" type="text" required placeholder="K3F9XA" onkeydown="if(event.key==='Enter'){event.preventDefault();handleStaffLogin();}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy uppercase focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <p id="authModalError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" onclick="handleStaffLogin()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Entrar</button>
+    `;
+  }
 
   function openModal(type) {
     document.getElementById('modalCard').classList.remove('modal-wide');
     const customRenderers = {
       'login': loginFormHtml,
       'signup': signupFormHtml,
+      'staff-login': staffLoginFormHtml,
       'add-reserva': addReservaFormHtml,
       'add-pedido': addPedidoFormHtml,
       'add-menu': addMenuFormHtml,
@@ -1414,6 +1428,10 @@
   }
   async function syncAccountToServer() {
     if (!currentAccount) return;
+    if (staffSession) {
+      await supabaseClient.rpc('staff_save_data', { p_user_id: staffSession.userId, p_email: staffSession.email, p_codigo: staffSession.codigo, p_new_data: currentAccount.data });
+      return;
+    }
     await supabaseClient.from('restaurant_data').upsert({
       user_id: currentAccount.userId,
       restaurant_name: currentAccount.restaurantName,
@@ -1462,6 +1480,42 @@
     enterApp();
   }
 
+  let staffSession = null;
+  async function handleStaffLogin() {
+    const email = document.getElementById('staffEmail').value.trim().toLowerCase();
+    const codigo = document.getElementById('staffCodigo').value.trim().toUpperCase();
+    if (!isGmail(email) || !codigo) return authError('Escribe tu correo de Gmail y tu código.');
+    const { data, error } = await supabaseClient.rpc('staff_login', { p_email: email, p_codigo: codigo });
+    if (error || !data) return authError('Correo o código incorrectos.');
+    staffSession = { userId: data.user_id, email, codigo, secciones: Array.isArray(data.secciones) ? data.secciones : [], restaurantName: data.restaurant_name, nombre: data.nombre };
+    closeModal();
+    await enterStaffApp();
+  }
+  async function enterStaffApp() {
+    const { data, error } = await supabaseClient.rpc('staff_get_data', { p_user_id: staffSession.userId, p_email: staffSession.email, p_codigo: staffSession.codigo });
+    if (error || !data) {
+      staffSession = null;
+      showToast('No se ha podido cargar tu panel. Vuelve a intentarlo.');
+      return;
+    }
+    currentAccount = { userId: staffSession.userId, email: staffSession.email, restaurantName: data.restaurant_name || staffSession.restaurantName, data: normalizeAccountData(data.data) };
+    enterApp();
+    aplicarPermisosStaff();
+  }
+  function resetNavVisibility() {
+    document.querySelectorAll('.nav-item[data-sec]').forEach(li => { li.style.display = ''; });
+  }
+  function aplicarPermisosStaff() {
+    if (!staffSession) return;
+    document.querySelectorAll('.nav-item[data-sec]').forEach(li => {
+      const sec = li.getAttribute('data-sec');
+      li.style.display = staffSession.secciones.includes(sec) ? '' : 'none';
+    });
+    if (!staffSession.secciones.includes('dashboard') && staffSession.secciones.length) {
+      goSection(staffSession.secciones[0]);
+    }
+  }
+
   async function cargarCuentaDesdeServidor(user) {
     const { data: row, error } = await supabaseClient.from('restaurant_data').select('*').eq('user_id', user.id).single();
     if (error || !row) {
@@ -1483,6 +1537,7 @@
   function enterApp() {
     document.getElementById('landingRoot').style.display = 'none';
     document.getElementById('appRoot').style.display = 'flex';
+    resetNavVisibility();
     hydrateApp();
     subscribeRealtime();
   }
@@ -1494,8 +1549,14 @@
   }
 
   async function logout() {
-    await supabaseClient.auth.signOut();
     if (realtimeChannel) { supabaseClient.removeChannel(realtimeChannel); realtimeChannel = null; }
+    if (staffSession) {
+      staffSession = null;
+      currentAccount = null;
+      goToLanding();
+      return;
+    }
+    await supabaseClient.auth.signOut();
     currentAccount = null;
     goToLanding();
   }
@@ -2148,16 +2209,30 @@
   }
 
   // ---- Personal ----
+  const SECCIONES_SAAS = [
+    { key: 'dashboard', label: 'Dashboard' },
+    { key: 'reservas', label: 'Reservas' },
+    { key: 'pedidos', label: 'Pedidos' },
+    { key: 'mesas', label: 'Mesas' },
+    { key: 'menu', label: 'Menú' },
+    { key: 'delivery', label: 'Delivery' },
+    { key: 'inventario', label: 'Inventario' },
+    { key: 'ia', label: 'Ayudante IA' },
+    { key: 'restaurante', label: 'Mi restaurante' },
+    { key: 'personal', label: 'Personal' },
+    { key: 'apps', label: 'Apps' },
+    { key: 'config', label: 'Configuración' },
+  ];
   function renderPersonal() {
     const acc = getCurrentAccount();
     const list = acc.data.personal;
     if (!list.length) {
-      document.getElementById('personalBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="5">Aún no has añadido a tu equipo</td></tr>`;
+      document.getElementById('personalBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="6">Aún no has añadido a tu equipo</td></tr>`;
       return;
     }
     document.getElementById('personalBody').innerHTML = list.map((p,i) => {
       const estadoCls = p.estado === 'Activo' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-500 bg-slate-100';
-      return `<tr><td class="px-4 py-2.5">${p.nombre}</td><td class="px-4 py-2.5">${p.rol}</td><td class="px-4 py-2.5">${p.turno}</td><td class="px-4 py-2.5"><span onclick="cicloEstadoEmpleado(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${p.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarEmpleado(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
+      return `<tr><td class="px-4 py-2.5">${p.nombre}</td><td class="px-4 py-2.5">${p.rol}</td><td class="px-4 py-2.5">${p.turno}</td><td class="px-4 py-2.5 font-mono text-xs">${p.codigo || '—'}</td><td class="px-4 py-2.5"><span onclick="cicloEstadoEmpleado(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${p.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarEmpleado(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
     }).join('');
   }
   function cicloEstadoEmpleado(i) {
@@ -2174,35 +2249,83 @@
     showToast('Empleado eliminado');
   }
   function addPersonalFormHtml() {
+    const seccionesHtml = SECCIONES_SAAS.map(s => `
+      <label class="flex items-center gap-2 text-sm text-navy py-1">
+        <input type="checkbox" class="per-seccion-check" value="${s.key}" style="width:16px;height:16px;">
+        ${s.label}
+      </label>
+    `).join('');
     return `
       <h3 class="text-xl font-bold text-navy">Añadir empleado</h3>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Nombre</label>
       <input id="perNombre" type="text" placeholder="Nombre y apellido" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Correo (Gmail)</label>
+      <input id="perEmail" type="email" placeholder="empleado@gmail.com" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Rol</label>
-      <input id="perRol" type="text" placeholder="Camarero, cocina, jefe de sala…" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <select id="perRol" onchange="document.getElementById('perRolOtroWrap').classList.toggle('hidden', this.value !== 'Otro')" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+        <option value="Camarero">Camarero</option>
+        <option value="Cocinero">Cocinero</option>
+        <option value="Jefe de sala">Jefe de sala</option>
+        <option value="Encargado">Encargado</option>
+        <option value="Repartidor">Repartidor</option>
+        <option value="Otro">Otro</option>
+      </select>
+      <div id="perRolOtroWrap" class="hidden mt-2">
+        <input id="perRolOtro" type="text" placeholder="Especifica el rol" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      </div>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Turno</label>
-      <input id="perTurno" type="text" placeholder="Mañana, tarde, noche…" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <select id="perTurno" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+        <option value="Mañana">Mañana</option>
+        <option value="Tarde">Tarde</option>
+        <option value="Noche">Noche</option>
+        <option value="Turno completo">Turno completo</option>
+      </select>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Estado</label>
       <select id="perEstado" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
         <option value="Activo">Activo</option>
         <option value="Descanso">Descanso</option>
       </select>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Acceso al panel</label>
+      <p class="text-xs text-slate-400 mb-1.5">Elige a qué apartados podrá entrar este empleado.</p>
+      <div class="border border-slate-200 rounded-lg px-3 py-2 max-h-40 overflow-y-auto">${seccionesHtml}</div>
       <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
       <button type="button" onclick="submitAddPersonal()" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar empleado</button>
     `;
   }
+  function generarCodigoEmpleado(existentes) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let codigo;
+    do {
+      codigo = '';
+      for (let i = 0; i < 6; i += 1) codigo += chars[Math.floor(Math.random() * chars.length)];
+    } while (existentes.includes(codigo));
+    return codigo;
+  }
   function submitAddPersonal() {
     const nombre = document.getElementById('perNombre').value.trim();
-    const rol = document.getElementById('perRol').value.trim();
-    const turno = document.getElementById('perTurno').value.trim();
+    const email = document.getElementById('perEmail').value.trim().toLowerCase();
+    const rolSel = document.getElementById('perRol').value;
+    const rolOtro = document.getElementById('perRolOtro').value.trim();
+    const rol = rolSel === 'Otro' ? rolOtro : rolSel;
+    const turno = document.getElementById('perTurno').value;
     const estado = document.getElementById('perEstado').value;
-    if (!nombre || !rol || !turno) return modalFormError('Rellena todos los campos.');
+    const secciones = Array.from(document.querySelectorAll('.per-seccion-check:checked')).map(el => el.value);
+    if (!nombre || !rol) return modalFormError('Rellena el nombre y el rol.');
+    if (!isGmail(email)) return modalFormError('Introduce un correo de Gmail válido (@gmail.com).');
+    if (!secciones.length) return modalFormError('Elige al menos un apartado al que tendrá acceso.');
     const acc = getCurrentAccount();
-    acc.data.personal.push({ nombre, rol, turno, estado });
+    const codigo = generarCodigoEmpleado(acc.data.personal.map(p => p.codigo).filter(Boolean));
+    acc.data.personal.push({ nombre, email, rol, turno, estado, codigo, secciones });
     saveCurrentAccountData(acc.data);
     renderPersonal();
-    closeModal();
-    showToast('Empleado añadido');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">¡Empleado añadido!</h3>
+      <p class="mt-2 text-sm text-slate-500">Comparte este código con <b>${nombre}</b> junto con su correo (${email}). Lo usará para entrar como trabajador desde la landing, en "Entrar como trabajador".</p>
+      <div class="mt-4 rounded-lg bg-slate-50 border border-slate-200 px-4 py-3 text-center">
+        <p class="text-2xl font-bold tracking-widest text-navy">${codigo}</p>
+      </div>
+      <button onclick="closeModal()" class="mt-5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>
+    `;
   }
   function pastePersonalFormHtml() {
     return `
