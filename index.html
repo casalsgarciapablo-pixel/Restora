@@ -1285,6 +1285,7 @@
       cuenta: { titular: '', telefono: '', bancoTitular: '', iban: '', idioma: 'es', moneda: 'EUR' },
       mesaEstados: [],
       mesaNombres: [],
+      mesaCapacidades: [],
       reservas: [],
       pedidos: [],
       menu: [],
@@ -1309,6 +1310,7 @@
     data.cuenta.moneda = data.cuenta.moneda || 'EUR';
     data.mesaEstados = Array.isArray(data.mesaEstados) ? data.mesaEstados : [];
     data.mesaNombres = Array.isArray(data.mesaNombres) ? data.mesaNombres : [];
+    data.mesaCapacidades = Array.isArray(data.mesaCapacidades) ? data.mesaCapacidades : [];
     data.reservas = Array.isArray(data.reservas) ? data.reservas : [];
     data.pedidos = Array.isArray(data.pedidos) ? data.pedidos : [];
     data.menu = Array.isArray(data.menu) ? data.menu : [];
@@ -1488,6 +1490,28 @@
     Ocupada: { border:'#fb7185', bg:'#fff1f2', text:'#e11d48' },
     Reservada: { border:'#fbbf24', bg:'#fffbeb', text:'#d97706' },
   };
+  function getMesaCapacidad(i) {
+    const acc = getCurrentAccount();
+    const cap = acc.data.mesaCapacidades[i];
+    return (cap && cap > 0) ? cap : 4;
+  }
+  function mesaVisualHtml(capacidad, numero, st) {
+    const n = Math.max(1, Math.min(12, capacidad));
+    const size = Math.max(60, Math.min(140, 60 + n * 6));
+    let chairs = '';
+    for (let k = 0; k < n; k += 1) {
+      const angle = (360 / n) * k - 90;
+      const rad = angle * Math.PI / 180;
+      const x = 50 + Math.cos(rad) * 46;
+      const y = 50 + Math.sin(rad) * 46;
+      chairs += `<span class="chair" style="left:${x}%;top:${y}%;transform:translate(-50%,-50%) rotate(${angle + 90}deg);"></span>`;
+    }
+    return `
+      <div class="mesa-chairs" style="width:${size}px;height:${size}px;">
+        ${chairs}
+        <div class="mesa-top" style="border-color:${st.border};background:${st.bg};color:${st.text};">${numero}</div>
+      </div>`;
+  }
   function renderMesas() {
     const acc = getCurrentAccount();
     const estados = acc.data.mesaEstados;
@@ -1509,13 +1533,7 @@
       const st = mesaStateStyle[s];
       return `
       <div class="mesa-item" onclick="openMesaDetalle(${i})">
-        <div class="mesa-chairs">
-          <span class="chair" style="top:-2px;left:50%;transform:translateX(-50%);"></span>
-          <span class="chair" style="bottom:-2px;left:50%;transform:translateX(-50%);"></span>
-          <span class="chair" style="left:-2px;top:50%;transform:translateY(-50%) rotate(90deg);"></span>
-          <span class="chair" style="right:-2px;top:50%;transform:translateY(-50%) rotate(90deg);"></span>
-          <div class="mesa-top" style="border-color:${st.border};background:${st.bg};color:${st.text};">${i+1}</div>
-        </div>
+        ${mesaVisualHtml(getMesaCapacidad(i), i + 1, st)}
         <p class="mesa-label" style="color:${st.text}" onclick="event.stopPropagation(); cycleMesa(${i})" title="Toca para cambiar el estado">${s}</p>
       </div>`;
     }).join('');
@@ -1558,6 +1576,7 @@
         </div>`;
     const qrUrl = location.origin + location.pathname + '?cuenta=' + encodeURIComponent(acc.userId) + '&mesa=' + numero;
     const qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(qrUrl);
+    const capacidad = getMesaCapacidad(i);
     document.getElementById('modalBody').innerHTML = `
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -1570,6 +1589,17 @@
       </div>
       <p class="text-xs text-slate-400 mt-1">Toca el estado para cambiarlo.</p>
       ${pedidoHtml}
+      <div class="mt-4 rounded-lg border border-slate-200 p-4">
+        <div class="flex items-center justify-between">
+          <p class="text-sm font-semibold text-navy">Capacidad</p>
+          <div class="flex items-center gap-3">
+            <button onclick="cambiarCapacidadMesa(${i}, -1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">−</button>
+            <span class="text-sm font-semibold text-navy w-14 text-center">${capacidad} ${capacidad === 1 ? 'persona' : 'personas'}</span>
+            <button onclick="cambiarCapacidadMesa(${i}, 1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">+</button>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-1.5">El dibujo de la mesa se adapta al número de personas.</p>
+      </div>
       <div class="mt-4 rounded-lg border border-slate-200 p-4 text-center">
         <p class="text-sm font-semibold text-navy mb-3">QR de la mesa</p>
         <img src="${qrImg}" width="140" height="140" class="mx-auto rounded-md" alt="QR de la Mesa ${numero}">
@@ -1583,12 +1613,22 @@
     cycleMesa(i);
     openMesaDetalle(i);
   }
+  function cambiarCapacidadMesa(i, delta) {
+    const acc = getCurrentAccount();
+    const actual = getMesaCapacidad(i);
+    const nueva = Math.max(1, Math.min(12, actual + delta));
+    acc.data.mesaCapacidades[i] = nueva;
+    saveCurrentAccountData(acc.data);
+    renderMesas();
+    openMesaDetalle(i);
+  }
   function crearMesas() {
     const n = parseInt(document.getElementById('mesasSetupCount').value, 10);
     if (!n || n < 1) return;
     const acc = getCurrentAccount();
     acc.data.mesaEstados = Array.from({ length: n }, () => 'Sin definir');
     acc.data.mesaNombres = Array.from({ length: n }, () => '');
+    acc.data.mesaCapacidades = Array.from({ length: n }, () => 4);
     saveCurrentAccountData(acc.data);
     renderMesas();
   }
@@ -1596,6 +1636,7 @@
     const acc = getCurrentAccount();
     acc.data.mesaEstados = [];
     acc.data.mesaNombres = [];
+    acc.data.mesaCapacidades = [];
     saveCurrentAccountData(acc.data);
     renderMesas();
   }
