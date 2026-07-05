@@ -1279,6 +1279,17 @@
   let currentAccount = null; // { userId, email, restaurantName, data }
   let saveTimer = null;
   let realtimeChannel = null;
+  function renderAllSections() {
+    applyTopbar(currentAccount);
+    renderMesas();
+    renderReservas();
+    renderPedidos();
+    renderMenu();
+    renderPersonal();
+    renderInventario();
+    renderDashboardStats();
+    renderIntegraciones();
+  }
   function subscribeRealtime() {
     if (!currentAccount) return;
     if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
@@ -1288,7 +1299,7 @@
         if (!currentAccount || !payload.new) return;
         currentAccount.data = normalizeAccountData(payload.new.data);
         currentAccount.restaurantName = payload.new.restaurant_name || currentAccount.restaurantName;
-        renderMesas();
+        renderAllSections();
       })
       .subscribe();
   }
@@ -2181,7 +2192,7 @@
     try {
       const mesaInt = parseInt(mesaNumero, 10);
       if (mesaInt > 0) {
-        supabaseClient.rpc('set_mesa_ocupada', { p_user_id: cuentaId, p_mesa: mesaInt }).catch(() => {});
+        supabaseClient.rpc('set_mesa_ocupada', { p_user_id: cuentaId, p_mesa: mesaInt }).then(null, () => {});
       }
       const { data, error } = await supabaseClient.rpc('get_public_menu', { p_user_id: cuentaId });
       if (error || !data) {
