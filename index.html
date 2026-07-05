@@ -52,8 +52,10 @@
   #appRoot table tbody tr { transition: background-color .12s ease; }
   #appRoot table tbody tr:hover { background-color: #f8fafc; }
   .mesa-item { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
-  .mesa-top { width: 64px; height: 64px; margin: 0 auto; border-radius: 14px; border-width: 3px; border-style: solid; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; text-align: center; line-height: 1.15; padding: 4px; overflow: hidden; transition: transform .15s ease; }
+  .mesa-chairs { position: relative; margin: 0 auto; }
+  .mesa-top { position: absolute; inset: 9px; border-width: 3px; border-style: solid; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; text-align: center; line-height: 1.15; padding: 4px; overflow: hidden; transition: transform .15s ease; }
   .mesa-item:hover .mesa-top { transform: scale(1.08); }
+  .chair { position: absolute; width: 13px; height: 8px; border-radius: 3px; background: #cbd5e1; }
   .mesa-capacidad-label { font-size: 10px; color: #94a3b8; }
   .mesa-label { font-size: 11px; font-weight: 600; }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) scale(.9); background: #0f2146; color: #fff; font-size: 13px; font-weight: 600; padding: 10px 18px; border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 200; opacity: 0; pointer-events: none; transition: opacity .25s cubic-bezier(.34,1.56,.64,1), transform .25s cubic-bezier(.34,1.56,.64,1); }
@@ -1285,6 +1287,7 @@
       mesaEstados: [],
       mesaNombres: [],
       mesaCapacidades: [],
+      mesaFormas: [],
       reservas: [],
       pedidos: [],
       menu: [],
@@ -1310,6 +1313,7 @@
     data.mesaEstados = Array.isArray(data.mesaEstados) ? data.mesaEstados : [];
     data.mesaNombres = Array.isArray(data.mesaNombres) ? data.mesaNombres : [];
     data.mesaCapacidades = Array.isArray(data.mesaCapacidades) ? data.mesaCapacidades : [];
+    data.mesaFormas = Array.isArray(data.mesaFormas) ? data.mesaFormas : [];
     data.reservas = Array.isArray(data.reservas) ? data.reservas : [];
     data.pedidos = Array.isArray(data.pedidos) ? data.pedidos : [];
     data.menu = Array.isArray(data.menu) ? data.menu : [];
@@ -1499,9 +1503,44 @@
     const nombre = acc.data.mesaNombres[i] && acc.data.mesaNombres[i].trim();
     return nombre || String(i + 1);
   }
-  function mesaVisualHtml(etiqueta, st) {
+  function getMesaForma(i) {
+    const acc = getCurrentAccount();
+    const f = acc.data.mesaFormas[i];
+    return (f === 'redonda' || f === 'cuadrada') ? f : 'rectangular';
+  }
+  function mesaVisualHtml(capacidad, etiqueta, st, forma) {
+    const n = Math.max(1, Math.min(12, capacidad));
+    const base = Math.max(64, Math.min(140, 64 + n * 6));
+    const w = forma === 'rectangular' ? Math.round(base * 1.35) : base;
+    const h = forma === 'rectangular' ? Math.round(base * 0.8) : base;
+    const margin = 9;
+    const a = w / 2 - margin;
+    const b = h / 2 - margin;
+    const gap = 8;
+    const radius = forma === 'redonda' ? '50%' : '12px';
+    let chairs = '';
+    for (let k = 0; k < n; k += 1) {
+      const angle = (360 / n) * k - 90;
+      const rad = angle * Math.PI / 180;
+      const dx = Math.cos(rad), dy = Math.sin(rad);
+      let px, py;
+      if (forma === 'redonda') {
+        const r = Math.min(a, b) + gap;
+        px = dx * r; py = dy * r;
+      } else {
+        const t = 1 / Math.max(Math.abs(dx) / a, Math.abs(dy) / b);
+        px = dx * (t + gap); py = dy * (t + gap);
+      }
+      const xPct = 50 + (px / w) * 100;
+      const yPct = 50 + (py / h) * 100;
+      chairs += `<span class="chair" style="left:${xPct}%;top:${yPct}%;transform:translate(-50%,-50%) rotate(${angle + 90}deg);"></span>`;
+    }
     const fontSize = String(etiqueta).length > 3 ? '11px' : '14px';
-    return `<div class="mesa-top" style="border-color:${st.border};background:${st.bg};color:${st.text};font-size:${fontSize};">${etiqueta}</div>`;
+    return `
+      <div class="mesa-chairs" style="width:${w}px;height:${h}px;">
+        ${chairs}
+        <div class="mesa-top" style="border-radius:${radius};border-color:${st.border};background:${st.bg};color:${st.text};font-size:${fontSize};">${etiqueta}</div>
+      </div>`;
   }
   function renderMesas() {
     const acc = getCurrentAccount();
@@ -1524,7 +1563,7 @@
       const st = mesaStateStyle[s];
       return `
       <div class="mesa-item" onclick="openMesaDetalle(${i})">
-        ${mesaVisualHtml(getMesaEtiqueta(i), st)}
+        ${mesaVisualHtml(getMesaCapacidad(i), getMesaEtiqueta(i), st, getMesaForma(i))}
         <p class="mesa-capacidad-label">${getMesaCapacidad(i)} pers.</p>
         <p class="mesa-label" style="color:${st.text}" onclick="event.stopPropagation(); cycleMesa(${i})" title="Toca para cambiar el estado">${s}</p>
       </div>`;
@@ -1569,6 +1608,7 @@
     const qrUrl = location.origin + location.pathname + '?cuenta=' + encodeURIComponent(acc.userId) + '&mesa=' + numero;
     const qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(qrUrl);
     const capacidad = getMesaCapacidad(i);
+    const forma = getMesaForma(i);
     document.getElementById('modalBody').innerHTML = `
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -1591,6 +1631,14 @@
           </div>
         </div>
         <p class="text-xs text-slate-400 mt-1.5">Se muestra debajo del nombre de la mesa.</p>
+        <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+          <p class="text-sm font-semibold text-navy">Forma</p>
+          <div class="flex items-center gap-2">
+            <button onclick="cambiarFormaMesa(${i}, 'rectangular')" class="text-xs font-semibold rounded-full px-3 py-1.5 transition ${forma === 'rectangular' ? 'bg-navydeep text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">Rectangular</button>
+            <button onclick="cambiarFormaMesa(${i}, 'cuadrada')" class="text-xs font-semibold rounded-full px-3 py-1.5 transition ${forma === 'cuadrada' ? 'bg-navydeep text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">Cuadrada</button>
+            <button onclick="cambiarFormaMesa(${i}, 'redonda')" class="text-xs font-semibold rounded-full px-3 py-1.5 transition ${forma === 'redonda' ? 'bg-navydeep text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">Redonda</button>
+          </div>
+        </div>
       </div>
       <div class="mt-4 rounded-lg border border-slate-200 p-4 text-center">
         <p class="text-sm font-semibold text-navy mb-3">QR de la mesa</p>
@@ -1614,6 +1662,13 @@
     renderMesas();
     openMesaDetalle(i);
   }
+  function cambiarFormaMesa(i, forma) {
+    const acc = getCurrentAccount();
+    acc.data.mesaFormas[i] = forma;
+    saveCurrentAccountData(acc.data);
+    renderMesas();
+    openMesaDetalle(i);
+  }
   function crearMesas() {
     const n = parseInt(document.getElementById('mesasSetupCount').value, 10);
     if (!n || n < 1) return;
@@ -1621,6 +1676,7 @@
     acc.data.mesaEstados = Array.from({ length: n }, () => 'Sin definir');
     acc.data.mesaNombres = Array.from({ length: n }, () => '');
     acc.data.mesaCapacidades = Array.from({ length: n }, () => 4);
+    acc.data.mesaFormas = Array.from({ length: n }, () => 'rectangular');
     saveCurrentAccountData(acc.data);
     renderMesas();
   }
@@ -1629,6 +1685,7 @@
     acc.data.mesaEstados = [];
     acc.data.mesaNombres = [];
     acc.data.mesaCapacidades = [];
+    acc.data.mesaFormas = [];
     saveCurrentAccountData(acc.data);
     renderMesas();
   }
