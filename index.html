@@ -2161,6 +2161,10 @@
     document.getElementById('landingRoot').style.display = 'none';
     document.getElementById('publicMenuRoot').style.display = 'block';
     const body = document.getElementById('publicMenuBody');
+    const mesaInt = parseInt(mesaNumero, 10);
+    if (mesaInt > 0) {
+      supabaseClient.rpc('set_mesa_ocupada', { p_user_id: cuentaId, p_mesa: mesaInt }).catch(() => {});
+    }
     const { data, error } = await supabaseClient.rpc('get_public_menu', { p_user_id: cuentaId });
     if (error || !data) {
       body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar el menú. Prueba a escanear el QR de nuevo.</p>`;
