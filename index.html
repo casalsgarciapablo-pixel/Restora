@@ -890,7 +890,7 @@
       <div id="reservasTableWrap" class="mt-5 rounded-xl border border-slate-200 overflow-hidden bg-white">
         <table class="w-full text-sm">
           <thead class="bg-slate-50 text-slate-500 text-xs">
-            <tr><th class="text-left font-medium px-4 py-2.5">Hora</th><th class="text-left font-medium px-4 py-2.5">Cliente</th><th class="text-left font-medium px-4 py-2.5">Personas</th><th class="text-left font-medium px-4 py-2.5">Mesa</th><th class="text-left font-medium px-4 py-2.5">Estado</th><th class="px-4 py-2.5 w-10"></th></tr>
+            <tr><th class="text-left font-medium px-4 py-2.5">Fecha</th><th class="text-left font-medium px-4 py-2.5">Hora</th><th class="text-left font-medium px-4 py-2.5">Cliente</th><th class="text-left font-medium px-4 py-2.5">Personas</th><th class="text-left font-medium px-4 py-2.5">Mesa</th><th class="text-left font-medium px-4 py-2.5">Estado</th><th class="px-4 py-2.5 w-10"></th></tr>
           </thead>
           <tbody id="reservasBody" class="divide-y divide-slate-100"></tbody>
         </table>
@@ -981,13 +981,9 @@
           <p class="text-xs text-slate-400 mt-1">Recomendaciones basadas en tus datos.</p>
         </div>
       </div>
-      <div class="mt-5 rounded-xl border border-dashed border-slate-300 p-8 text-center max-w-2xl">
-        <p class="text-sm font-semibold text-navy">Aún no hay suficientes datos</p>
-        <p class="text-xs text-slate-400 mt-1">Cuantos más pedidos, mesas, menú e inventario registres, mejores recomendaciones podrá darte tu Ayudante IA.</p>
-      </div>
       <div id="iaChat" class="mt-4 space-y-2 max-w-2xl"></div>
       <div class="mt-4 max-w-2xl flex gap-2">
-        <input id="iaInput" type="text" placeholder="Pregúntale algo a tu asistente…" class="flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+        <input id="iaInput" type="text" placeholder="Pregúntale algo a tu asistente…" onkeydown="if(event.key==='Enter'){event.preventDefault();askIA();}" class="flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
         <button onclick="askIA()" class="rounded-lg bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-4">Enviar</button>
       </div>
     </section>
@@ -1316,6 +1312,7 @@
     renderInventario();
     renderDashboardStats();
     renderIntegraciones();
+    renderIAChat();
   }
   function subscribeRealtime() {
     if (!currentAccount) return;
@@ -1383,6 +1380,7 @@
       personal: [],
       inventario: [],
       integraciones: { square: false, glovo: false, uber: false, justeat: false, notifs: false },
+      iaChatHistory: [],
     };
   }
   function normalizeAccountData(data) {
@@ -1414,6 +1412,7 @@
     data.integraciones.uber = !!data.integraciones.uber;
     data.integraciones.justeat = !!data.integraciones.justeat;
     data.integraciones.notifs = !!data.integraciones.notifs;
+    data.iaChatHistory = Array.isArray(data.iaChatHistory) ? data.iaChatHistory : [];
     return data;
   }
   function getCurrentAccount() {
@@ -1597,7 +1596,7 @@
     document.getElementById('cuentaIban').value = c.iban || '';
     document.getElementById('cuentaIdioma').value = c.idioma || 'es';
     document.getElementById('cuentaMoneda').value = c.moneda || 'EUR';
-    document.getElementById('iaChat').innerHTML = '';
+    renderIAChat();
     notifications = [];
     notifUnread = 0;
     renderNotifications();
@@ -1831,20 +1830,60 @@
     setTimeout(() => t.classList.remove('show'), 1800);
   }
 
-  function askIA() {
-    const input = document.getElementById('iaInput');
-    if (!input.value.trim()) return;
+  function iaMsgHtml(role, texto) {
+    if (role === 'user') {
+      return `<div style="display:flex;justify-content:flex-end;"><div class="text-sm text-white bg-accent rounded-2xl px-4 py-2.5" style="max-width:80%; white-space:pre-wrap;">${texto}</div></div>`;
+    }
+    return `<div class="flex items-start gap-2.5"><span class="w-7 h-7 rounded-full bg-accent/10 text-accent flex items-center justify-center shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L20 9.5l-6.1 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.9L12 2z"/></svg></span><div class="rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-600" style="max-width:80%; white-space:pre-wrap;">${texto}</div></div>`;
+  }
+  function renderIAChat() {
+    const acc = getCurrentAccount();
+    const historial = acc.data.iaChatHistory || [];
+    document.getElementById('iaChat').innerHTML = historial.map(m => iaMsgHtml(m.role, m.content)).join('');
     const chat = document.getElementById('iaChat');
-    const userMsg = document.createElement('div');
-    userMsg.style.display = 'flex';
-    userMsg.style.justifyContent = 'flex-end';
-    userMsg.innerHTML = `<div class="text-sm text-white bg-accent rounded-2xl px-4 py-2.5" style="max-width:80%">${input.value}</div>`;
-    chat.appendChild(userMsg);
-    const reply = document.createElement('div');
-    reply.className = 'flex items-start gap-2.5';
-    reply.innerHTML = `<span class="w-7 h-7 rounded-full bg-accent/10 text-accent flex items-center justify-center shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L20 9.5l-6.1 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.9L12 2z"/></svg></span><div class="rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-600" style="max-width:80%">Cuantos más datos registres en tu cuenta, mejor podré ayudarte. De momento aún no tengo suficiente información sobre tu restaurante.</div>`;
-    chat.appendChild(reply);
+    chat.scrollTop = chat.scrollHeight;
+  }
+  function construirDatosParaIA() {
+    const acc = getCurrentAccount();
+    const d = acc.data;
+    return {
+      restaurantName: acc.restaurantName,
+      perfil: d.perfil,
+      mesas: d.mesaEstados.map((estado, i) => ({ numero: i + 1, nombre: d.mesaNombres[i] || null, capacidad: d.mesaCapacidades[i] || null, estado })),
+      pedidos: d.pedidos,
+      reservas: d.reservas,
+      menu: d.menu.map(m => ({ nombre: m.nombre, precio: m.precio, estado: m.estado })),
+      personal: d.personal.map(p => ({ nombre: p.nombre, rol: p.rol, turno: p.turno, estado: p.estado })),
+      inventario: d.inventario,
+    };
+  }
+  async function askIA() {
+    const input = document.getElementById('iaInput');
+    const pregunta = input.value.trim();
+    if (!pregunta) return;
+    const acc = getCurrentAccount();
+    acc.data.iaChatHistory.push({ role: 'user', content: pregunta });
     input.value = '';
+    renderIAChat();
+    const chat = document.getElementById('iaChat');
+    const pensando = document.createElement('div');
+    pensando.id = 'iaPensando';
+    pensando.className = 'flex items-start gap-2.5';
+    pensando.innerHTML = `<span class="w-7 h-7 rounded-full bg-accent/10 text-accent flex items-center justify-center shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L20 9.5l-6.1 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.9L12 2z"/></svg></span><div class="rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-400">Pensando…</div>`;
+    chat.appendChild(pensando);
+    chat.scrollTop = chat.scrollHeight;
+    try {
+      const historialPrevio = acc.data.iaChatHistory.slice(0, -1).slice(-20);
+      const { data, error } = await supabaseClient.functions.invoke('ia-asistente', {
+        body: { pregunta, historial: historialPrevio, datos: construirDatosParaIA() },
+      });
+      const respuesta = (!error && data && data.respuesta) ? data.respuesta : 'No he podido responder ahora mismo. Inténtalo de nuevo en un momento.';
+      acc.data.iaChatHistory.push({ role: 'assistant', content: respuesta });
+    } catch (e) {
+      acc.data.iaChatHistory.push({ role: 'assistant', content: 'No he podido responder ahora mismo. Inténtalo de nuevo en un momento.' });
+    }
+    saveCurrentAccountData(acc.data);
+    renderIAChat();
   }
 
   // ---- Reservas ----
@@ -1852,12 +1891,12 @@
     const acc = getCurrentAccount();
     const list = acc.data.reservas;
     if (!list.length) {
-      document.getElementById('reservasBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="6">Sin reservas todavía</td></tr>`;
+      document.getElementById('reservasBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="7">Sin reservas todavía</td></tr>`;
       return;
     }
     document.getElementById('reservasBody').innerHTML = list.map((r,i) => {
       const estadoCls = r.estado === 'Confirmada' ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50';
-      return `<tr><td class="px-4 py-2.5">${r.hora}</td><td class="px-4 py-2.5">${r.cliente}</td><td class="px-4 py-2.5">${r.personas}</td><td class="px-4 py-2.5">${r.mesa}</td><td class="px-4 py-2.5"><span onclick="cicloEstadoReserva(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${r.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarReserva(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
+      return `<tr><td class="px-4 py-2.5">${r.fecha || '—'}</td><td class="px-4 py-2.5">${r.hora}</td><td class="px-4 py-2.5">${r.cliente}</td><td class="px-4 py-2.5">${r.personas}</td><td class="px-4 py-2.5">${r.mesa}</td><td class="px-4 py-2.5"><span onclick="cicloEstadoReserva(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${r.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarReserva(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
     }).join('');
   }
   function cicloEstadoReserva(i) {
@@ -1876,6 +1915,8 @@
   function addReservaFormHtml() {
     return `
       <h3 class="text-xl font-bold text-navy">Nueva reserva</h3>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Fecha</label>
+      <input id="resFecha" type="date" value="${new Date().toISOString().slice(0, 10)}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Hora</label>
       <input id="resHora" type="time" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Cliente</label>
@@ -1894,14 +1935,15 @@
     `;
   }
   function submitAddReserva() {
+    const fecha = document.getElementById('resFecha').value;
     const hora = document.getElementById('resHora').value;
     const cliente = document.getElementById('resCliente').value.trim();
     const personas = document.getElementById('resPersonas').value.trim();
     const mesa = document.getElementById('resMesa').value.trim();
     const estado = document.getElementById('resEstado').value;
-    if (!hora || !cliente || !personas || !mesa) return modalFormError('Rellena todos los campos.');
+    if (!fecha || !hora || !cliente || !personas || !mesa) return modalFormError('Rellena todos los campos.');
     const acc = getCurrentAccount();
-    acc.data.reservas.push({ hora, cliente, personas, mesa, estado });
+    acc.data.reservas.push({ fecha, hora, cliente, personas, mesa, estado });
     saveCurrentAccountData(acc.data);
     renderReservas();
     closeModal();
@@ -2042,10 +2084,11 @@
     const elegidos = disponibles.filter(m => (pedidoEnCurso.cantidades[m.idx] || 0) > 0);
     if (!elegidos.length) return modalFormError('Elige al menos un plato.');
     const items = elegidos.map(m => pedidoEnCurso.cantidades[m.idx] + 'x ' + m.nombre).join(', ');
+    const platos = elegidos.map(m => ({ nombre: m.nombre, cantidad: pedidoEnCurso.cantidades[m.idx], precio: m.precio }));
     const total = elegidos.reduce((sum, m) => sum + precioToNumero(m.precio) * pedidoEnCurso.cantidades[m.idx], 0);
     const mesa = 'Mesa ' + pedidoEnCurso.numero;
     const acc = getCurrentAccount();
-    acc.data.pedidos.push({ mesa, items, personas: pedidoEnCurso.personas, total, estado: 'Pendiente' });
+    acc.data.pedidos.push({ mesa, items, platos, personas: pedidoEnCurso.personas, total, estado: 'Pendiente', fecha: new Date().toISOString() });
     saveCurrentAccountData(acc.data);
     renderPedidos();
     renderDashboardStats();
