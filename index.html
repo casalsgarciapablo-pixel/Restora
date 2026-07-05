@@ -1501,7 +1501,12 @@
     const acc = getCurrentAccount();
     return acc.data.mesaFormas[i] === 'redonda' ? 'redonda' : 'rectangular';
   }
-  function mesaVisualHtml(capacidad, numero, st, forma) {
+  function getMesaEtiqueta(i) {
+    const acc = getCurrentAccount();
+    const nombre = acc.data.mesaNombres[i] && acc.data.mesaNombres[i].trim();
+    return nombre || String(i + 1);
+  }
+  function mesaVisualHtml(capacidad, etiqueta, st, forma) {
     const n = Math.max(1, Math.min(12, capacidad));
     const base = Math.max(60, Math.min(140, 60 + n * 6));
     const w = forma === 'rectangular' ? Math.round(base * 1.35) : base;
@@ -1541,10 +1546,11 @@
         chairs += `<span class="chair" style="left:${x}%;top:${y}%;transform:translate(-50%,-50%) rotate(${angle + 90}deg);"></span>`;
       }
     }
+    const fontSize = String(etiqueta).length > 3 ? '11px' : '14px';
     return `
       <div class="mesa-chairs" style="width:${w}px;height:${h}px;">
         ${chairs}
-        <div class="mesa-top" style="border-radius:${radius};border-color:${st.border};background:${st.bg};color:${st.text};">${numero}</div>
+        <div class="mesa-top" style="border-radius:${radius};border-color:${st.border};background:${st.bg};color:${st.text};font-size:${fontSize};padding:4px;text-align:center;line-height:1.15;overflow:hidden;">${etiqueta}</div>
       </div>`;
   }
   function renderMesas() {
@@ -1568,7 +1574,7 @@
       const st = mesaStateStyle[s];
       return `
       <div class="mesa-item" onclick="openMesaDetalle(${i})">
-        ${mesaVisualHtml(getMesaCapacidad(i), i + 1, st, getMesaForma(i))}
+        ${mesaVisualHtml(getMesaCapacidad(i), getMesaEtiqueta(i), st, getMesaForma(i))}
         <p class="mesa-label" style="color:${st.text}" onclick="event.stopPropagation(); cycleMesa(${i})" title="Toca para cambiar el estado">${s}</p>
       </div>`;
     }).join('');
