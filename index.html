@@ -1962,7 +1962,7 @@
     const reader = new FileReader();
     reader.onload = async () => {
       try {
-        const { data, error } = await supabaseClient.functions.invoke('smart-service', { body: { image: reader.result } });
+        const { data, error } = await supabaseClient.functions.invoke('menu-ocr', { body: { image: reader.result } });
         if (error || !data || data.error) {
           modalFormError((data && data.error) || 'No se ha podido leer el menú. Inténtalo de nuevo.');
           btn.disabled = false;
