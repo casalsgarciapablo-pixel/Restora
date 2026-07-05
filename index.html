@@ -49,7 +49,7 @@
   .kpi-pop { animation: kpiPop .35s ease; }
   .kpi-tile, .lift-card { transition: transform .18s ease, box-shadow .18s ease; }
   .kpi-tile:hover, .lift-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px -10px rgba(11,33,66,0.18); }
-  #appRoot { background: #F7F8FC; }
+  #appRoot { background: #F1F2FF; }
   #appRoot table tbody tr { transition: background-color .12s ease; }
   #appRoot table tbody tr:hover { background-color: #f8fafc; }
   #tableGrid > div { transition: transform .15s ease, opacity .15s ease; }
@@ -756,7 +756,7 @@
 
 <div id="appRoot" class="h-screen flex flex-col" style="display:none">
 <!-- Top bar -->
-<header class="flex items-center justify-between px-5 py-3 shrink-0" style="background:rgba(101,110,255,0.09); border-bottom:1px solid rgba(101,110,255,0.16);">
+<header class="flex items-center justify-between px-5 py-3 shrink-0" style="background:#F7F8FC; border-bottom:1px solid rgba(11,33,66,0.08);">
   <div class="flex items-center gap-3">
     <a href="javascript:void(0)" onclick="goToLanding()" class="flex items-center gap-2">
       <svg width="24" height="24" viewBox="0 0 30 30" fill="none">
@@ -779,7 +779,7 @@
 
 <div class="flex flex-1 min-h-0">
   <!-- Sidebar -->
-  <aside class="w-56 shrink-0 px-3 py-5 text-sm flex flex-col" style="background:rgba(101,110,255,0.09); border-right:1px solid rgba(101,110,255,0.16);">
+  <aside class="w-56 shrink-0 px-3 py-5 text-sm flex flex-col" style="background:#F7F8FC; border-right:1px solid rgba(11,33,66,0.08);">
     <ul class="space-y-1 text-slate-600">
       <li data-sec="dashboard" onclick="showSection('dashboard', this)" class="nav-item active flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.3"/><rect x="14" y="3" width="7" height="5" rx="1.3"/><rect x="14" y="12" width="7" height="9" rx="1.3"/><rect x="3" y="16" width="7" height="5" rx="1.3"/></svg></span>Dashboard</li>
       <li data-sec="reservas" onclick="showSection('reservas', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-sky-50 text-sky-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M8 3v4M16 3v4M3 10h18"/></svg></span>Reservas</li>
