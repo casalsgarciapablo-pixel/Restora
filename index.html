@@ -1964,7 +1964,7 @@
       try {
         const { data, error } = await supabaseClient.functions.invoke('menu-ocr', { body: { image: reader.result } });
         if (error || !data || data.error) {
-          modalFormError((data && data.error) || 'No se ha podido leer el menú. Inténtalo de nuevo.');
+          modalFormError((data && data.error) || (error && error.message) || 'No se ha podido leer el menú. Inténtalo de nuevo.');
           btn.disabled = false;
           btn.textContent = 'Transcribir con IA';
           return;
