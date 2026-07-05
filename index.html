@@ -1508,12 +1508,38 @@
     const h = forma === 'rectangular' ? Math.round(base * 0.8) : base;
     const radius = forma === 'rectangular' ? '12px' : '50%';
     let chairs = '';
-    for (let k = 0; k < n; k += 1) {
-      const angle = (360 / n) * k - 90;
-      const rad = angle * Math.PI / 180;
-      const x = 50 + Math.cos(rad) * 46;
-      const y = 50 + Math.sin(rad) * 46;
-      chairs += `<span class="chair" style="left:${x}%;top:${y}%;transform:translate(-50%,-50%) rotate(${angle + 90}deg);"></span>`;
+    if (forma === 'rectangular') {
+      const perim = 2 * (w + h);
+      const step = perim / n;
+      for (let k = 0; k < n; k += 1) {
+        let d = (step * k + step / 2) % perim;
+        let x, y, translate;
+        if (d < w) {
+          x = (d / w) * 100; y = 0;
+          translate = 'translate(-50%, calc(-50% - 6px)) rotate(0deg)';
+        } else if (d < w + h) {
+          d -= w;
+          x = 100; y = (d / h) * 100;
+          translate = 'translate(calc(-50% + 6px), -50%) rotate(90deg)';
+        } else if (d < 2 * w + h) {
+          d -= (w + h);
+          x = 100 - (d / w) * 100; y = 100;
+          translate = 'translate(-50%, calc(-50% + 6px)) rotate(0deg)';
+        } else {
+          d -= (2 * w + h);
+          x = 0; y = 100 - (d / h) * 100;
+          translate = 'translate(calc(-50% - 6px), -50%) rotate(90deg)';
+        }
+        chairs += `<span class="chair" style="left:${x}%;top:${y}%;transform:${translate};"></span>`;
+      }
+    } else {
+      for (let k = 0; k < n; k += 1) {
+        const angle = (360 / n) * k - 90;
+        const rad = angle * Math.PI / 180;
+        const x = 50 + Math.cos(rad) * 46;
+        const y = 50 + Math.sin(rad) * 46;
+        chairs += `<span class="chair" style="left:${x}%;top:${y}%;transform:translate(-50%,-50%) rotate(${angle + 90}deg);"></span>`;
+      }
     }
     return `
       <div class="mesa-chairs" style="width:${w}px;height:${h}px;">
