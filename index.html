@@ -19,7 +19,7 @@
   .footer-dots { background-image: radial-gradient(circle, rgba(11,33,66,0.10) 1px, transparent 1px); background-size: 18px 18px; }
   .testi-fade { -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 85%); mask-image: linear-gradient(to bottom, black 0%, transparent 85%); transition: mask-image .3s, -webkit-mask-image .3s; }
   .testi-fade.testi-expanded { -webkit-mask-image: none; mask-image: none; }
-  .modal-overlay { position: fixed; inset: 0; background: rgba(11,33,66,0.5); backdrop-filter: blur(2px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(11,33,66,0.5); backdrop-filter: blur(2px); display: none; align-items: flex-start; justify-content: center; z-index: 100; padding: 2.5rem 1rem; overflow-y: auto; }
   .modal-overlay.open { display: flex; }
   .chart-seg { transition: filter .15s, opacity .3s, height .3s; cursor: pointer; }
   .chart-seg:hover { filter: brightness(0.85); }
