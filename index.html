@@ -910,6 +910,7 @@
           </div>
         </div>
         <div class="flex gap-2">
+          <button onclick="openModal('upload-menu')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Subir foto del menú</button>
           <button onclick="openModal('paste-menu')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Pegar menú</button>
           <button onclick="openModal('add-menu')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir plato</button>
         </div>
@@ -1211,6 +1212,7 @@
       'add-pedido': addPedidoFormHtml,
       'add-menu': addMenuFormHtml,
       'paste-menu': pasteMenuFormHtml,
+      'upload-menu': uploadMenuFormHtml,
       'add-personal': addPersonalFormHtml,
       'paste-personal': pastePersonalFormHtml,
       'add-inventario': addInventarioFormHtml,
@@ -1940,6 +1942,51 @@
     } else {
       finish('');
     }
+  }
+  function uploadMenuFormHtml() {
+    return `
+      <h3 class="text-xl font-bold text-navy">Subir foto del menú</h3>
+      <p class="mt-1.5 text-sm text-slate-500">Sube una foto de tu carta y la IA transcribirá los platos y precios automáticamente. Podrás revisarlos antes de importarlos.</p>
+      <input id="menuUploadFoto" type="file" accept="image/*" class="mt-3 w-full text-sm text-slate-500">
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" id="menuUploadBtn" onclick="submitUploadMenu()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Transcribir con IA</button>
+    `;
+  }
+  function submitUploadMenu() {
+    const fileInput = document.getElementById('menuUploadFoto');
+    const file = fileInput.files[0];
+    if (!file) return modalFormError('Selecciona una foto del menú.');
+    const btn = document.getElementById('menuUploadBtn');
+    btn.disabled = true;
+    btn.textContent = 'Leyendo el menú…';
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const { data, error } = await supabaseClient.functions.invoke('transcribe-menu', { body: { image: reader.result } });
+        if (error || !data || data.error) {
+          modalFormError((data && data.error) || 'No se ha podido leer el menú. Inténtalo de nuevo.');
+          btn.disabled = false;
+          btn.textContent = 'Transcribir con IA';
+          return;
+        }
+        const items = Array.isArray(data.items) ? data.items : [];
+        if (!items.length) {
+          modalFormError('No se ha reconocido ningún plato en la imagen.');
+          btn.disabled = false;
+          btn.textContent = 'Transcribir con IA';
+          return;
+        }
+        const lines = items.map(it => (it.nombre || '') + ' - ' + (it.precio || '')).join('\n');
+        document.getElementById('modalBody').innerHTML = pasteMenuFormHtml();
+        document.getElementById('menuPasteText').value = lines;
+        showToast(items.length + ' platos detectados, revísalos antes de importar');
+      } catch (e) {
+        modalFormError('Error de red al leer el menú.');
+        btn.disabled = false;
+        btn.textContent = 'Transcribir con IA';
+      }
+    };
+    reader.readAsDataURL(file);
   }
   function parsePriceLine(line) {
     const m = line.match(/^(.*?)[\s\-–,:]+(\d+[.,]\d{1,2}\s*€?|\d+\s*€)\s*$/);
