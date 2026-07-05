@@ -52,10 +52,8 @@
   #appRoot table tbody tr { transition: background-color .12s ease; }
   #appRoot table tbody tr:hover { background-color: #f8fafc; }
   .mesa-item { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
-  .mesa-chairs { position: relative; margin: 0 auto; }
-  .mesa-top { position: absolute; inset: 9px; border-width: 3px; border-style: solid; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; text-align: center; line-height: 1.15; padding: 4px; overflow: hidden; transition: transform .15s ease; }
+  .mesa-top { margin: 0 auto; border-width: 3px; border-style: solid; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; text-align: center; line-height: 1.15; padding: 4px; overflow: hidden; transition: transform .15s ease; }
   .mesa-item:hover .mesa-top { transform: scale(1.08); }
-  .chair { position: absolute; width: 13px; height: 8px; border-radius: 3px; background: #cbd5e1; }
   .mesa-capacidad-label { font-size: 10px; color: #94a3b8; }
   .mesa-label { font-size: 11px; font-weight: 600; }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) scale(.9); background: #0f2146; color: #fff; font-size: 13px; font-weight: 600; padding: 10px 18px; border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 200; opacity: 0; pointer-events: none; transition: opacity .25s cubic-bezier(.34,1.56,.64,1), transform .25s cubic-bezier(.34,1.56,.64,1); }
@@ -1513,34 +1511,9 @@
     const base = Math.max(64, Math.min(140, 64 + n * 6));
     const w = forma === 'rectangular' ? Math.round(base * 1.35) : base;
     const h = forma === 'rectangular' ? Math.round(base * 0.8) : base;
-    const margin = 9;
-    const a = w / 2 - margin;
-    const b = h / 2 - margin;
-    const gap = 8;
     const radius = forma === 'redonda' ? '50%' : '12px';
-    let chairs = '';
-    for (let k = 0; k < n; k += 1) {
-      const angle = (360 / n) * k - 90;
-      const rad = angle * Math.PI / 180;
-      const dx = Math.cos(rad), dy = Math.sin(rad);
-      let px, py;
-      if (forma === 'redonda') {
-        const r = Math.min(a, b) + gap;
-        px = dx * r; py = dy * r;
-      } else {
-        const t = 1 / Math.max(Math.abs(dx) / a, Math.abs(dy) / b);
-        px = dx * (t + gap); py = dy * (t + gap);
-      }
-      const xPct = 50 + (px / w) * 100;
-      const yPct = 50 + (py / h) * 100;
-      chairs += `<span class="chair" style="left:${xPct}%;top:${yPct}%;transform:translate(-50%,-50%) rotate(${angle + 90}deg);"></span>`;
-    }
     const fontSize = String(etiqueta).length > 3 ? '11px' : '14px';
-    return `
-      <div class="mesa-chairs" style="width:${w}px;height:${h}px;">
-        ${chairs}
-        <div class="mesa-top" style="border-radius:${radius};border-color:${st.border};background:${st.bg};color:${st.text};font-size:${fontSize};">${etiqueta}</div>
-      </div>`;
+    return `<div class="mesa-top" style="width:${w}px;height:${h}px;border-radius:${radius};border-color:${st.border};background:${st.bg};color:${st.text};font-size:${fontSize};">${etiqueta}</div>`;
   }
   function renderMesas() {
     const acc = getCurrentAccount();
