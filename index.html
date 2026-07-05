@@ -1278,6 +1278,20 @@
 
   let currentAccount = null; // { userId, email, restaurantName, data }
   let saveTimer = null;
+  let realtimeChannel = null;
+  function subscribeRealtime() {
+    if (!currentAccount) return;
+    if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
+    realtimeChannel = supabaseClient
+      .channel('restaurant_data_' + currentAccount.userId)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'restaurant_data', filter: 'user_id=eq.' + currentAccount.userId }, (payload) => {
+        if (!currentAccount || !payload.new) return;
+        currentAccount.data = normalizeAccountData(payload.new.data);
+        currentAccount.restaurantName = payload.new.restaurant_name || currentAccount.restaurantName;
+        renderMesas();
+      })
+      .subscribe();
+  }
 
   function defaultAccountData(nombre) {
     return {
@@ -1406,6 +1420,7 @@
     document.getElementById('landingRoot').style.display = 'none';
     document.getElementById('appRoot').style.display = 'flex';
     hydrateApp();
+    subscribeRealtime();
   }
 
   function goToLanding() {
@@ -1416,6 +1431,7 @@
 
   async function logout() {
     await supabaseClient.auth.signOut();
+    if (realtimeChannel) { supabaseClient.removeChannel(realtimeChannel); realtimeChannel = null; }
     currentAccount = null;
     goToLanding();
   }
