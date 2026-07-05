@@ -1181,12 +1181,12 @@
 </div>
 
 <div id="informeRoot" class="min-h-screen font-sans text-navy antialiased" style="display:none; background:#F7F8FC">
-  <div class="max-w-2xl mx-auto px-5 py-10">
-    <div class="flex items-center justify-between gap-2 informe-no-print">
+  <div class="max-w-2xl mx-auto px-5" style="padding-top:64px; padding-bottom:40px;">
+    <div class="flex items-center justify-between gap-4 informe-no-print">
       <button onclick="cerrarInformeSemanal()" class="text-sm font-semibold text-slate-500 hover:text-navy transition">← Volver al panel</button>
       <button onclick="window.print()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Descargar PDF</button>
     </div>
-    <div id="informeBody" class="mt-6 text-sm text-slate-400 text-center">Cargando informe…</div>
+    <div id="informeBody" class="mt-8 text-sm text-slate-400 text-center">Cargando informe…</div>
   </div>
 </div>
 
@@ -2014,35 +2014,59 @@
     if (enLista) html += '</ul>';
     return html;
   }
-  function getRangoSemanaAnterior() {
-    const hoy = new Date();
-    const diaSemana = hoy.getDay();
+  function getRangoSemanaDe(fechaRef) {
+    const diaSemana = fechaRef.getDay();
     const diasDesdeLunes = (diaSemana + 6) % 7;
-    const lunesEstaSemana = new Date(hoy);
-    lunesEstaSemana.setHours(0, 0, 0, 0);
-    lunesEstaSemana.setDate(hoy.getDate() - diasDesdeLunes);
-    const lunesAnterior = new Date(lunesEstaSemana);
-    lunesAnterior.setDate(lunesEstaSemana.getDate() - 7);
-    const domingoAnterior = new Date(lunesEstaSemana);
-    domingoAnterior.setDate(lunesEstaSemana.getDate() - 1);
-    domingoAnterior.setHours(23, 59, 59, 999);
-    return { inicio: lunesAnterior, fin: domingoAnterior };
+    const lunes = new Date(fechaRef);
+    lunes.setHours(0, 0, 0, 0);
+    lunes.setDate(fechaRef.getDate() - diasDesdeLunes);
+    const domingo = new Date(lunes);
+    domingo.setDate(lunes.getDate() + 6);
+    domingo.setHours(23, 59, 59, 999);
+    return { inicio: lunes, fin: domingo };
+  }
+  function getRangoSemanaAnterior() {
+    const rangoActual = getRangoSemanaDe(new Date());
+    const lunesAnterior = new Date(rangoActual.inicio);
+    lunesAnterior.setDate(lunesAnterior.getDate() - 7);
+    return getRangoSemanaDe(lunesAnterior);
+  }
+  function getUltimoDomingoCompleto() {
+    return getRangoSemanaAnterior().fin;
   }
   function fmtFechaCorta(d) {
     return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
+  function fmtFechaInput(d) {
+    return d.toISOString().slice(0, 10);
+  }
   async function abrirInformeSemanal() {
-    const acc = getCurrentAccount();
-    const { inicio, fin } = getRangoSemanaAnterior();
-    const idSemana = inicio.toISOString().slice(0, 10) + '_' + fin.toISOString().slice(0, 10);
     document.getElementById('appRoot').style.display = 'none';
     document.getElementById('informeRoot').style.display = 'block';
-    const existente = acc.data.iaInformes.find(inf => inf.id === idSemana);
-    if (existente) {
-      renderInformeSemanal(existente);
+    const { inicio, fin } = getRangoSemanaAnterior();
+    await cargarInformeSemana(inicio, fin);
+  }
+  function cambiarSemanaInforme(fechaStr) {
+    if (!fechaStr) return;
+    const partes = fechaStr.split('-').map(n => parseInt(n, 10));
+    const fechaRef = new Date(partes[0], partes[1] - 1, partes[2]);
+    const { inicio, fin } = getRangoSemanaDe(fechaRef);
+    const ultimoDomingo = getUltimoDomingoCompleto();
+    if (inicio > ultimoDomingo) {
+      showToast('Solo puedes ver informes de semanas ya terminadas.');
       return;
     }
-    document.getElementById('informeBody').innerHTML = '<p class="text-center text-slate-400 mt-10">Generando informe de la semana anterior…</p>';
+    cargarInformeSemana(inicio, fin);
+  }
+  async function cargarInformeSemana(inicio, fin) {
+    const acc = getCurrentAccount();
+    const idSemana = inicio.toISOString().slice(0, 10) + '_' + fin.toISOString().slice(0, 10);
+    const existente = acc.data.iaInformes.find(inf => inf.id === idSemana);
+    if (existente) {
+      renderInformeSemanal(existente, inicio, fin);
+      return;
+    }
+    document.getElementById('informeBody').innerHTML = '<p class="text-center text-slate-400 mt-10">Generando informe de esa semana…</p>';
     const pedidosSemana = acc.data.pedidos.filter(p => p.fecha && new Date(p.fecha) >= inicio && new Date(p.fecha) <= fin);
     const reservasSemana = acc.data.reservas.filter(r => r.fecha && new Date(r.fecha) >= inicio && new Date(r.fecha) <= fin);
     if (!pedidosSemana.length && !reservasSemana.length) {
@@ -2052,7 +2076,7 @@
       };
       acc.data.iaInformes.push(vacio);
       saveCurrentAccountData(acc.data);
-      renderInformeSemanal(vacio);
+      renderInformeSemanal(vacio, inicio, fin);
       return;
     }
     try {
@@ -2071,12 +2095,12 @@
       const informe = { id: idSemana, inicio: inicio.toISOString(), fin: fin.toISOString(), generadoEn: new Date().toISOString(), contenido };
       acc.data.iaInformes.push(informe);
       saveCurrentAccountData(acc.data);
-      renderInformeSemanal(informe);
+      renderInformeSemanal(informe, inicio, fin);
     } catch (e) {
       document.getElementById('informeBody').innerHTML = '<p class="text-center text-rose-500 mt-10">No se ha podido generar el informe. Inténtalo de nuevo más tarde.</p>';
     }
   }
-  function renderInformeSemanal(informe) {
+  function renderInformeSemanal(informe, inicio, fin) {
     const acc = getCurrentAccount();
     const anteriores = acc.data.iaInformes.filter(inf => inf.id !== informe.id).slice().reverse();
     const listaAnteriores = anteriores.length
@@ -2087,15 +2111,18 @@
       : '';
     document.getElementById('informeBody').innerHTML = `
       <h1 class="text-2xl font-extrabold text-navy">Informe semanal</h1>
-      <p class="text-sm text-slate-500 mt-1">${fmtFechaCorta(new Date(informe.inicio))} — ${fmtFechaCorta(new Date(informe.fin))} · ${acc.restaurantName || ''}</p>
-      <div class="mt-6 text-sm text-slate-600">${markdownSimpleHtml(informe.contenido)}</div>
+      <div class="mt-1 flex items-center justify-center gap-2">
+        <p class="text-sm text-slate-500">${fmtFechaCorta(new Date(informe.inicio))} — ${fmtFechaCorta(new Date(informe.fin))} · ${acc.restaurantName || ''}</p>
+        <input type="date" class="informe-no-print text-xs border border-slate-200 rounded-md px-1.5 py-1" value="${fmtFechaInput(inicio)}" max="${fmtFechaInput(getUltimoDomingoCompleto())}" onchange="cambiarSemanaInforme(this.value)" title="Elegir otra semana">
+      </div>
+      <div class="mt-6 text-sm text-slate-600 text-left">${markdownSimpleHtml(informe.contenido)}</div>
       ${listaAnteriores}
     `;
   }
   function verInformeGuardado(id) {
     const acc = getCurrentAccount();
     const informe = acc.data.iaInformes.find(inf => inf.id === id);
-    if (informe) renderInformeSemanal(informe);
+    if (informe) renderInformeSemanal(informe, new Date(informe.inicio), new Date(informe.fin));
   }
   function cerrarInformeSemanal() {
     document.getElementById('informeRoot').style.display = 'none';
