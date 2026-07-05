@@ -1329,6 +1329,15 @@
     renderIntegraciones();
     renderIAChat();
   }
+  function getPresentStaffEmails() {
+    if (!realtimeChannel) return [];
+    const state = realtimeChannel.presenceState();
+    const emails = [];
+    Object.values(state).forEach(presences => {
+      presences.forEach(p => { if (p.email) emails.push(String(p.email).toLowerCase()); });
+    });
+    return emails;
+  }
   function subscribeRealtime() {
     if (!currentAccount) return;
     if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
@@ -1345,7 +1354,14 @@
         }
         renderAllSections();
       })
-      .subscribe();
+      .on('presence', { event: 'sync' }, () => {
+        renderPersonal();
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED' && staffSession) {
+          await realtimeChannel.track({ email: staffSession.email });
+        }
+      });
   }
 
   let notifications = [];
@@ -2337,9 +2353,13 @@
       document.getElementById('personalBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="6">Aún no has añadido a tu equipo</td></tr>`;
       return;
     }
+    const presentes = getPresentStaffEmails();
     document.getElementById('personalBody').innerHTML = list.map((p,i) => {
       const estadoCls = p.estado === 'Activo' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-500 bg-slate-100';
-      return `<tr><td class="px-4 py-2.5">${p.nombre}</td><td class="px-4 py-2.5">${p.rol}</td><td class="px-4 py-2.5">${p.turno}</td><td class="px-4 py-2.5 font-mono text-xs">${p.codigo || '—'}</td><td class="px-4 py-2.5"><span onclick="cicloEstadoEmpleado(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${p.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarEmpleado(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
+      const enLinea = !!(p.email && presentes.includes(p.email.toLowerCase()));
+      const puntoTitulo = enLinea ? 'Con la página abierta ahora mismo' : 'Sin conexión ahora mismo';
+      const punto = `<span class="inline-block w-2 h-2 rounded-full mr-1.5" style="background:${enLinea ? '#10b981' : '#cbd5e1'};" title="${puntoTitulo}"></span>`;
+      return `<tr><td class="px-4 py-2.5">${punto}${p.nombre}</td><td class="px-4 py-2.5">${p.rol}</td><td class="px-4 py-2.5">${p.turno}</td><td class="px-4 py-2.5 font-mono text-xs">${p.codigo || '—'}</td><td class="px-4 py-2.5"><span onclick="cicloEstadoEmpleado(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${p.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarEmpleado(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
     }).join('');
   }
   function cicloEstadoEmpleado(i) {
