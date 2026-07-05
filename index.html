@@ -1023,7 +1023,6 @@
           </div>
         </div>
         <div class="flex gap-2">
-          <button onclick="openModal('paste-personal')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Pegar lista</button>
           <button onclick="openModal('add-personal')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir empleado</button>
         </div>
       </div>
@@ -1241,7 +1240,6 @@
       'paste-menu': pasteMenuFormHtml,
       'upload-menu': uploadMenuFormHtml,
       'add-personal': addPersonalFormHtml,
-      'paste-personal': pastePersonalFormHtml,
       'add-inventario': addInventarioFormHtml,
     };
     if (customRenderers[type]) {
@@ -2327,35 +2325,6 @@
       <button onclick="closeModal()" class="mt-5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>
     `;
   }
-  function pastePersonalFormHtml() {
-    return `
-      <h3 class="text-xl font-bold text-navy">Pegar lista de personal</h3>
-      <p class="mt-1.5 text-sm text-slate-500">Una línea por persona. Ej: <br><i>Marcos Ruiz - Camarero - Noche</i></p>
-      <textarea id="personalPasteText" rows="8" placeholder="Marcos Ruiz - Jefe de sala - Noche&#10;Elena López - Camarera - Noche" class="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></textarea>
-      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
-      <button type="button" onclick="submitPastePersonal()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Importar personal</button>
-    `;
-  }
-  function submitPastePersonal() {
-    const text = document.getElementById('personalPasteText').value;
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-    if (!lines.length) return modalFormError('Pega al menos una línea.');
-    const acc = getCurrentAccount();
-    let added = 0;
-    lines.forEach(line => {
-      const parts = line.split(/[-–]/).map(p => p.trim()).filter(Boolean);
-      if (parts.length >= 2) {
-        acc.data.personal.push({ nombre: parts[0], rol: parts[1] || '', turno: parts[2] || '', estado: 'Activo' });
-        added++;
-      }
-    });
-    if (!added) return modalFormError('No se ha podido reconocer ninguna línea. Usa el formato "Nombre - Rol - Turno".');
-    saveCurrentAccountData(acc.data);
-    renderPersonal();
-    closeModal();
-    showToast(added + ' empleados importados');
-  }
-
   // ---- Inventario ----
   function inventarioEstado(stock, minimo) {
     const s = parseFloat(String(stock).replace(',', '.'));
