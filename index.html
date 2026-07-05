@@ -2161,39 +2161,43 @@
     document.getElementById('landingRoot').style.display = 'none';
     document.getElementById('publicMenuRoot').style.display = 'block';
     const body = document.getElementById('publicMenuBody');
-    const mesaInt = parseInt(mesaNumero, 10);
-    if (mesaInt > 0) {
-      supabaseClient.rpc('set_mesa_ocupada', { p_user_id: cuentaId, p_mesa: mesaInt }).catch(() => {});
+    try {
+      const mesaInt = parseInt(mesaNumero, 10);
+      if (mesaInt > 0) {
+        supabaseClient.rpc('set_mesa_ocupada', { p_user_id: cuentaId, p_mesa: mesaInt }).catch(() => {});
+      }
+      const { data, error } = await supabaseClient.rpc('get_public_menu', { p_user_id: cuentaId });
+      if (error || !data) {
+        body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar el menú. Prueba a escanear el QR de nuevo.</p>`;
+        return;
+      }
+      const nombre = data.restaurant_name || 'Restaurante';
+      const menu = Array.isArray(data.menu) ? data.menu : [];
+      const itemsHtml = menu.length
+        ? menu.map(m => {
+            const disponible = m.estado === 'Disponible';
+            const foto = m.foto ? `<img src="${m.foto}" class="w-14 h-14 rounded-lg object-cover shrink-0">` : `<div class="w-14 h-14 rounded-lg bg-slate-100 shrink-0"></div>`;
+            return `<div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 ${disponible ? '' : 'opacity-50'}">
+              ${foto}
+              <div class="min-w-0 flex-1 text-left">
+                <p class="text-sm font-semibold text-navy truncate">${m.nombre}</p>
+                <p class="text-xs text-slate-400 mt-0.5">${disponible ? 'Disponible' : 'Agotado'}</p>
+              </div>
+              <p class="text-sm font-semibold text-navy shrink-0">${m.precio}</p>
+            </div>`;
+          }).join('')
+        : `<p class="text-sm text-slate-400 mt-6">Este restaurante todavía no ha publicado su menú.</p>`;
+      body.innerHTML = `
+        <div class="text-left">
+          <p class="text-xs font-semibold text-accent">Mesa ${mesaNumero}</p>
+          <h1 class="text-2xl font-extrabold text-navy mt-1">${nombre}</h1>
+          <p class="text-sm text-slate-500 mt-1">Carta del restaurante</p>
+          <div class="mt-6 space-y-3">${itemsHtml}</div>
+        </div>
+      `;
+    } catch (e) {
+      body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar el menú (${(e && e.message) || 'error de red'}). Prueba a escanear el QR de nuevo.</p>`;
     }
-    const { data, error } = await supabaseClient.rpc('get_public_menu', { p_user_id: cuentaId });
-    if (error || !data) {
-      body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar el menú. Prueba a escanear el QR de nuevo.</p>`;
-      return;
-    }
-    const nombre = data.restaurant_name || 'Restaurante';
-    const menu = Array.isArray(data.menu) ? data.menu : [];
-    const itemsHtml = menu.length
-      ? menu.map(m => {
-          const disponible = m.estado === 'Disponible';
-          const foto = m.foto ? `<img src="${m.foto}" class="w-14 h-14 rounded-lg object-cover shrink-0">` : `<div class="w-14 h-14 rounded-lg bg-slate-100 shrink-0"></div>`;
-          return `<div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 ${disponible ? '' : 'opacity-50'}">
-            ${foto}
-            <div class="min-w-0 flex-1 text-left">
-              <p class="text-sm font-semibold text-navy truncate">${m.nombre}</p>
-              <p class="text-xs text-slate-400 mt-0.5">${disponible ? 'Disponible' : 'Agotado'}</p>
-            </div>
-            <p class="text-sm font-semibold text-navy shrink-0">${m.precio}</p>
-          </div>`;
-        }).join('')
-      : `<p class="text-sm text-slate-400 mt-6">Este restaurante todavía no ha publicado su menú.</p>`;
-    body.innerHTML = `
-      <div class="text-left">
-        <p class="text-xs font-semibold text-accent">Mesa ${mesaNumero}</p>
-        <h1 class="text-2xl font-extrabold text-navy mt-1">${nombre}</h1>
-        <p class="text-sm text-slate-500 mt-1">Carta del restaurante</p>
-        <div class="mt-6 space-y-3">${itemsHtml}</div>
-      </div>
-    `;
   }
 
   (async function initAuth() {
