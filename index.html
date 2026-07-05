@@ -1499,12 +1499,14 @@
   }
   function getMesaForma(i) {
     const acc = getCurrentAccount();
-    return acc.data.mesaFormas[i] === 'cuadrada' ? 'cuadrada' : 'redonda';
+    return acc.data.mesaFormas[i] === 'redonda' ? 'redonda' : 'rectangular';
   }
   function mesaVisualHtml(capacidad, numero, st, forma) {
     const n = Math.max(1, Math.min(12, capacidad));
-    const size = Math.max(60, Math.min(140, 60 + n * 6));
-    const radius = forma === 'cuadrada' ? '14px' : '50%';
+    const base = Math.max(60, Math.min(140, 60 + n * 6));
+    const w = forma === 'rectangular' ? Math.round(base * 1.35) : base;
+    const h = forma === 'rectangular' ? Math.round(base * 0.8) : base;
+    const radius = forma === 'rectangular' ? '12px' : '50%';
     let chairs = '';
     for (let k = 0; k < n; k += 1) {
       const angle = (360 / n) * k - 90;
@@ -1514,7 +1516,7 @@
       chairs += `<span class="chair" style="left:${x}%;top:${y}%;transform:translate(-50%,-50%) rotate(${angle + 90}deg);"></span>`;
     }
     return `
-      <div class="mesa-chairs" style="width:${size}px;height:${size}px;">
+      <div class="mesa-chairs" style="width:${w}px;height:${h}px;">
         ${chairs}
         <div class="mesa-top" style="border-radius:${radius};border-color:${st.border};background:${st.bg};color:${st.text};">${numero}</div>
       </div>`;
@@ -1610,8 +1612,8 @@
         <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
           <p class="text-sm font-semibold text-navy">Forma</p>
           <div class="flex items-center gap-2">
+            <button onclick="cambiarFormaMesa(${i}, 'rectangular')" class="text-xs font-semibold rounded-full px-3 py-1.5 transition ${forma === 'rectangular' ? 'bg-navydeep text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">Rectangular</button>
             <button onclick="cambiarFormaMesa(${i}, 'redonda')" class="text-xs font-semibold rounded-full px-3 py-1.5 transition ${forma === 'redonda' ? 'bg-navydeep text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">Redonda</button>
-            <button onclick="cambiarFormaMesa(${i}, 'cuadrada')" class="text-xs font-semibold rounded-full px-3 py-1.5 transition ${forma === 'cuadrada' ? 'bg-navydeep text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">Cuadrada</button>
           </div>
         </div>
       </div>
@@ -1651,7 +1653,7 @@
     acc.data.mesaEstados = Array.from({ length: n }, () => 'Sin definir');
     acc.data.mesaNombres = Array.from({ length: n }, () => '');
     acc.data.mesaCapacidades = Array.from({ length: n }, () => 4);
-    acc.data.mesaFormas = Array.from({ length: n }, () => 'redonda');
+    acc.data.mesaFormas = Array.from({ length: n }, () => 'rectangular');
     saveCurrentAccountData(acc.data);
     renderMesas();
   }
