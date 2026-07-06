@@ -3009,7 +3009,7 @@
         p_user_id: cuentaId, p_nombre: nombre, p_fecha: fecha, p_hora: hora, p_personas: personas,
       });
       if (error || !data || data.error) {
-        errorEl.textContent = 'No se ha podido enviar la reserva. Inténtalo de nuevo.';
+        errorEl.textContent = (data && data.error) || 'No se ha podido enviar la reserva. Inténtalo de nuevo.';
         errorEl.classList.remove('hidden');
         return;
       }
