@@ -1035,6 +1035,12 @@
         </div>
         <button onclick="guardarPerfil()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar cambios</button>
       </div>
+      <div class="mt-8 max-w-lg">
+        <p class="text-sm font-semibold text-navy mb-1">Horario de apertura</p>
+        <p class="text-xs text-slate-400 mb-3">Se usa para limitar las reservas online (enlace público) a tus horas de apertura.</p>
+        <div id="horarioDias" class="space-y-2"></div>
+        <button onclick="guardarHorario()" class="mt-4 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar horario</button>
+      </div>
     </section>
 
     <!-- PERSONAL -->
@@ -1429,9 +1435,23 @@
       : '<p class="px-4 py-6 text-sm text-slate-400 text-center">Sin notificaciones</p>';
   }
 
+  const DIAS_SEMANA = [
+    { key: 'lunes', label: 'Lunes' },
+    { key: 'martes', label: 'Martes' },
+    { key: 'miercoles', label: 'Miércoles' },
+    { key: 'jueves', label: 'Jueves' },
+    { key: 'viernes', label: 'Viernes' },
+    { key: 'sabado', label: 'Sábado' },
+    { key: 'domingo', label: 'Domingo' },
+  ];
+  function defaultHorario() {
+    const h = {};
+    DIAS_SEMANA.forEach(d => { h[d.key] = { abierto: true, apertura: '13:00', cierre: '23:00' }; });
+    return h;
+  }
   function defaultAccountData(nombre) {
     return {
-      perfil: { nombre: nombre, direccion: '', mesas: '', telefono: '' },
+      perfil: { nombre: nombre, direccion: '', mesas: '', telefono: '', horarioConfigurado: false, horario: defaultHorario() },
       cuenta: { titular: '', telefono: '', bancoTitular: '', iban: '', idioma: 'es', moneda: 'EUR' },
       mesaEstados: [],
       mesaNombres: [],
@@ -1455,6 +1475,16 @@
     data.perfil.direccion = data.perfil.direccion || '';
     data.perfil.mesas = data.perfil.mesas || '';
     data.perfil.telefono = data.perfil.telefono || '';
+    data.perfil.horarioConfigurado = !!data.perfil.horarioConfigurado;
+    data.perfil.horario = data.perfil.horario || defaultHorario();
+    DIAS_SEMANA.forEach(d => {
+      const dia = data.perfil.horario[d.key];
+      data.perfil.horario[d.key] = {
+        abierto: dia ? !!dia.abierto : true,
+        apertura: (dia && dia.apertura) || '13:00',
+        cierre: (dia && dia.cierre) || '23:00',
+      };
+    });
     data.cuenta = data.cuenta || {};
     data.cuenta.titular = data.cuenta.titular || '';
     data.cuenta.telefono = data.cuenta.telefono || '';
@@ -1632,16 +1662,48 @@
 
   function guardarPerfil() {
     const acc = getCurrentAccount();
-    acc.data.perfil = {
-      nombre: document.getElementById('perfilNombre').value.trim(),
-      direccion: document.getElementById('perfilDireccion').value.trim(),
-      mesas: document.getElementById('perfilMesas').value.trim(),
-      telefono: document.getElementById('perfilTelefono').value.trim(),
-    };
+    acc.data.perfil.nombre = document.getElementById('perfilNombre').value.trim();
+    acc.data.perfil.direccion = document.getElementById('perfilDireccion').value.trim();
+    acc.data.perfil.mesas = document.getElementById('perfilMesas').value.trim();
+    acc.data.perfil.telefono = document.getElementById('perfilTelefono').value.trim();
     acc.restaurantName = acc.data.perfil.nombre || acc.restaurantName;
     saveCurrentAccountData(acc.data);
     applyTopbar(acc);
     showToast('Cambios guardados');
+  }
+  function renderHorarioForm() {
+    const acc = getCurrentAccount();
+    document.getElementById('horarioDias').innerHTML = DIAS_SEMANA.map(d => {
+      const dia = acc.data.perfil.horario[d.key];
+      return `<div class="flex items-center gap-3">
+        <label class="flex items-center gap-2 w-28 shrink-0 text-sm text-navy">
+          <input type="checkbox" id="horAbierto_${d.key}" ${dia.abierto ? 'checked' : ''} onchange="toggleHorarioDia('${d.key}')" style="width:16px;height:16px;">
+          ${d.label}
+        </label>
+        <select id="horApertura_${d.key}" ${dia.abierto ? '' : 'disabled'} class="text-xs border border-slate-200 rounded-md px-1.5 py-1">${opcionesHora15min(dia.apertura)}</select>
+        <span class="text-xs text-slate-400">a</span>
+        <select id="horCierre_${d.key}" ${dia.abierto ? '' : 'disabled'} class="text-xs border border-slate-200 rounded-md px-1.5 py-1">${opcionesHora15min(dia.cierre)}</select>
+        ${dia.abierto ? '' : '<span class="text-xs text-slate-400">Cerrado</span>'}
+      </div>`;
+    }).join('');
+  }
+  function toggleHorarioDia(dia) {
+    const abierto = document.getElementById('horAbierto_' + dia).checked;
+    document.getElementById('horApertura_' + dia).disabled = !abierto;
+    document.getElementById('horCierre_' + dia).disabled = !abierto;
+  }
+  function guardarHorario() {
+    const acc = getCurrentAccount();
+    DIAS_SEMANA.forEach(d => {
+      acc.data.perfil.horario[d.key] = {
+        abierto: document.getElementById('horAbierto_' + d.key).checked,
+        apertura: document.getElementById('horApertura_' + d.key).value,
+        cierre: document.getElementById('horCierre_' + d.key).value,
+      };
+    });
+    acc.data.perfil.horarioConfigurado = true;
+    saveCurrentAccountData(acc.data);
+    showToast('Horario guardado');
   }
 
   function applyTopbar(acc) {
@@ -1661,6 +1723,7 @@
     document.getElementById('perfilDireccion').value = p.direccion || '';
     document.getElementById('perfilMesas').value = p.mesas || '';
     document.getElementById('perfilTelefono').value = p.telefono || '';
+    renderHorarioForm();
     const c = acc.data.cuenta;
     document.getElementById('cuentaTitular').value = c.titular || '';
     document.getElementById('cuentaTelefono').value = c.telefono || '';
@@ -2975,16 +3038,60 @@
     }
   }
 
-  function opcionesHora15min() {
+  function opcionesHora15min(seleccionada) {
     let html = '';
     for (let h = 0; h < 24; h += 1) {
       for (let m = 0; m < 60; m += 15) {
         const hh = String(h).padStart(2, '0');
         const mm = String(m).padStart(2, '0');
-        html += `<option value="${hh}:${mm}">${hh}:${mm}</option>`;
+        const val = hh + ':' + mm;
+        html += `<option value="${val}" ${seleccionada === val ? 'selected' : ''}>${val}</option>`;
       }
     }
     return html;
+  }
+  const DIA_JS_A_KEY = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+  let publicReservaHorario = null;
+  let publicReservaHorarioConfigurado = false;
+  function actualizarHorasDisponiblesPublico() {
+    const fechaVal = document.getElementById('pubResFecha').value;
+    const selectHora = document.getElementById('pubResHora');
+    const avisoEl = document.getElementById('pubResAvisoHorario');
+    const btn = document.getElementById('pubResBtnEnviar');
+    if (!fechaVal) return;
+    if (!publicReservaHorarioConfigurado || !publicReservaHorario) {
+      selectHora.innerHTML = opcionesHora15min();
+      selectHora.disabled = false;
+      btn.disabled = false;
+      avisoEl.classList.add('hidden');
+      return;
+    }
+    const partes = fechaVal.split('-').map(n => parseInt(n, 10));
+    const fechaObj = new Date(partes[0], partes[1] - 1, partes[2]);
+    const diaKey = DIA_JS_A_KEY[fechaObj.getDay()];
+    const dia = publicReservaHorario[diaKey];
+    if (!dia || !dia.abierto) {
+      selectHora.innerHTML = '';
+      selectHora.disabled = true;
+      btn.disabled = true;
+      avisoEl.textContent = 'El restaurante está cerrado ese día.';
+      avisoEl.classList.remove('hidden');
+      return;
+    }
+    let html = '';
+    for (let h = 0; h < 24; h += 1) {
+      for (let m = 0; m < 60; m += 15) {
+        const val = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+        if (val >= dia.apertura && val < dia.cierre) {
+          html += `<option value="${val}">${val}</option>`;
+        }
+      }
+    }
+    selectHora.innerHTML = html || '<option value="">Sin horas disponibles</option>';
+    selectHora.disabled = !html;
+    btn.disabled = !html;
+    avisoEl.textContent = 'Horario ese día: ' + dia.apertura + ' - ' + dia.cierre + '.';
+    avisoEl.classList.remove('hidden');
   }
   async function renderPublicReserva(cuentaId) {
     document.getElementById('landingRoot').style.display = 'none';
@@ -2996,6 +3103,8 @@
         body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar la página de reservas. Prueba a abrir el enlace de nuevo.</p>`;
         return;
       }
+      publicReservaHorario = data.horario || null;
+      publicReservaHorarioConfigurado = !!data.horarioConfigurado;
       const nombre = data.restaurant_name || 'Restaurante';
       const hoy = new Date().toISOString().slice(0, 10);
       body.innerHTML = `
@@ -3008,18 +3117,20 @@
               <input id="pubResNombre" type="text" placeholder="Nombre y apellido" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <div><label class="block text-sm font-medium text-navy mb-1.5">Fecha</label><input id="pubResFecha" type="date" min="${hoy}" value="${hoy}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+              <div><label class="block text-sm font-medium text-navy mb-1.5">Fecha</label><input id="pubResFecha" type="date" min="${hoy}" value="${hoy}" onchange="actualizarHorasDisponiblesPublico()" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
               <div><label class="block text-sm font-medium text-navy mb-1.5">Hora</label><select id="pubResHora" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${opcionesHora15min()}</select></div>
             </div>
+            <p id="pubResAvisoHorario" class="text-xs text-slate-400 hidden"></p>
             <div>
               <label class="block text-sm font-medium text-navy mb-1.5">Personas</label>
               <input id="pubResPersonas" type="number" min="1" placeholder="2" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
             </div>
             <p id="pubResError" class="text-xs text-rose-600 hidden"></p>
-            <button onclick="enviarReservaPublica('${cuentaId}')" class="w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Reservar</button>
+            <button id="pubResBtnEnviar" onclick="enviarReservaPublica('${cuentaId}')" class="w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Reservar</button>
           </div>
         </div>
       `;
+      actualizarHorasDisponiblesPublico();
     } catch (e) {
       body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar la página de reservas.</p>`;
     }
