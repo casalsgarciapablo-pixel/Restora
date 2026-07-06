@@ -870,7 +870,7 @@
           <input id="mesasSetupCount" type="number" min="1" max="60" placeholder="Ej. 12" class="w-24 rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
           <button onclick="crearMesas()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Crear mesas</button>
         </div>
-        <button id="mesasSetupVolver" onclick="cancelarCambiarMesas()" class="mt-4 text-sm font-semibold text-slate-500 hover:text-navy transition hidden">← Volver al panel</button>
+        <button id="mesasSetupVolver" onclick="cancelarCambiarMesas()" class="mt-4 text-sm font-semibold text-slate-500 hover:text-navy transition">← Volver al panel</button>
       </div>
 
       <div id="mesasContent" class="hidden">
@@ -1855,10 +1855,14 @@
     const acc = getCurrentAccount();
     document.getElementById('mesasSetup').classList.remove('hidden');
     document.getElementById('mesasContent').classList.add('hidden');
-    document.getElementById('mesasSetupVolver').classList.remove('hidden');
     document.getElementById('mesasSetupCount').value = acc.data.mesaEstados.length || '';
   }
   function cancelarCambiarMesas() {
+    const acc = getCurrentAccount();
+    if (!acc.data.mesaEstados.length) {
+      goSection('dashboard');
+      return;
+    }
     document.getElementById('mesasSetup').classList.add('hidden');
     document.getElementById('mesasContent').classList.remove('hidden');
   }
