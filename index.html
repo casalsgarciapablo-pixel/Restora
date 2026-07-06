@@ -1391,7 +1391,7 @@
         currentAccount.restaurantName = payload.new.restaurant_name || currentAccount.restaurantName;
         if (currentAccount.data.pedidos.length > pedidosAntes) {
           const nuevo = currentAccount.data.pedidos[currentAccount.data.pedidos.length - 1];
-          pushNotification('Nuevo pedido: ' + nuevo.mesa + ' (' + nuevo.personas + ' pers.)');
+          pushNotification('Nuevo pedido: ' + nuevo.mesa + (nuevo.personas ? ' (' + nuevo.personas + ' pers.)' : ''));
         }
         renderAllSections();
       })
@@ -2998,6 +2998,10 @@
     });
   }
 
+  let publicMenuData = null;
+  let publicMenuCuentaId = null;
+  let publicMenuMesaNumero = null;
+  let publicPedidoCarrito = {};
   async function renderPublicMenu(cuentaId, mesaNumero) {
     document.getElementById('landingRoot').style.display = 'none';
     document.getElementById('publicMenuRoot').style.display = 'block';
@@ -3012,32 +3016,108 @@
         body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar el menú. Prueba a escanear el QR de nuevo.</p>`;
         return;
       }
-      const nombre = data.restaurant_name || 'Restaurante';
-      const menu = Array.isArray(data.menu) ? data.menu : [];
-      const itemsHtml = menu.length
-        ? menu.map(m => {
-            const disponible = m.estado === 'Disponible';
-            const foto = m.foto ? `<img src="${m.foto}" class="w-14 h-14 rounded-lg object-cover shrink-0">` : `<div class="w-14 h-14 rounded-lg bg-slate-100 shrink-0"></div>`;
-            return `<div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 ${disponible ? '' : 'opacity-50'}">
-              ${foto}
-              <div class="min-w-0 flex-1 text-left">
-                <p class="text-sm font-semibold text-navy truncate">${m.nombre}</p>
-                <p class="text-xs text-slate-400 mt-0.5">${disponible ? 'Disponible' : 'Agotado'}</p>
-              </div>
-              <p class="text-sm font-semibold text-navy shrink-0">${m.precio}</p>
-            </div>`;
-          }).join('')
-        : `<p class="text-sm text-slate-400 mt-6">Este restaurante todavía no ha publicado su menú.</p>`;
-      body.innerHTML = `
-        <div class="text-left">
-          <p class="text-xs font-semibold text-accent">Mesa ${mesaNumero}</p>
-          <h1 class="text-2xl font-extrabold text-navy mt-1">${nombre}</h1>
-          <p class="text-sm text-slate-500 mt-1">Carta del restaurante</p>
-          <div class="mt-6 space-y-3">${itemsHtml}</div>
+      publicMenuData = data;
+      publicMenuCuentaId = cuentaId;
+      publicMenuMesaNumero = mesaNumero;
+      publicPedidoCarrito = {};
+      renderPublicMenuBody();
+    } catch (e) {
+      body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar el menú (${(e && e.message) || 'error de red'}). Prueba a escanear el QR de nuevo.</p>`;
+    }
+  }
+  function renderPublicMenuBody() {
+    const body = document.getElementById('publicMenuBody');
+    const nombre = publicMenuData.restaurant_name || 'Restaurante';
+    const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
+    const itemsHtml = menu.length
+      ? menu.map((m, idx) => {
+          const disponible = m.estado === 'Disponible';
+          const foto = m.foto ? `<img src="${m.foto}" class="w-14 h-14 rounded-lg object-cover shrink-0">` : `<div class="w-14 h-14 rounded-lg bg-slate-100 shrink-0"></div>`;
+          const qty = publicPedidoCarrito[idx] || 0;
+          const stepper = disponible ? `
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button type="button" onclick="cambiarCantidadPublico(${idx}, -1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">−</button>
+              <span class="text-sm font-semibold text-navy w-5 text-center">${qty}</span>
+              <button type="button" onclick="cambiarCantidadPublico(${idx}, 1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">+</button>
+            </div>` : '';
+          return `<div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 ${disponible ? '' : 'opacity-50'}">
+            ${foto}
+            <div class="min-w-0 flex-1 text-left">
+              <p class="text-sm font-semibold text-navy truncate">${m.nombre}</p>
+              <p class="text-xs text-slate-400 mt-0.5">${disponible ? 'Disponible' : 'Agotado'}</p>
+            </div>
+            <p class="text-sm font-semibold text-navy shrink-0">${m.precio}</p>
+            ${stepper}
+          </div>`;
+        }).join('')
+      : `<p class="text-sm text-slate-400 mt-6">Este restaurante todavía no ha publicado su menú.</p>`;
+    const totalItems = Object.values(publicPedidoCarrito).reduce((a, b) => a + b, 0);
+    const total = menu.reduce((sum, m, idx) => sum + precioToNumero(m.precio) * (publicPedidoCarrito[idx] || 0), 0);
+    body.innerHTML = `
+      <div class="text-left" style="${totalItems > 0 ? 'padding-bottom:88px' : ''}">
+        <p class="text-xs font-semibold text-accent">Mesa ${publicMenuMesaNumero}</p>
+        <h1 class="text-2xl font-extrabold text-navy mt-1">${nombre}</h1>
+        <p class="text-sm text-slate-500 mt-1">Carta del restaurante · pide desde aquí</p>
+        <div class="mt-6 space-y-3">${itemsHtml}</div>
+        <p id="pubPedError" class="text-xs text-rose-600 hidden mt-3"></p>
+      </div>
+      ${totalItems > 0 ? `
+        <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg px-4 py-3 sm:px-6" style="z-index:40;">
+          <div class="max-w-lg mx-auto flex items-center gap-3">
+            <div class="min-w-0 shrink-0">
+              <p class="text-xs text-slate-400">${totalItems} ${totalItems === 1 ? 'plato' : 'platos'}</p>
+              <p class="text-base font-bold text-navy">${total.toFixed(2).replace('.', ',')}€</p>
+            </div>
+            <button type="button" onclick="enviarPedidoPublico()" id="pubPedBtn" class="flex-1 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-3">Enviar pedido</button>
+          </div>
+        </div>
+      ` : ''}
+    `;
+  }
+  function cambiarCantidadPublico(idx, delta) {
+    const actual = publicPedidoCarrito[idx] || 0;
+    const nuevo = Math.max(0, actual + delta);
+    if (nuevo === 0) delete publicPedidoCarrito[idx];
+    else publicPedidoCarrito[idx] = nuevo;
+    renderPublicMenuBody();
+  }
+  async function enviarPedidoPublico() {
+    const btn = document.getElementById('pubPedBtn');
+    const errorEl = document.getElementById('pubPedError');
+    const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
+    const items = Object.keys(publicPedidoCarrito)
+      .map(idx => ({ nombre: menu[idx] && menu[idx].nombre, cantidad: publicPedidoCarrito[idx] }))
+      .filter(it => it.nombre && it.cantidad > 0);
+    if (!items.length) return;
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+    try {
+      const mesaInt = parseInt(publicMenuMesaNumero, 10);
+      const { data, error } = await supabaseClient.rpc('crear_pedido_publico', {
+        p_user_id: publicMenuCuentaId, p_mesa: mesaInt, p_items: items,
+      });
+      if (error || !data || data.error) {
+        if (errorEl) {
+          errorEl.textContent = (data && data.error) || 'No se ha podido enviar el pedido. Inténtalo de nuevo.';
+          errorEl.classList.remove('hidden');
+        }
+        if (btn) { btn.disabled = false; btn.textContent = 'Enviar pedido'; }
+        return;
+      }
+      document.getElementById('publicMenuBody').innerHTML = `
+        <div class="text-center py-10">
+          <div class="w-11 h-11 rounded-full bg-accent/10 text-accent flex items-center justify-center mb-4 mx-auto">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <h1 class="text-xl font-bold text-navy">¡Pedido enviado!</h1>
+          <p class="text-sm text-slate-500 mt-2">Tu pedido en la Mesa ${publicMenuMesaNumero} se ha enviado a cocina. En breve lo recibirás.</p>
         </div>
       `;
     } catch (e) {
-      body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar el menú (${(e && e.message) || 'error de red'}). Prueba a escanear el QR de nuevo.</p>`;
+      if (errorEl) {
+        errorEl.textContent = 'No se ha podido enviar el pedido. Inténtalo de nuevo.';
+        errorEl.classList.remove('hidden');
+      }
+      if (btn) { btn.disabled = false; btn.textContent = 'Enviar pedido'; }
     }
   }
 
