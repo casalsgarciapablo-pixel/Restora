@@ -90,6 +90,7 @@
     .landing-mobile-btn { display: inline-flex; align-items: center; justify-content: center; }
     .landing-mobile-panel { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #fff; flex-direction: column; padding: 90px 24px 24px; gap: 4px; z-index: 150; overflow-y: auto; }
     .landing-mobile-panel a { padding: 12px 4px; font-size: 16px; font-weight: 500; color: #0b2142; border-bottom: 1px solid #f1f5f9; }
+    .landing-mobile-panel a.landing-mobile-cta { color: #fff !important; border-bottom: none; margin-top: 10px; display: block; }
     .landing-mobile-panel.open { display: flex; }
     .landing-mobile-panel-close { position: fixed; top: 22px; right: 24px; background: none; border: none; color: #0b2142; padding: 6px; z-index: 151; }
     .landing-mobile-panel-divider { height: 1px; background: #e2e8f0; margin: 6px 0; }
@@ -879,7 +880,7 @@
   <div class="landing-mobile-panel-divider"></div>
   <a href="javascript:void(0)" onclick="openModal('staff-login')" class="hover:text-navy transition">Entrar como trabajador</a>
   <a href="javascript:void(0)" onclick="openModal('login')" class="hover:text-navy transition">Iniciar sesión</a>
-  <a href="javascript:void(0)" onclick="openModal('signup')" class="rounded-full bg-navydeep text-white text-sm font-semibold px-5 py-2.5 text-center">Prueba gratis -></a>
+  <a href="javascript:void(0)" onclick="openModal('signup')" class="landing-mobile-cta rounded-full bg-navydeep text-white text-sm font-semibold px-5 py-2.5 text-center">Prueba gratis -></a>
 </div>
 
 <div id="appRoot" class="h-screen flex flex-col" style="display:none">
@@ -1429,6 +1430,8 @@
   }
 
   function openModal(type) {
+    if (typeof toggleLandingMobileNav === 'function') toggleLandingMobileNav(false);
+    if (typeof toggleSidebarMobile === 'function') toggleSidebarMobile(false);
     document.getElementById('modalCard').classList.remove('modal-wide');
     const customRenderers = {
       'login': loginFormHtml,
