@@ -88,9 +88,10 @@
     .landing-header { position: relative; }
     .landing-header-actions { display: none !important; }
     .landing-mobile-btn { display: inline-flex; align-items: center; justify-content: center; }
-    .landing-mobile-panel { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border-top: 1px solid #e2e8f0; box-shadow: 0 12px 24px -8px rgba(11,33,66,0.15); flex-direction: column; padding: 14px 20px 20px; gap: 2px; z-index: 40; border-radius: 0 0 16px 16px; }
-    .landing-mobile-panel a { padding: 10px 4px; font-size: 14px; font-weight: 500; color: #0b2142; }
+    .landing-mobile-panel { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #fff; flex-direction: column; padding: 90px 24px 24px; gap: 4px; z-index: 150; overflow-y: auto; }
+    .landing-mobile-panel a { padding: 12px 4px; font-size: 16px; font-weight: 500; color: #0b2142; border-bottom: 1px solid #f1f5f9; }
     .landing-mobile-panel.open { display: flex; }
+    .landing-mobile-panel-close { position: fixed; top: 22px; right: 24px; background: none; border: none; color: #0b2142; padding: 6px; z-index: 151; }
     .landing-mobile-panel-divider { height: 1px; background: #e2e8f0; margin: 6px 0; }
 
     /* Hero */
@@ -219,6 +220,9 @@
       <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
     <div id="landingMobilePanel" class="landing-mobile-panel">
+      <button type="button" onclick="toggleLandingMobileNav(false)" class="landing-mobile-panel-close" aria-label="Cerrar menú">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
       <a href="#plantillas" onclick="toggleLandingMobileNav(false)" class="hover:text-navy transition">Plantillas</a>
       <a href="#funcionalidades" onclick="toggleLandingMobileNav(false)" class="hover:text-navy transition">Funcionalidades</a>
       <a href="#precios" onclick="toggleLandingMobileNav(false)" class="hover:text-navy transition">Precios</a>
