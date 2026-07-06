@@ -1764,6 +1764,7 @@
       let movido = false;
       let startX = 0, startY = 0;
       el.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('.mesa-label')) return;
         arrastrando = true;
         movido = false;
         startX = e.clientX;
@@ -1786,6 +1787,7 @@
         el.style.top = yPct + '%';
       });
       el.addEventListener('pointerup', (e) => {
+        if (e.target.closest('.mesa-label')) return;
         arrastrando = false;
         el.style.zIndex = '';
         if (movido) {
