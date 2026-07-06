@@ -2527,9 +2527,11 @@
     const mesa = 'Mesa ' + pedidoEnCurso.numero;
     const acc = getCurrentAccount();
     acc.data.pedidos.push({ mesa, items, platos, personas: pedidoEnCurso.personas, total, estado: 'Pendiente', fecha: new Date().toISOString() });
+    acc.data.mesaEstados[pedidoEnCurso.numero - 1] = 'Ocupada';
     saveCurrentAccountData(acc.data);
     renderPedidos();
     renderDashboardStats();
+    renderMesas();
     pedidoEnCurso = null;
     closeModal();
     showToast('Pedido guardado');
