@@ -894,7 +894,10 @@
             <p class="text-xs text-slate-400 mt-1">Gestiona las reservas de tu restaurante.</p>
           </div>
         </div>
-        <button onclick="openModal('add-reserva')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Nueva reserva</button>
+        <div class="flex gap-2">
+          <button onclick="openModal('conectar-reservas')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Conectar</button>
+          <button onclick="openModal('add-reserva')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Nueva reserva</button>
+        </div>
       </div>
       <div id="reservasTableWrap" class="mt-5 rounded-xl border border-slate-200 overflow-hidden bg-white">
         <table class="w-full text-sm">
@@ -1194,6 +1197,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
   const modalContent = {
     contacto: {
@@ -1266,6 +1270,7 @@
       'signup': signupFormHtml,
       'staff-login': staffLoginFormHtml,
       'add-reserva': addReservaFormHtml,
+      'conectar-reservas': conectarReservasFormHtml,
       'add-pedido': addPedidoFormHtml,
       'add-menu': addMenuFormHtml,
       'paste-menu': pasteMenuFormHtml,
@@ -1431,7 +1436,7 @@
       menu: [],
       personal: [],
       inventario: [],
-      integraciones: { square: false, glovo: false, uber: false, justeat: false, notifs: false },
+      integraciones: { square: false, glovo: false, uber: false, justeat: false, notifs: false, googleCalendar: false },
       iaConversaciones: [],
       iaInformes: [],
     };
@@ -1466,6 +1471,7 @@
     data.integraciones.uber = !!data.integraciones.uber;
     data.integraciones.justeat = !!data.integraciones.justeat;
     data.integraciones.notifs = !!data.integraciones.notifs;
+    data.integraciones.googleCalendar = !!data.integraciones.googleCalendar;
     data.iaConversaciones = Array.isArray(data.iaConversaciones) ? data.iaConversaciones : [];
     if (Array.isArray(data.iaChatHistory) && data.iaChatHistory.length) {
       data.iaConversaciones.push({ id: 'migrada-' + Date.now(), titulo: data.iaChatHistory[0].content, mensajes: data.iaChatHistory, creada: new Date().toISOString() });
@@ -2259,11 +2265,101 @@
     const estado = document.getElementById('resEstado').value;
     if (!fecha || !hora || !cliente || !personas || !mesa) return modalFormError('Rellena todos los campos.');
     const acc = getCurrentAccount();
-    acc.data.reservas.push({ fecha, hora, cliente, personas, mesa, estado });
+    const reserva = { fecha, hora, cliente, personas, mesa, estado };
+    acc.data.reservas.push(reserva);
     saveCurrentAccountData(acc.data);
     renderReservas();
     closeModal();
     showToast('Reserva añadida');
+    if (googleAccessToken) crearEventoGoogleCalendar(reserva);
+  }
+
+  // ---- Conectar (Reservas): Google Calendar / TheFork / Airtable ----
+  const GOOGLE_CLIENT_ID = 'PON_AQUI_TU_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+  let googleTokenClient = null;
+  let googleAccessToken = null;
+  function conectarReservasFormHtml() {
+    const acc = getCurrentAccount();
+    const conectado = acc.data.integraciones.googleCalendar && googleAccessToken;
+    return `
+      <h3 class="text-xl font-bold text-navy">Conectar Reservas</h3>
+      <p class="mt-1.5 text-sm text-slate-500">Sincroniza tus reservas con otras herramientas.</p>
+      <div class="mt-4 space-y-3">
+        <div class="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M8 3v4M16 3v4M3 10h18"/></svg></span>
+            <div><p class="text-sm font-semibold text-navy">Google Calendar</p><p class="text-xs text-slate-400">${conectado ? 'Conectado en esta sesión' : 'Crea un evento por cada reserva nueva'}</p></div>
+          </div>
+          ${conectado
+            ? `<button onclick="desconectarGoogleCalendar()" class="text-xs font-semibold text-rose-500 hover:underline shrink-0">Desconectar</button>`
+            : `<button onclick="conectarGoogleCalendar()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2 shrink-0">Conectar</button>`}
+        </div>
+        <div class="flex items-center justify-between rounded-lg border border-slate-200 p-3 opacity-60">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 text-sm font-bold">TF</span>
+            <div><p class="text-sm font-semibold text-navy">TheFork</p><p class="text-xs text-slate-400">Requiere acuerdo comercial con TheFork</p></div>
+          </div>
+          <span class="text-xs font-semibold text-slate-400 shrink-0">Próximamente</span>
+        </div>
+        <div class="flex items-center justify-between rounded-lg border border-slate-200 p-3 opacity-60">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 text-sm font-bold">AT</span>
+            <div><p class="text-sm font-semibold text-navy">Airtable</p><p class="text-xs text-slate-400">Necesita tu propia clave de API de Airtable</p></div>
+          </div>
+          <span class="text-xs font-semibold text-slate-400 shrink-0">Próximamente</span>
+        </div>
+      </div>
+      <button onclick="closeModal()" class="mt-5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>
+    `;
+  }
+  function conectarGoogleCalendar() {
+    if (typeof google === 'undefined' || !google.accounts) {
+      showToast('No se ha podido cargar Google. Comprueba tu conexión e inténtalo de nuevo.');
+      return;
+    }
+    if (!googleTokenClient) {
+      googleTokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/calendar.events',
+        callback: (resp) => {
+          if (resp.error) {
+            showToast('No se ha podido conectar con Google Calendar.');
+            return;
+          }
+          googleAccessToken = resp.access_token;
+          const acc = getCurrentAccount();
+          acc.data.integraciones.googleCalendar = true;
+          saveCurrentAccountData(acc.data);
+          showToast('Google Calendar conectado');
+          openModal('conectar-reservas');
+        },
+      });
+    }
+    googleTokenClient.requestAccessToken();
+  }
+  function desconectarGoogleCalendar() {
+    googleAccessToken = null;
+    const acc = getCurrentAccount();
+    acc.data.integraciones.googleCalendar = false;
+    saveCurrentAccountData(acc.data);
+    openModal('conectar-reservas');
+  }
+  async function crearEventoGoogleCalendar(reserva) {
+    try {
+      const inicio = new Date(reserva.fecha + 'T' + reserva.hora + ':00');
+      const fin = new Date(inicio.getTime() + 90 * 60000);
+      await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + googleAccessToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          summary: 'Reserva: ' + reserva.cliente + ' (' + reserva.personas + ' pers., ' + reserva.mesa + ')',
+          start: { dateTime: inicio.toISOString() },
+          end: { dateTime: fin.toISOString() },
+        }),
+      });
+    } catch (e) {
+      // Si falla la sincronización con Google Calendar, la reserva ya se guardó igualmente en Restora.
+    }
   }
 
   // ---- Pedidos ----
