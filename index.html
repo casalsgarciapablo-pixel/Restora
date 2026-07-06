@@ -931,12 +931,15 @@
 
     <!-- TPV -->
     <section id="sec-tpv" class="app-section">
-      <div class="flex items-center gap-3">
-        <span class="w-9 h-9 rounded-lg bg-lime-50 text-lime-600 flex items-center justify-center shrink-0"><svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="7" width="18" height="13" rx="2"/><path stroke-linecap="round" d="M8 7V5a4 4 0 018 0v2"/><path stroke-linecap="round" d="M7 12h2M15 12h2"/></svg></span>
-        <div>
-          <p class="text-sm font-semibold text-navy">TPV</p>
-          <p class="text-xs text-slate-400 mt-1">Cobra cuentas y gestiona la caja. <span class="font-semibold text-amber-600">Modo prueba: ningún cobro es real.</span></p>
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-lg bg-lime-50 text-lime-600 flex items-center justify-center shrink-0"><svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="7" width="18" height="13" rx="2"/><path stroke-linecap="round" d="M8 7V5a4 4 0 018 0v2"/><path stroke-linecap="round" d="M7 12h2M15 12h2"/></svg></span>
+          <div>
+            <p class="text-sm font-semibold text-navy">TPV</p>
+            <p class="text-xs text-slate-400 mt-1">Cobra cuentas y gestiona la caja. <span class="font-semibold text-amber-600">Modo prueba: ningún cobro es real.</span></p>
+          </div>
         </div>
+        <button onclick="openModal('conectar-tpv')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Conectar</button>
       </div>
       <div id="tpvBody" class="mt-5"></div>
     </section>
@@ -1313,6 +1316,7 @@
       'staff-login': staffLoginFormHtml,
       'add-reserva': addReservaFormHtml,
       'conectar-reservas': conectarReservasFormHtml,
+      'conectar-tpv': conectarTPVFormHtml,
       'add-pedido': addPedidoFormHtml,
       'add-menu': addMenuFormHtml,
       'paste-menu': pasteMenuFormHtml,
@@ -2532,6 +2536,30 @@
     showToast('Pedido eliminado');
   }
   // ---- TPV ----
+  function conectarTPVFormHtml() {
+    const apps = [
+      { nombre: 'Square', letras: 'SQ', color: 'bg-slate-800 text-white', nota: 'Tiene API pública — se puede conectar de verdad si lo pides' },
+      { nombre: 'ICG Software', letras: 'ICG', color: 'bg-blue-50 text-blue-600', nota: 'Requiere acuerdo comercial con ICG' },
+      { nombre: 'Lightspeed', letras: 'LS', color: 'bg-emerald-50 text-emerald-600', nota: 'Requiere acuerdo comercial con Lightspeed' },
+      { nombre: 'Aloha (NCR)', letras: 'AL', color: 'bg-rose-50 text-rose-600', nota: 'Requiere acuerdo comercial con NCR' },
+      { nombre: 'TPV Fácil', letras: 'TF', color: 'bg-amber-50 text-amber-600', nota: 'Sin API pública de autoservicio' },
+    ];
+    const filas = apps.map(a => `
+      <div class="flex items-center justify-between rounded-lg border border-slate-200 p-3 opacity-60">
+        <div class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-lg ${a.color} flex items-center justify-center shrink-0 text-xs font-bold">${a.letras}</span>
+          <div><p class="text-sm font-semibold text-navy">${a.nombre}</p><p class="text-xs text-slate-400">${a.nota}</p></div>
+        </div>
+        <span class="text-xs font-semibold text-slate-400 shrink-0">Próximamente</span>
+      </div>
+    `).join('');
+    return `
+      <h3 class="text-xl font-bold text-navy">Conectar TPV externo</h3>
+      <p class="mt-1.5 text-sm text-slate-500">Si el restaurante ya usa otro TPV, puedes sincronizarlo aquí en vez de sustituirlo por el de Restora.</p>
+      <div class="mt-4 space-y-3">${filas}</div>
+      <button onclick="closeModal()" class="mt-5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>
+    `;
+  }
   function renderTPV() {
     const body = document.getElementById('tpvBody');
     if (!body) return;
