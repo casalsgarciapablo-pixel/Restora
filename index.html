@@ -2783,7 +2783,7 @@
       const enLinea = !!(p.email && presentes.includes(p.email.toLowerCase()));
       const puntoTitulo = enLinea ? 'Con la página abierta ahora mismo' : 'Sin conexión ahora mismo';
       const punto = `<span class="inline-block w-2 h-2 rounded-full mr-1.5" style="background:${enLinea ? '#10b981' : '#cbd5e1'};" title="${puntoTitulo}"></span>`;
-      return `<tr><td class="px-4 py-2.5">${punto}${p.nombre}</td><td class="px-4 py-2.5">${p.rol}</td><td class="px-4 py-2.5">${p.turno}</td><td class="px-4 py-2.5 font-mono text-xs">${p.codigo || '—'}</td><td class="px-4 py-2.5"><span onclick="cicloEstadoEmpleado(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${p.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarEmpleado(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
+      return `<tr><td class="px-4 py-2.5"><span onclick="abrirEditarEmpleado(${i})" class="cursor-pointer hover:text-accent hover:underline transition" title="Editar rol y accesos">${punto}${p.nombre}</span></td><td class="px-4 py-2.5">${p.rol}</td><td class="px-4 py-2.5">${p.turno}</td><td class="px-4 py-2.5 font-mono text-xs">${p.codigo || '—'}</td><td class="px-4 py-2.5"><span onclick="cicloEstadoEmpleado(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${p.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarEmpleado(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
     }).join('');
   }
   function cicloEstadoEmpleado(i) {
@@ -2798,6 +2798,56 @@
     saveCurrentAccountData(acc.data);
     renderPersonal();
     showToast('Empleado eliminado');
+  }
+  function abrirEditarEmpleado(i) {
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = editPersonalFormHtml(i);
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function editPersonalFormHtml(i) {
+    const acc = getCurrentAccount();
+    const p = acc.data.personal[i];
+    const rolesFijos = ['Camarero', 'Cocinero', 'Jefe de sala', 'Encargado', 'Repartidor'];
+    const esRolFijo = rolesFijos.includes(p.rol);
+    const opcionesRol = rolesFijos.map(r => `<option value="${r}" ${p.rol === r ? 'selected' : ''}>${r}</option>`).join('');
+    const seccionesHtml = SECCIONES_SAAS.map(s => `
+      <label class="flex items-center gap-2 text-sm text-navy py-1">
+        <input type="checkbox" class="per-edit-seccion-check" value="${s.key}" ${(p.secciones || []).includes(s.key) ? 'checked' : ''} style="width:16px;height:16px;">
+        ${s.label}
+      </label>
+    `).join('');
+    return `
+      <h3 class="text-xl font-bold text-navy">Editar a ${p.nombre}</h3>
+      <p class="mt-1 text-sm text-slate-500">Cambia su rol o los apartados del SaaS a los que tiene acceso.</p>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Rol</label>
+      <select id="perEditRol" onchange="document.getElementById('perEditRolOtroWrap').classList.toggle('hidden', this.value !== 'Otro')" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+        ${opcionesRol}
+        <option value="Otro" ${!esRolFijo ? 'selected' : ''}>Otro</option>
+      </select>
+      <div id="perEditRolOtroWrap" class="${esRolFijo ? 'hidden' : ''} mt-2">
+        <input id="perEditRolOtro" type="text" value="${!esRolFijo ? p.rol : ''}" placeholder="Especifica el rol" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      </div>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Acceso al panel</label>
+      <p class="text-xs text-slate-400 mb-1.5">Elige a qué apartados podrá entrar este empleado.</p>
+      <div class="border border-slate-200 rounded-lg px-3 py-2 max-h-40 overflow-y-auto">${seccionesHtml}</div>
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" onclick="submitEditPersonal(${i})" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar cambios</button>
+    `;
+  }
+  function submitEditPersonal(i) {
+    const rolSel = document.getElementById('perEditRol').value;
+    const rolOtro = document.getElementById('perEditRolOtro').value.trim();
+    const rol = rolSel === 'Otro' ? rolOtro : rolSel;
+    const secciones = Array.from(document.querySelectorAll('.per-edit-seccion-check:checked')).map(el => el.value);
+    if (!rol) return modalFormError('Escribe el rol.');
+    if (!secciones.length) return modalFormError('Elige al menos un apartado al que tendrá acceso.');
+    const acc = getCurrentAccount();
+    acc.data.personal[i].rol = rol;
+    acc.data.personal[i].secciones = secciones;
+    saveCurrentAccountData(acc.data);
+    renderPersonal();
+    closeModal();
+    showToast('Empleado actualizado');
   }
   function addPersonalFormHtml() {
     const seccionesHtml = SECCIONES_SAAS.map(s => `
