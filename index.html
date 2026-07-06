@@ -2973,6 +2973,17 @@
     }
   }
 
+  function opcionesHora15min() {
+    let html = '';
+    for (let h = 0; h < 24; h += 1) {
+      for (let m = 0; m < 60; m += 15) {
+        const hh = String(h).padStart(2, '0');
+        const mm = String(m).padStart(2, '0');
+        html += `<option value="${hh}:${mm}">${hh}:${mm}</option>`;
+      }
+    }
+    return html;
+  }
   async function renderPublicReserva(cuentaId) {
     document.getElementById('landingRoot').style.display = 'none';
     document.getElementById('publicReservaRoot').style.display = 'block';
@@ -2996,7 +3007,7 @@
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div><label class="block text-sm font-medium text-navy mb-1.5">Fecha</label><input id="pubResFecha" type="date" min="${hoy}" value="${hoy}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
-              <div><label class="block text-sm font-medium text-navy mb-1.5">Hora</label><input id="pubResHora" type="time" step="900" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+              <div><label class="block text-sm font-medium text-navy mb-1.5">Hora</label><select id="pubResHora" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${opcionesHora15min()}</select></div>
             </div>
             <div>
               <label class="block text-sm font-medium text-navy mb-1.5">Personas</label>
