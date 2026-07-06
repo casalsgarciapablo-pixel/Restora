@@ -81,7 +81,7 @@
   .sidebar-backdrop { display: none; }
 
   @media (max-width: 880px) {
-    #landingRoot { zoom: 1; }
+    #landingRoot { zoom: normal; }
     body { overflow-x: hidden; }
 
     /* Landing header / mobile nav */
@@ -219,19 +219,6 @@
     <button type="button" onclick="toggleLandingMobileNav()" class="landing-mobile-btn" aria-label="Abrir menú">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
-    <div id="landingMobilePanel" class="landing-mobile-panel">
-      <button type="button" onclick="toggleLandingMobileNav(false)" class="landing-mobile-panel-close" aria-label="Cerrar menú">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-      <a href="#plantillas" onclick="toggleLandingMobileNav(false)" class="hover:text-navy transition">Plantillas</a>
-      <a href="#funcionalidades" onclick="toggleLandingMobileNav(false)" class="hover:text-navy transition">Funcionalidades</a>
-      <a href="#precios" onclick="toggleLandingMobileNav(false)" class="hover:text-navy transition">Precios</a>
-      <a href="#blog" onclick="toggleLandingMobileNav(false)" class="hover:text-navy transition">Blog</a>
-      <div class="landing-mobile-panel-divider"></div>
-      <a href="javascript:void(0)" onclick="openModal('staff-login')" class="hover:text-navy transition">Entrar como trabajador</a>
-      <a href="javascript:void(0)" onclick="openModal('login')" class="hover:text-navy transition">Iniciar sesión</a>
-      <a href="javascript:void(0)" onclick="openModal('signup')" class="rounded-full bg-navydeep text-white text-sm font-semibold px-5 py-2.5 text-center">Prueba gratis -></a>
-    </div>
   </header>
 
   <!-- Hero -->
@@ -880,6 +867,20 @@
 </footer>
 
 </div><!-- /landingRoot -->
+
+<div id="landingMobilePanel" class="landing-mobile-panel">
+  <button type="button" onclick="toggleLandingMobileNav(false)" class="landing-mobile-panel-close" aria-label="Cerrar menú">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+  </button>
+  <a href="#plantillas" onclick="toggleLandingMobileNav(false)" class="hover:text-navy transition">Plantillas</a>
+  <a href="#funcionalidades" onclick="toggleLandingMobileNav(false)" class="hover:text-navy transition">Funcionalidades</a>
+  <a href="#precios" onclick="toggleLandingMobileNav(false)" class="hover:text-navy transition">Precios</a>
+  <a href="#blog" onclick="toggleLandingMobileNav(false)" class="hover:text-navy transition">Blog</a>
+  <div class="landing-mobile-panel-divider"></div>
+  <a href="javascript:void(0)" onclick="openModal('staff-login')" class="hover:text-navy transition">Entrar como trabajador</a>
+  <a href="javascript:void(0)" onclick="openModal('login')" class="hover:text-navy transition">Iniciar sesión</a>
+  <a href="javascript:void(0)" onclick="openModal('signup')" class="rounded-full bg-navydeep text-white text-sm font-semibold px-5 py-2.5 text-center">Prueba gratis -></a>
+</div>
 
 <div id="appRoot" class="h-screen flex flex-col" style="display:none">
 <!-- Top bar -->
