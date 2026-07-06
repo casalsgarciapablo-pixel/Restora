@@ -1365,6 +1365,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  if (location.hash && !location.search) {
+    history.replaceState(null, '', location.pathname + location.search);
+    window.scrollTo(0, 0);
+    window.addEventListener('load', () => window.scrollTo(0, 0));
+  }
   const modalContent = {
     contacto: {
       title: 'Habla con ventas',
@@ -3927,7 +3933,6 @@
     items.forEach(el => io.observe(el));
   })();
 
-  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   document.querySelectorAll('a[href^="#"]').forEach(a => {
     a.addEventListener('click', function (e) {
       const id = this.getAttribute('href').slice(1);
