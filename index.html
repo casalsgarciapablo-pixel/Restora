@@ -2223,9 +2223,21 @@
       document.getElementById('reservasBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="7">Sin reservas todavía</td></tr>`;
       return;
     }
+    const numMesas = acc.data.mesaEstados.length;
     document.getElementById('reservasBody').innerHTML = list.map((r,i) => {
       const estadoCls = r.estado === 'Confirmada' ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50';
-      return `<tr><td class="px-4 py-2.5">${r.fecha || '—'}</td><td class="px-4 py-2.5">${r.hora}</td><td class="px-4 py-2.5">${r.cliente}</td><td class="px-4 py-2.5">${r.personas}</td><td class="px-4 py-2.5">${r.mesa}</td><td class="px-4 py-2.5"><span onclick="cicloEstadoReserva(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${r.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarReserva(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
+      let mesaHtml;
+      if (numMesas) {
+        const opciones = Array.from({ length: numMesas }, (_, idx) => 'Mesa ' + (idx + 1));
+        const extra = opciones.includes(r.mesa) ? '' : `<option value="${r.mesa}" selected>${r.mesa}</option>`;
+        mesaHtml = `<select onchange="cambiarMesaReserva(${i}, this.value)" class="text-xs border border-slate-200 rounded-md px-1.5 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+          ${extra}
+          ${opciones.map((val, idx) => `<option value="${val}" ${r.mesa === val ? 'selected' : ''}>${getMesaSelectLabel(idx)}</option>`).join('')}
+        </select>`;
+      } else {
+        mesaHtml = r.mesa;
+      }
+      return `<tr><td class="px-4 py-2.5">${r.fecha || '—'}</td><td class="px-4 py-2.5">${r.hora}</td><td class="px-4 py-2.5">${r.cliente}</td><td class="px-4 py-2.5">${r.personas}</td><td class="px-4 py-2.5">${mesaHtml}</td><td class="px-4 py-2.5"><span onclick="cicloEstadoReserva(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${r.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarReserva(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
     }).join('');
   }
   function cicloEstadoReserva(i) {
@@ -2233,6 +2245,13 @@
     acc.data.reservas[i].estado = acc.data.reservas[i].estado === 'Confirmada' ? 'Pendiente' : 'Confirmada';
     saveCurrentAccountData(acc.data);
     renderReservas();
+  }
+  function cambiarMesaReserva(i, nuevaMesa) {
+    const acc = getCurrentAccount();
+    acc.data.reservas[i].mesa = nuevaMesa;
+    saveCurrentAccountData(acc.data);
+    renderReservas();
+    showToast('Mesa actualizada');
   }
   function eliminarReserva(i) {
     const acc = getCurrentAccount();
