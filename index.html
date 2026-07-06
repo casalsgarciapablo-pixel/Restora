@@ -64,6 +64,9 @@
     #informeRoot, #informeRoot * { visibility: visible; }
     #informeRoot { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
     .informe-no-print { display: none !important; }
+    #ticketRoot, #ticketRoot * { visibility: visible; }
+    #ticketRoot { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
+    .ticket-no-print { display: none !important; }
   }
   .mesa-label { font-size: 11px; font-weight: 600; }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) scale(.9); background: #0f2146; color: #fff; font-size: 13px; font-weight: 600; padding: 10px 18px; border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 200; opacity: 0; pointer-events: none; transition: opacity .25s cubic-bezier(.34,1.56,.64,1), transform .25s cubic-bezier(.34,1.56,.64,1); }
@@ -796,6 +799,7 @@
       <li data-sec="dashboard" onclick="showSection('dashboard', this)" class="nav-item active flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.3"/><rect x="14" y="3" width="7" height="5" rx="1.3"/><rect x="14" y="12" width="7" height="9" rx="1.3"/><rect x="3" y="16" width="7" height="5" rx="1.3"/></svg></span>Dashboard</li>
       <li data-sec="reservas" onclick="showSection('reservas', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-sky-50 text-sky-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M8 3v4M16 3v4M3 10h18"/></svg></span>Reservas</li>
       <li data-sec="pedidos" onclick="showSection('pedidos', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path stroke-linecap="round" d="M9 8h6M9 12h6"/></svg></span>Pedidos</li>
+      <li data-sec="tpv" onclick="showSection('tpv', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-lime-50 text-lime-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path stroke-linecap="round" d="M8 7V5a4 4 0 018 0v2"/><path stroke-linecap="round" d="M7 12h2M15 12h2"/></svg></span>TPV</li>
       <li data-sec="mesas" onclick="showSection('mesas', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-violet-100 text-violet-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M3 8h18M5 8v10M19 8v10M9 8v3M15 8v3"/></svg></span>Mesas</li>
       <li data-sec="menu" onclick="showSection('menu', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 016.5 3H12v18H6.5A2.5 2.5 0 014 18.5v-13zM20 5.5A2.5 2.5 0 0017.5 3H12v18h5.5a2.5 2.5 0 002.5-2.5v-13z"/></svg></span>Menú</li>
       <li data-sec="delivery" onclick="showSection('delivery', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-rose-50 text-rose-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M2 9h3M2 13h2M2 17h2"/><rect x="8" y="6" width="13" height="12" rx="2"/><path stroke-linecap="round" d="M8 10h13"/></svg></span>Delivery</li>
@@ -923,6 +927,18 @@
         <button onclick="openModal('add-pedido')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Nuevo pedido</button>
       </div>
       <div id="pedidosGrid" class="mt-5 grid md:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- TPV -->
+    <section id="sec-tpv" class="app-section">
+      <div class="flex items-center gap-3">
+        <span class="w-9 h-9 rounded-lg bg-lime-50 text-lime-600 flex items-center justify-center shrink-0"><svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="7" width="18" height="13" rx="2"/><path stroke-linecap="round" d="M8 7V5a4 4 0 018 0v2"/><path stroke-linecap="round" d="M7 12h2M15 12h2"/></svg></span>
+        <div>
+          <p class="text-sm font-semibold text-navy">TPV</p>
+          <p class="text-xs text-slate-400 mt-1">Cobra cuentas y gestiona la caja. <span class="font-semibold text-amber-600">Modo prueba: ningún cobro es real.</span></p>
+        </div>
+      </div>
+      <div id="tpvBody" class="mt-5"></div>
     </section>
 
     <!-- MENU -->
@@ -1203,6 +1219,16 @@
   </div>
 </div>
 
+<div id="ticketRoot" class="min-h-screen font-sans text-navy antialiased" style="display:none; background:#F7F8FC">
+  <div class="max-w-sm mx-auto px-5" style="padding-top:64px; padding-bottom:40px;">
+    <div class="flex items-center justify-between gap-4 ticket-no-print">
+      <button onclick="cerrarTicket()" class="text-sm font-semibold text-slate-500 hover:text-navy transition">← Volver al panel</button>
+      <button onclick="window.print()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Imprimir ticket</button>
+    </div>
+    <div id="ticketBody" class="mt-6 bg-white rounded-xl border border-slate-200 p-5"></div>
+  </div>
+</div>
+
 <div id="publicReservaRoot" class="min-h-screen font-sans text-navy antialiased" style="display:none; background:linear-gradient(180deg,#F1F4FB 0%,#F7F8FC 40%)">
   <div class="min-h-screen flex items-start sm:items-center justify-center px-4 sm:px-6 py-10 sm:py-14">
     <div class="w-full max-w-md">
@@ -1369,6 +1395,7 @@
     renderDashboardStats();
     renderIntegraciones();
     renderIAChat();
+    renderTPV();
   }
   function getPresentStaffEmails() {
     if (!realtimeChannel) return [];
@@ -1469,6 +1496,7 @@
       integraciones: { square: false, glovo: false, uber: false, justeat: false, notifs: false, googleCalendar: false },
       iaConversaciones: [],
       iaInformes: [],
+      caja: { abierta: false, fecha: null, efectivoInicial: 0, aperturaHora: null, historico: [] },
     };
   }
   function normalizeAccountData(data) {
@@ -1518,6 +1546,12 @@
     }
     delete data.iaChatHistory;
     data.iaInformes = Array.isArray(data.iaInformes) ? data.iaInformes : [];
+    data.caja = data.caja || {};
+    data.caja.abierta = !!data.caja.abierta;
+    data.caja.fecha = data.caja.fecha || null;
+    data.caja.efectivoInicial = data.caja.efectivoInicial || 0;
+    data.caja.aperturaHora = data.caja.aperturaHora || null;
+    data.caja.historico = Array.isArray(data.caja.historico) ? data.caja.historico : [];
     return data;
   }
   function getCurrentAccount() {
@@ -1747,6 +1781,7 @@
     renderInventario();
     renderDashboardStats();
     renderIntegraciones();
+    renderTPV();
   }
 
   function guardarCuenta() {
@@ -2021,7 +2056,7 @@
   }
 
   // ---- Nav, toasts ----
-  const sectionNames = { dashboard:'Dashboard', reservas:'Reservas', pedidos:'Pedidos', mesas:'Mesas', menu:'Menú', delivery:'Delivery', inventario:'Inventario', ia:'Ayudante IA', restaurante:'Mi restaurante', personal:'Personal', apps:'Apps', config:'Configuración' };
+  const sectionNames = { dashboard:'Dashboard', reservas:'Reservas', pedidos:'Pedidos', mesas:'Mesas', menu:'Menú', delivery:'Delivery', inventario:'Inventario', tpv:'TPV', ia:'Ayudante IA', restaurante:'Mi restaurante', personal:'Personal', apps:'Apps', config:'Configuración' };
   function showSection(name, el) {
     document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
     document.getElementById('sec-' + name).classList.add('active');
@@ -2496,6 +2531,305 @@
     renderDashboardStats();
     showToast('Pedido eliminado');
   }
+  // ---- TPV ----
+  function renderTPV() {
+    const body = document.getElementById('tpvBody');
+    if (!body) return;
+    const acc = getCurrentAccount();
+    const caja = acc.data.caja;
+    const hoy = new Date().toISOString().slice(0, 10);
+    if (!caja.abierta || caja.fecha !== hoy) {
+      body.innerHTML = `
+        <div class="rounded-xl border border-slate-200 bg-white p-6 max-w-sm">
+          <p class="text-sm font-semibold text-navy">Abrir caja</p>
+          <p class="text-xs text-slate-400 mt-1">Indica el efectivo con el que empiezas hoy para poder cobrar cuentas.</p>
+          <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Efectivo inicial</label>
+          <input id="tpvEfectivoInicial" type="number" min="0" step="0.01" placeholder="0,00" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+          <p id="tpvAbrirError" class="mt-3 text-xs text-rose-600 hidden"></p>
+          <button onclick="abrirCaja()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Abrir caja</button>
+        </div>
+      `;
+      return;
+    }
+    renderTPVAbierta();
+  }
+  function abrirCaja() {
+    const input = document.getElementById('tpvEfectivoInicial');
+    const val = parseFloat(input.value);
+    const errorEl = document.getElementById('tpvAbrirError');
+    if (isNaN(val) || val < 0) {
+      errorEl.textContent = 'Escribe un importe válido.';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+    const acc = getCurrentAccount();
+    const hoy = new Date().toISOString().slice(0, 10);
+    acc.data.caja = { abierta: true, fecha: hoy, efectivoInicial: val, aperturaHora: new Date().toISOString(), historico: acc.data.caja.historico || [] };
+    saveCurrentAccountData(acc.data);
+    renderTPV();
+    showToast('Caja abierta');
+  }
+  function renderTPVAbierta() {
+    const acc = getCurrentAccount();
+    const pedidos = acc.data.pedidos;
+    const hoy = new Date().toISOString().slice(0, 10);
+    const cobradosHoy = pedidos.filter(p => p.estado === 'Pagado' && (p.fechaPago || '').slice(0, 10) === hoy);
+    const pendientes = pedidos.map((p, i) => Object.assign({ _idx: i }, p)).filter(p => p.estado !== 'Pagado');
+    const porMetodo = { Efectivo: 0, Tarjeta: 0, Bizum: 0 };
+    cobradosHoy.forEach(p => { porMetodo[p.metodoPago] = (porMetodo[p.metodoPago] || 0) + p.total; });
+    const totalHoy = cobradosHoy.reduce((s, p) => s + p.total, 0);
+    const ticketsHtml = pendientes.length
+      ? pendientes.map(p => `
+        <div class="lift-card rounded-xl border border-slate-200 bg-white p-4">
+          <div class="flex justify-between items-start gap-2">
+            <p class="font-semibold text-navy text-sm">${p.mesa}</p>
+            <span class="text-xs bg-slate-100 text-slate-500 rounded-full px-2 py-0.5 font-medium">${p.estado}</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">${p.items}</p>
+          <div class="flex items-center justify-between mt-3">
+            <p class="text-sm font-semibold text-navy">${p.total.toFixed(2).replace('.', ',')}€</p>
+            <button onclick="abrirCobroPedido(${p._idx})" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-1.5">Cobrar</button>
+          </div>
+        </div>
+      `).join('')
+      : `<div class="rounded-xl border border-dashed border-slate-200 bg-white p-4 text-center col-span-full"><p class="text-sm text-slate-400">No hay cuentas pendientes de cobro.</p></div>`;
+    document.getElementById('tpvBody').innerHTML = `
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex gap-3 flex-wrap">
+          <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <p class="text-xs text-slate-400">Ventas de hoy</p>
+            <p class="text-lg font-bold text-navy mt-0.5">${totalHoy.toFixed(2).replace('.', ',')}€</p>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <p class="text-xs text-slate-400">Efectivo · Tarjeta · Bizum</p>
+            <p class="text-sm font-semibold text-navy mt-0.5">${porMetodo.Efectivo.toFixed(2).replace('.', ',')}€ · ${porMetodo.Tarjeta.toFixed(2).replace('.', ',')}€ · ${porMetodo.Bizum.toFixed(2).replace('.', ',')}€</p>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <p class="text-xs text-slate-400">Tickets cobrados</p>
+            <p class="text-lg font-bold text-navy mt-0.5">${cobradosHoy.length}</p>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="abrirVentaRapida()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Venta rápida</button>
+          <button onclick="abrirCerrarCaja()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Cerrar caja</button>
+        </div>
+      </div>
+      <div class="mt-5 grid md:grid-cols-3 gap-4">${ticketsHtml}</div>
+    `;
+  }
+  function abrirCobroPedido(i) {
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[i];
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Cobrar ${p.mesa}</h3>
+      <p class="mt-1 text-sm text-slate-500">${p.items}</p>
+      <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
+        <p class="text-sm font-semibold text-navy">Total</p>
+        <p class="text-xl font-bold text-navy">${p.total.toFixed(2).replace('.', ',')}€</p>
+      </div>
+      <p class="text-xs text-amber-600 font-medium mt-3">Modo prueba: no se procesa ningún cobro real.</p>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Método de pago</label>
+      <div class="grid grid-cols-3 gap-2">
+        <button type="button" onclick="confirmarCobro(${i}, 'Efectivo')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy">💶 Efectivo</button>
+        <button type="button" onclick="confirmarCobro(${i}, 'Tarjeta')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy">💳 Tarjeta</button>
+        <button type="button" onclick="confirmarCobro(${i}, 'Bizum')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy">📱 Bizum</button>
+      </div>
+    `;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function confirmarCobro(i, metodo) {
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[i];
+    p.estado = 'Pagado';
+    p.metodoPago = metodo;
+    p.fechaPago = new Date().toISOString();
+    const mMatch = /^Mesa (\d+)$/i.exec(p.mesa || '');
+    if (mMatch) {
+      const idx = parseInt(mMatch[1], 10) - 1;
+      const otrosPendientes = acc.data.pedidos.some((o, oi) => oi !== i && o.mesa === p.mesa && o.estado !== 'Pagado');
+      if (!otrosPendientes && acc.data.mesaEstados[idx] !== undefined) acc.data.mesaEstados[idx] = 'Libre';
+    }
+    saveCurrentAccountData(acc.data);
+    closeModal();
+    renderPedidos();
+    renderDashboardStats();
+    renderMesas();
+    renderTPV();
+    mostrarTicket(p);
+    showToast('Cobrado con ' + metodo);
+  }
+  function mostrarTicket(p) {
+    const acc = getCurrentAccount();
+    const fecha = new Date(p.fechaPago || p.fecha);
+    const itemsHtml = (p.platos && p.platos.length)
+      ? p.platos.map(pl => `<div class="flex justify-between text-sm py-1"><span>${pl.cantidad}x ${pl.nombre}</span><span>${(precioToNumero(pl.precio) * pl.cantidad).toFixed(2).replace('.', ',')}€</span></div>`).join('')
+      : `<p class="text-sm">${p.items}</p>`;
+    document.getElementById('ticketBody').innerHTML = `
+      <div class="text-center">
+        <h1 class="text-lg font-bold text-navy">${acc.restaurantName || 'Restaurante'}</h1>
+        <p class="text-xs text-slate-400 mt-1">${fecha.toLocaleDateString('es-ES')} · ${fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</p>
+        <p class="text-xs text-slate-400">${p.mesa}</p>
+      </div>
+      <div class="mt-4 border-t border-b border-dashed border-slate-300 py-3">${itemsHtml}</div>
+      <div class="flex justify-between mt-3 text-base font-bold text-navy">
+        <span>Total</span><span>${p.total.toFixed(2).replace('.', ',')}€</span>
+      </div>
+      <p class="text-xs text-slate-400 mt-2 text-center">Pagado con ${p.metodoPago}</p>
+      <p class="text-xs text-amber-600 font-medium mt-3 text-center ticket-no-print">Ticket de prueba — modo simulado, ningún cobro real procesado.</p>
+    `;
+    document.getElementById('appRoot').style.display = 'none';
+    document.getElementById('ticketRoot').style.display = 'block';
+  }
+  function cerrarTicket() {
+    document.getElementById('ticketRoot').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'flex';
+  }
+  function abrirCerrarCaja() {
+    const acc = getCurrentAccount();
+    const caja = acc.data.caja;
+    const hoy = new Date().toISOString().slice(0, 10);
+    const cobradosHoy = acc.data.pedidos.filter(p => p.estado === 'Pagado' && (p.fechaPago || '').slice(0, 10) === hoy);
+    const porMetodo = { Efectivo: 0, Tarjeta: 0, Bizum: 0 };
+    cobradosHoy.forEach(p => { porMetodo[p.metodoPago] = (porMetodo[p.metodoPago] || 0) + p.total; });
+    const totalHoy = cobradosHoy.reduce((s, p) => s + p.total, 0);
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Cerrar caja</h3>
+      <p class="mt-1 text-sm text-slate-500">Resumen de hoy antes de cerrar. Es un cierre de prueba: no mueve dinero real.</p>
+      <div class="mt-4 space-y-2 text-sm">
+        <div class="flex justify-between"><span class="text-slate-500">Efectivo inicial</span><span class="font-medium text-navy">${caja.efectivoInicial.toFixed(2).replace('.', ',')}€</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Ventas en efectivo</span><span class="font-medium text-navy">${porMetodo.Efectivo.toFixed(2).replace('.', ',')}€</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Ventas con tarjeta</span><span class="font-medium text-navy">${porMetodo.Tarjeta.toFixed(2).replace('.', ',')}€</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Ventas con Bizum</span><span class="font-medium text-navy">${porMetodo.Bizum.toFixed(2).replace('.', ',')}€</span></div>
+        <div class="flex justify-between border-t border-slate-200 pt-2"><span class="font-semibold text-navy">Total vendido</span><span class="font-bold text-navy">${totalHoy.toFixed(2).replace('.', ',')}€</span></div>
+        <div class="flex justify-between"><span class="font-semibold text-navy">Efectivo esperado en caja</span><span class="font-bold text-navy">${(caja.efectivoInicial + porMetodo.Efectivo).toFixed(2).replace('.', ',')}€</span></div>
+      </div>
+      <p class="text-xs text-slate-400 mt-3">${cobradosHoy.length} ticket${cobradosHoy.length === 1 ? '' : 's'} cobrado${cobradosHoy.length === 1 ? '' : 's'} hoy.</p>
+      <button type="button" onclick="confirmarCerrarCaja()" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Confirmar cierre de caja</button>
+      <button type="button" onclick="closeModal()" class="mt-2.5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cancelar</button>
+    `;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function confirmarCerrarCaja() {
+    const acc = getCurrentAccount();
+    const caja = acc.data.caja;
+    const hoy = new Date().toISOString().slice(0, 10);
+    const cobradosHoy = acc.data.pedidos.filter(p => p.estado === 'Pagado' && (p.fechaPago || '').slice(0, 10) === hoy);
+    const porMetodo = { Efectivo: 0, Tarjeta: 0, Bizum: 0 };
+    cobradosHoy.forEach(p => { porMetodo[p.metodoPago] = (porMetodo[p.metodoPago] || 0) + p.total; });
+    const totalHoy = cobradosHoy.reduce((s, p) => s + p.total, 0);
+    caja.historico.push({
+      fecha: hoy,
+      aperturaHora: caja.aperturaHora,
+      cierreHora: new Date().toISOString(),
+      efectivoInicial: caja.efectivoInicial,
+      ventasEfectivo: porMetodo.Efectivo,
+      ventasTarjeta: porMetodo.Tarjeta,
+      ventasBizum: porMetodo.Bizum,
+      totalVentas: totalHoy,
+      numTickets: cobradosHoy.length,
+    });
+    caja.abierta = false;
+    saveCurrentAccountData(acc.data);
+    closeModal();
+    renderTPV();
+    showToast('Caja cerrada');
+  }
+  let ventaRapidaEnCurso = null;
+  function ventaRapidaFormHtml() {
+    const acc = getCurrentAccount();
+    const mesas = acc.data.mesaEstados;
+    const opciones = mesas.map((s, i) => `<option value="${i + 1}">${getMesaSelectLabel(i)}</option>`).join('');
+    return `
+      <h3 class="text-xl font-bold text-navy">Venta rápida</h3>
+      <p class="mt-1 text-sm text-slate-500">Cobra una venta directa en barra o para llevar, sin pasar por Pedidos.</p>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Mesa (opcional)</label>
+      <select id="tpvVentaMesa" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+        <option value="">Venta directa (barra / para llevar)</option>
+        ${opciones}
+      </select>
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" onclick="submitVentaRapidaPaso1()" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Elegir platos →</button>
+    `;
+  }
+  function abrirVentaRapida() {
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = ventaRapidaFormHtml();
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function submitVentaRapidaPaso1() {
+    const val = document.getElementById('tpvVentaMesa').value;
+    ventaRapidaEnCurso = { mesaNumero: val ? parseInt(val, 10) : null, cantidades: {} };
+    document.getElementById('modalCard').classList.add('modal-wide');
+    document.getElementById('modalBody').innerHTML = ventaRapidaPlatosFormHtml();
+  }
+  function volverVentaRapidaPaso1() {
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = ventaRapidaFormHtml();
+    if (ventaRapidaEnCurso.mesaNumero) document.getElementById('tpvVentaMesa').value = String(ventaRapidaEnCurso.mesaNumero);
+  }
+  function ventaRapidaPlatosFormHtml() {
+    const disponibles = platosDisponiblesPedido();
+    const filas = disponibles.length
+      ? disponibles.map(m => {
+          const qty = ventaRapidaEnCurso.cantidades[m.idx] || 0;
+          return `<div class="flex items-center justify-between gap-2 py-2 border-b border-slate-100">
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-navy truncate">${m.nombre}</p>
+              <p class="text-xs text-slate-400">${m.precio}</p>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button type="button" onclick="cambiarCantidadVentaRapida(${m.idx}, -1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">−</button>
+              <span class="text-sm font-semibold text-navy w-5 text-center">${qty}</span>
+              <button type="button" onclick="cambiarCantidadVentaRapida(${m.idx}, 1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">+</button>
+            </div>
+          </div>`;
+        }).join('')
+      : '<p class="text-sm text-slate-400 py-4 text-center">No tienes platos disponibles en el menú.</p>';
+    const total = disponibles.reduce((sum, m) => sum + precioToNumero(m.precio) * (ventaRapidaEnCurso.cantidades[m.idx] || 0), 0);
+    return `
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="volverVentaRapidaPaso1()" class="text-slate-400 hover:text-navy transition" title="Atrás">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <h3 class="text-xl font-bold text-navy">Elige los platos</h3>
+      </div>
+      <div class="mt-3 grid grid-cols-2" style="column-gap:3rem;">${filas}</div>
+      <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
+        <p class="text-sm font-semibold text-navy">Total</p>
+        <p class="text-lg font-bold text-navy">${total.toFixed(2).replace('.', ',')}€</p>
+      </div>
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" onclick="submitVentaRapidaFinal()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Continuar al cobro →</button>
+    `;
+  }
+  function cambiarCantidadVentaRapida(idx, delta) {
+    const actual = ventaRapidaEnCurso.cantidades[idx] || 0;
+    ventaRapidaEnCurso.cantidades[idx] = Math.max(0, actual + delta);
+    document.getElementById('modalBody').innerHTML = ventaRapidaPlatosFormHtml();
+  }
+  function submitVentaRapidaFinal() {
+    const disponibles = platosDisponiblesPedido();
+    const elegidos = disponibles.filter(m => (ventaRapidaEnCurso.cantidades[m.idx] || 0) > 0);
+    if (!elegidos.length) return modalFormError('Elige al menos un plato.');
+    const items = elegidos.map(m => ventaRapidaEnCurso.cantidades[m.idx] + 'x ' + m.nombre).join(', ');
+    const platos = elegidos.map(m => ({ nombre: m.nombre, cantidad: ventaRapidaEnCurso.cantidades[m.idx], precio: m.precio }));
+    const total = elegidos.reduce((sum, m) => sum + precioToNumero(m.precio) * ventaRapidaEnCurso.cantidades[m.idx], 0);
+    const mesa = ventaRapidaEnCurso.mesaNumero ? 'Mesa ' + ventaRapidaEnCurso.mesaNumero : 'Venta directa';
+    const acc = getCurrentAccount();
+    acc.data.pedidos.push({ mesa, items, platos, personas: null, total, estado: 'Pendiente', fecha: new Date().toISOString(), origen: 'tpv' });
+    if (ventaRapidaEnCurso.mesaNumero) acc.data.mesaEstados[ventaRapidaEnCurso.mesaNumero - 1] = 'Ocupada';
+    saveCurrentAccountData(acc.data);
+    const nuevoIdx = acc.data.pedidos.length - 1;
+    ventaRapidaEnCurso = null;
+    closeModal();
+    renderPedidos();
+    renderDashboardStats();
+    renderMesas();
+    renderTPV();
+    abrirCobroPedido(nuevoIdx);
+  }
   let pedidoEnCurso = null;
   function getMesaSelectLabel(i) {
     const acc = getCurrentAccount();
@@ -2764,6 +3098,7 @@
     { key: 'menu', label: 'Menú' },
     { key: 'delivery', label: 'Delivery' },
     { key: 'inventario', label: 'Inventario' },
+    { key: 'tpv', label: 'TPV' },
     { key: 'ia', label: 'Ayudante IA' },
     { key: 'restaurante', label: 'Mi restaurante' },
     { key: 'personal', label: 'Personal' },
