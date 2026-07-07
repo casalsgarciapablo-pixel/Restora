@@ -300,7 +300,7 @@
           <feGaussianBlur stdDeviation="26"/>
         </filter>
       </defs>
-      <path d="M -100 700 C 220 600, 300 220, 540 100 C 680 25, 720 -30, 950 -60" stroke="url(#waveGrad)" stroke-width="110" fill="none" filter="url(#waveBlur)" stroke-linecap="round"/>
+      <path id="heroWavePath" d="M -100 700 C 220 600, 300 220, 540 100 C 680 25, 720 -30, 950 -60" stroke="url(#waveGrad)" stroke-width="110" fill="none" filter="url(#waveBlur)" stroke-linecap="round"/>
     </svg>
   </div>
 
@@ -4323,11 +4323,57 @@
       const align = svg.dataset.parDesktop.split(' ')[0];
       svg.setAttribute('preserveAspectRatio', isMobile ? align + ' meet' : svg.dataset.parDesktop);
       svg.querySelectorAll('path').forEach(path => {
+        if (path.id === 'heroWavePath') return;
         if (!path.dataset.strokeDesktop) path.dataset.strokeDesktop = path.getAttribute('stroke-width');
         const base = parseFloat(path.dataset.strokeDesktop);
         path.setAttribute('stroke-width', isMobile ? base * 3.2 : path.dataset.strokeDesktop);
       });
     });
+    ajustarHeroWaveTaper(isMobile);
+  }
+
+  function ajustarHeroWaveTaper(isMobile) {
+    const path = document.getElementById('heroWavePath');
+    if (!path) return;
+    if (!path.dataset.strokeDesktop) path.dataset.strokeDesktop = path.getAttribute('stroke-width');
+    const taper = document.getElementById('heroWaveTaper');
+    if (!isMobile) {
+      path.setAttribute('stroke-width', path.dataset.strokeDesktop);
+      path.style.display = '';
+      if (taper) taper.style.display = 'none';
+      return;
+    }
+    const maxWidth = parseFloat(path.dataset.strokeDesktop) * 3.2;
+    const len = path.getTotalLength();
+    const steps = 60;
+    const top = [];
+    const bottom = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const s = t * len;
+      const p = path.getPointAtLength(s);
+      const p2 = path.getPointAtLength(Math.min(s + 1, len));
+      let dx = p2.x - p.x, dy = p2.y - p.y;
+      const dlen = Math.hypot(dx, dy) || 1;
+      dx /= dlen; dy /= dlen;
+      const nx = -dy, ny = dx;
+      const w = t < 0.5 ? maxWidth : maxWidth * (1 - (t - 0.5) / 0.5);
+      top.push([p.x + nx * w / 2, p.y + ny * w / 2]);
+      bottom.push([p.x - nx * w / 2, p.y - ny * w / 2]);
+    }
+    const d = 'M ' + top.map(pt => pt[0] + ',' + pt[1]).join(' L ') +
+      ' L ' + bottom.slice().reverse().map(pt => pt[0] + ',' + pt[1]).join(' L ') + ' Z';
+    let taperPath = taper;
+    if (!taperPath) {
+      taperPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      taperPath.id = 'heroWaveTaper';
+      taperPath.setAttribute('fill', 'url(#waveGrad)');
+      taperPath.setAttribute('filter', 'url(#waveBlur)');
+      path.parentNode.insertBefore(taperPath, path);
+    }
+    taperPath.setAttribute('d', d);
+    taperPath.style.display = '';
+    path.style.display = 'none';
   }
   ajustarHeroGlow();
   window.addEventListener('resize', ajustarHeroGlow);
