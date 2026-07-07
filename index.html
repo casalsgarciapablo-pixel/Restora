@@ -278,8 +278,16 @@
   .dash-area-anim { opacity: 0; animation: dashFade .8s ease .35s forwards; }
   .dash-dot-anim { opacity: 0; animation: dashFade .35s ease forwards; }
   .dash-bar-anim { transform-box: fill-box; transform-origin: bottom; animation: dashRise .55s cubic-bezier(.34,1.2,.64,1) both; }
+  @keyframes dashPie { from { opacity: 0; transform: scale(.82) translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes dashSpin { from { opacity: 0; transform: rotate(-24deg) scale(.85); } to { opacity: 1; transform: none; } }
+  .dash-pie-anim { animation: dashPie .65s cubic-bezier(.34,1.25,.64,1) both; transform-origin: center; }
+  .dash-pie-anim svg { animation: dashSpin .8s cubic-bezier(.3,.9,.35,1) both; transform-origin: 130px 95px; }
+  .dash-slice-anim { opacity: 0; animation: dashFade .55s ease forwards; }
+  @keyframes dashGrowX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  .dash-hbar-anim { transform-box: fill-box; transform-origin: left; animation: dashGrowX .6s cubic-bezier(.34,1.1,.64,1) both; }
+  .dash-hbar-val { opacity: 0; animation: dashFade .4s ease forwards; }
   @media (prefers-reduced-motion: reduce) {
-    .dash-line-anim, .dash-area-anim, .dash-dot-anim, .dash-bar-anim { animation: none !important; stroke-dashoffset: 0 !important; opacity: 1 !important; transform: none !important; }
+    .dash-line-anim, .dash-area-anim, .dash-dot-anim, .dash-bar-anim, .dash-pie-anim, .dash-pie-anim svg, .dash-slice-anim, .dash-hbar-anim, .dash-hbar-val { animation: none !important; stroke-dashoffset: 0 !important; opacity: 1 !important; transform: none !important; }
   }
 
   /* ============ Mobile / tablet responsive layer (desktop >880px untouched) ============ */
@@ -4582,34 +4590,71 @@
     const rows = data.map((d, i) => {
       const y = padT + i * rowH;
       const bw = Math.max(3, (d.value / max) * full);
+      const delay = (0.06 + i * 0.07).toFixed(2);
       return `<text x="${labelW}" y="${y + rowH / 2 + 4}" text-anchor="end" font-size="12" fill="#334155">${svgEsc(truncar(d.label, 20))}</text>
         <rect x="${barX}" y="${y + 7}" width="${full}" height="${rowH - 16}" rx="5" fill="#F1F3F7"/>
-        <rect x="${barX}" y="${y + 7}" width="${bw}" height="${rowH - 16}" rx="5" fill="${opts.color}"/>
-        <text x="${barX + bw + 8}" y="${y + rowH / 2 + 4}" font-size="11.5" font-weight="700" fill="#16161D">${opts.fmt(d.value)}</text>`;
+        <rect class="dash-hbar-anim" style="animation-delay:${delay}s" x="${barX}" y="${y + 7}" width="${bw}" height="${rowH - 16}" rx="5" fill="url(#dashHGrad)"/>
+        <text class="dash-hbar-val" style="animation-delay:${(parseFloat(delay) + 0.35).toFixed(2)}s" x="${barX + bw + 8}" y="${y + rowH / 2 + 4}" font-size="11.5" font-weight="700" fill="#16161D">${opts.fmt(d.value)}</text>`;
     }).join('');
-    return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">${rows}</svg>`;
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">
+      <defs><linearGradient id="dashHGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="${dashShade(opts.color, -0.12)}"/><stop offset="100%" stop-color="${opts.color}"/></linearGradient></defs>
+      ${rows}</svg>`;
   }
 
+  function dashShade(hex, amt) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    r = Math.max(0, Math.min(255, Math.round(r * (1 + amt))));
+    g = Math.max(0, Math.min(255, Math.round(g * (1 + amt))));
+    b = Math.max(0, Math.min(255, Math.round(b * (1 + amt))));
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
   function svgDonut(segs) {
+    segs = segs.filter(s => s.value > 0);
     const total = segs.reduce((s, x) => s + x.value, 0);
     if (!total) return svgEmpty('Aún no hay pedidos registrados');
-    const cx = 120, cy = 120, r = 84, sw = 30, circ = 2 * Math.PI * r;
-    let off = 0;
-    const arcs = segs.filter(s => s.value > 0).map(s => {
-      const dash = (s.value / total) * circ;
-      const el = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="${dash} ${circ - dash}" stroke-dashoffset="${-off}" transform="rotate(-90 ${cx} ${cy})" stroke-linecap="butt"/>`;
-      off += dash; return el;
-    }).join('');
+    const cx = 130, cy = 95, rx = 98, ry = 55, depth = 28;
+    const proj = a => [cx + rx * Math.cos(a), cy + ry * Math.sin(a)];
+    let ang = -Math.PI / 2;
+    const slices = segs.map(s => { const sweep = s.value / total * Math.PI * 2; const sl = { s, a0: ang, a1: ang + sweep }; ang += sweep; return sl; });
+    // Paredes laterales (solo la mitad frontal, sin > 0)
+    let walls = '';
+    slices.forEach(sl => {
+      const step = 0.02; let run = null; const runs = [];
+      for (let a = sl.a0; a <= sl.a1 + 1e-9; a += step) {
+        if (Math.sin(a) > 0) { if (!run) { run = []; runs.push(run); } run.push(a); } else run = null;
+      }
+      runs.forEach(pts => {
+        if (pts.length < 2) return;
+        let top = '', bot = '';
+        pts.forEach((a, i) => { const p = proj(a); top += (i ? 'L' : 'M') + p[0].toFixed(2) + ' ' + p[1].toFixed(2) + ' '; });
+        for (let i = pts.length - 1; i >= 0; i--) { const p = proj(pts[i]); bot += 'L' + p[0].toFixed(2) + ' ' + (p[1] + depth).toFixed(2) + ' '; }
+        walls += `<path d="${top}${bot}Z" fill="${dashShade(sl.s.color, -0.32)}"/>`;
+      });
+    });
+    // Caras superiores
+    let tops = '';
+    slices.forEach((sl, i) => {
+      const p0 = proj(sl.a0), p1 = proj(sl.a1);
+      const large = (sl.a1 - sl.a0) > Math.PI ? 1 : 0;
+      tops += `<path class="dash-slice-anim" style="animation-delay:${0.15 + i * 0.12}s" d="M ${cx} ${cy} L ${p0[0].toFixed(2)} ${p0[1].toFixed(2)} A ${rx} ${ry} 0 ${large} 1 ${p1[0].toFixed(2)} ${p1[1].toFixed(2)} Z" fill="${sl.s.color}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>`;
+    });
     const legend = segs.map(s => `<div class="flex items-center justify-between gap-3 py-2 border-b border-slate-100 last:border-0">
-      <span class="flex items-center gap-2.5 text-sm text-slate-600"><span style="width:11px;height:11px;border-radius:3px;background:${s.color};display:inline-block;flex-shrink:0"></span>${svgEsc(s.label)}</span>
+      <span class="flex items-center gap-2.5 text-sm text-slate-600"><span style="width:11px;height:11px;border-radius:3px;background:${s.color};display:inline-block;flex-shrink:0;box-shadow:0 1px 2px ${dashShade(s.color, -0.3)}"></span>${svgEsc(s.label)}</span>
       <span class="text-sm font-semibold text-navy tabular-nums">${s.value} <span class="text-xs text-slate-400 font-normal">(${Math.round(s.value / total * 100)}%)</span></span>
     </div>`).join('');
     return `<div class="flex flex-col sm:flex-row items-center gap-6 py-2">
-      <svg viewBox="0 0 240 240" width="196" height="196" style="flex-shrink:0">${arcs}
-        <text x="120" y="116" text-anchor="middle" font-size="34" font-weight="700" fill="#16161D">${total}</text>
-        <text x="120" y="138" text-anchor="middle" font-size="12.5" fill="#94A3B8">pedidos</text>
-      </svg>
-      <div class="flex-1 w-full">${legend}</div>
+      <div class="dash-pie-anim" style="flex-shrink:0">
+        <svg viewBox="0 0 260 200" width="240" height="185" style="display:block;overflow:visible">
+          <ellipse cx="${cx}" cy="${cy + depth}" rx="${rx}" ry="${ry}" fill="rgba(15,23,42,0.10)"/>
+          ${walls}${tops}
+        </svg>
+      </div>
+      <div class="flex-1 w-full">
+        <p class="text-2xl font-bold text-navy tabular-nums leading-none">${total}</p>
+        <p class="text-xs text-slate-400 mb-2">pedidos en total</p>
+        ${legend}
+      </div>
     </div>`;
   }
 
