@@ -4323,7 +4323,7 @@
       svg.querySelectorAll('path').forEach(path => {
         if (!path.dataset.strokeDesktop) path.dataset.strokeDesktop = path.getAttribute('stroke-width');
         const base = parseFloat(path.dataset.strokeDesktop);
-        path.setAttribute('stroke-width', isMobile ? base * 1.6 : path.dataset.strokeDesktop);
+        path.setAttribute('stroke-width', isMobile ? base * 3.2 : path.dataset.strokeDesktop);
       });
     });
   }
