@@ -373,16 +373,16 @@
     <svg viewBox="0 0 1500 900" preserveAspectRatio="xMidYMin slice">
       <defs>
         <linearGradient id="waveGrad" x1="0%" y1="100%" x2="80%" y2="0%">
-          <stop offset="0%" stop-color="#8b9dff" stop-opacity="0.15"/>
-          <stop offset="20%" stop-color="#8b9dff" stop-opacity="0.65"/>
-          <stop offset="65%" stop-color="#7c93ff" stop-opacity="0.6"/>
+          <stop offset="0%" stop-color="#9fb0ff" stop-opacity="0.12"/>
+          <stop offset="25%" stop-color="#8b9dff" stop-opacity="0.5"/>
+          <stop offset="65%" stop-color="#7c93ff" stop-opacity="0.5"/>
           <stop offset="100%" stop-color="#7c93ff" stop-opacity="0"/>
         </linearGradient>
-        <filter id="waveBlur" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="26"/>
+        <filter id="waveBlur" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="50"/>
         </filter>
       </defs>
-      <path id="heroWavePath" d="M -100 700 C 220 600, 300 220, 540 100 C 680 25, 720 -30, 950 -60" stroke="url(#waveGrad)" stroke-width="110" fill="none" filter="url(#waveBlur)" stroke-linecap="round"/>
+      <path id="heroWavePath" d="M -100 700 C 220 600, 300 220, 540 100 C 680 25, 720 -30, 950 -60" stroke="url(#waveGrad)" stroke-width="260" fill="none" filter="url(#waveBlur)" stroke-linecap="round"/>
     </svg>
   </div>
 
@@ -601,16 +601,16 @@
     <svg viewBox="0 0 1500 900" preserveAspectRatio="xMidYMid slice">
       <defs>
         <linearGradient id="waveGrad2" x1="0%" y1="0%" x2="100%" y2="60%">
-          <stop offset="0%" stop-color="#8b9dff" stop-opacity="0"/>
-          <stop offset="35%" stop-color="#8b9dff" stop-opacity="0.6"/>
-          <stop offset="75%" stop-color="#7c93ff" stop-opacity="0.65"/>
-          <stop offset="100%" stop-color="#7c93ff" stop-opacity="0.1"/>
+          <stop offset="0%" stop-color="#9fb0ff" stop-opacity="0"/>
+          <stop offset="35%" stop-color="#8b9dff" stop-opacity="0.48"/>
+          <stop offset="75%" stop-color="#7c93ff" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="#7c93ff" stop-opacity="0.08"/>
         </linearGradient>
-        <filter id="waveBlur2" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="26"/>
+        <filter id="waveBlur2" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="50"/>
         </filter>
       </defs>
-      <path d="M -150 550 C 150 700, 450 750, 700 650 C 950 550, 1100 350, 1450 200" stroke="url(#waveGrad2)" stroke-width="110" fill="none" filter="url(#waveBlur2)" stroke-linecap="round"/>
+      <path d="M -150 550 C 150 700, 450 750, 700 650 C 950 550, 1100 350, 1450 200" stroke="url(#waveGrad2)" stroke-width="260" fill="none" filter="url(#waveBlur2)" stroke-linecap="round"/>
     </svg>
   </div>
   <div class="max-w-6xl mx-auto px-6 relative z-10">
@@ -864,16 +864,16 @@
     <svg viewBox="0 0 1500 900" preserveAspectRatio="xMidYMid slice">
       <defs>
         <linearGradient id="waveGrad4" x1="0%" y1="0%" x2="100%" y2="60%">
-          <stop offset="0%" stop-color="#8b9dff" stop-opacity="0"/>
-          <stop offset="35%" stop-color="#8b9dff" stop-opacity="0.6"/>
-          <stop offset="75%" stop-color="#7c93ff" stop-opacity="0.65"/>
-          <stop offset="100%" stop-color="#7c93ff" stop-opacity="0.1"/>
+          <stop offset="0%" stop-color="#9fb0ff" stop-opacity="0"/>
+          <stop offset="35%" stop-color="#8b9dff" stop-opacity="0.48"/>
+          <stop offset="75%" stop-color="#7c93ff" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="#7c93ff" stop-opacity="0.08"/>
         </linearGradient>
-        <filter id="waveBlur4" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="26"/>
+        <filter id="waveBlur4" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="50"/>
         </filter>
       </defs>
-      <path d="M -100 100 C 300 250, 600 300, 900 500 C 1200 700, 1500 850, 1750 1050" stroke="url(#waveGrad4)" stroke-width="160" fill="none" filter="url(#waveBlur4)" stroke-linecap="round"/>
+      <path d="M -100 100 C 300 250, 600 300, 900 500 C 1200 700, 1500 850, 1750 1050" stroke="url(#waveGrad4)" stroke-width="320" fill="none" filter="url(#waveBlur4)" stroke-linecap="round"/>
     </svg>
   </div>
   <div class="max-w-6xl mx-auto px-6 relative z-10">
@@ -4408,7 +4408,7 @@
         if (path.id === 'heroWavePath') return;
         if (!path.dataset.strokeDesktop) path.dataset.strokeDesktop = path.getAttribute('stroke-width');
         const base = parseFloat(path.dataset.strokeDesktop);
-        path.setAttribute('stroke-width', isMobile ? base * 3.2 : path.dataset.strokeDesktop);
+        path.setAttribute('stroke-width', isMobile ? base * 1.35 : path.dataset.strokeDesktop);
       });
     });
     ajustarHeroWaveTaper(isMobile);
@@ -4425,7 +4425,7 @@
       if (taper) taper.style.display = 'none';
       return;
     }
-    const maxWidth = parseFloat(path.dataset.strokeDesktop) * 3.2;
+    const maxWidth = parseFloat(path.dataset.strokeDesktop) * 1.35;
     const len = path.getTotalLength();
     const steps = 60;
     const top = [];
