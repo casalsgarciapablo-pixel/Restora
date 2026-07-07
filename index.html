@@ -1172,31 +1172,32 @@
           <p class="text-xs text-slate-400 mt-1">Información general de tu local.</p>
         </div>
       </div>
-      <div class="mt-5 grid lg:grid-cols-2 gap-10 items-start">
-        <div>
-          <div class="max-w-lg space-y-4">
-            <div><label class="block text-xs font-medium text-slate-500 mb-1">Nombre</label><input id="perfilNombre" type="text" placeholder="Nombre de tu restaurante" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
-            <div><label class="block text-xs font-medium text-slate-500 mb-1">Dirección</label><input id="perfilDireccion" type="text" placeholder="Calle, número, ciudad" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
-            <div class="grid grid-cols-2 gap-4">
-              <div><label class="block text-xs font-medium text-slate-500 mb-1">Nº de mesas</label><input id="perfilMesas" type="text" placeholder="Ej. 12" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
-              <div><label class="block text-xs font-medium text-slate-500 mb-1">Teléfono</label><input id="perfilTelefono" type="text" placeholder="Ej. 910 000 000" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+      <div class="mt-6 max-w-6xl mx-auto grid lg:grid-cols-2 gap-6 items-start">
+        <div class="space-y-6">
+          <div class="rounded-xl border border-slate-200 bg-white p-6">
+            <p class="text-xs font-semibold text-slate-400 mb-4">DATOS GENERALES</p>
+            <div class="space-y-4">
+              <div><label class="block text-xs font-medium text-slate-500 mb-1">Nombre</label><input id="perfilNombre" type="text" placeholder="Nombre de tu restaurante" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+              <div><label class="block text-xs font-medium text-slate-500 mb-1">Dirección</label><input id="perfilDireccion" type="text" placeholder="Calle, número, ciudad" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+              <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-xs font-medium text-slate-500 mb-1">Nº de mesas</label><input id="perfilMesas" type="text" placeholder="Ej. 12" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+                <div><label class="block text-xs font-medium text-slate-500 mb-1">Teléfono</label><input id="perfilTelefono" type="text" placeholder="Ej. 910 000 000" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+              </div>
             </div>
-            <button onclick="guardarPerfil()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar cambios</button>
+            <button onclick="guardarPerfil()" class="mt-5 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar cambios</button>
           </div>
-          <div class="mt-8 max-w-lg">
-            <p class="text-sm font-semibold text-navy mb-1">Horario de apertura</p>
-            <p class="text-xs text-slate-400 mb-3">Se usa para limitar las reservas online (enlace público) a tus horas de apertura.</p>
+          <div class="rounded-xl border border-slate-200 bg-white p-6">
+            <p class="text-xs font-semibold text-slate-400 mb-1">HORARIO DE APERTURA</p>
+            <p class="text-xs text-slate-400 mb-4">Se usa para limitar las reservas online (enlace público) a tus horas de apertura.</p>
             <div id="horarioDias" class="space-y-2"></div>
             <button onclick="guardarHorario()" class="mt-4 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar horario</button>
           </div>
         </div>
-        <div>
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <p class="text-sm font-semibold text-navy">Carta digital personalizada</p>
-              <p class="text-xs text-slate-400 mt-1">El QR de tus mesas llevará aquí en vez de a la carta básica.</p>
-            </div>
-            <button id="cartaDigitalBtn" onclick="abrirGenerarCartaDigital()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2 shrink-0 whitespace-nowrap">🎨 Generar carta digital</button>
+        <div class="rounded-xl border border-slate-200 bg-white p-6 flex flex-col items-center text-center lg:sticky lg:top-0">
+          <div class="w-full text-left">
+            <p class="text-xs font-semibold text-slate-400">CARTA DIGITAL</p>
+            <p class="text-sm font-semibold text-navy mt-0.5">Carta digital personalizada</p>
+            <p class="text-xs text-slate-400 mt-1">El QR de tus mesas llevará aquí en cuanto la generes.</p>
           </div>
           <div class="phone-mockup mx-auto mt-6">
             <div class="phone-mockup-notch"></div>
@@ -1204,6 +1205,14 @@
               <iframe id="cartaDigitalPreviewFrame" class="phone-mockup-iframe" title="Vista previa de tu carta digital"></iframe>
               <div id="cartaDigitalPlaceholder" class="phone-mockup-placeholder"></div>
             </div>
+          </div>
+          <button id="cartaDigitalBtn" onclick="abrirGenerarCartaDigital()" class="mt-6 w-full max-w-xs rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">🎨 Generar carta digital</button>
+          <p id="cartaDigitalEstado" class="mt-3 text-xs text-slate-400"></p>
+          <div class="mt-6 w-full text-left border-t border-slate-100 pt-4 space-y-2">
+            <p class="text-xs font-semibold text-slate-400">INCLUYE</p>
+            <p class="text-xs text-slate-500 flex items-center gap-1.5"><span class="text-accent">✓</span>Colores y estilo a tu medida</p>
+            <p class="text-xs text-slate-500 flex items-center gap-1.5"><span class="text-accent">✓</span>Eslogan generado por IA</p>
+            <p class="text-xs text-slate-500 flex items-center gap-1.5"><span class="text-accent">✓</span>Tu menú siempre actualizado</p>
           </div>
         </div>
       </div>
@@ -1914,42 +1923,55 @@
     const frame = document.getElementById('cartaDigitalPreviewFrame');
     const placeholder = document.getElementById('cartaDigitalPlaceholder');
     const btn = document.getElementById('cartaDigitalBtn');
+    const estadoEl = document.getElementById('cartaDigitalEstado');
     if (!frame || !placeholder) return;
     const acc = getCurrentAccount();
     const cd = acc.data.cartaDigital;
     if (cd.activada) {
       if (btn) btn.textContent = '🎨 Regenerar carta digital';
+      if (estadoEl) {
+        const fecha = cd.creadaEn ? new Date(cd.creadaEn).toLocaleDateString('es-ES') : '';
+        estadoEl.innerHTML = `<span class="inline-flex items-center gap-1.5 text-emerald-600 font-medium">● Activa${fecha ? ' · generada el ' + fecha : ''}</span>`;
+      }
       frame.src = location.origin + location.pathname + '?cuenta=' + encodeURIComponent(acc.userId) + '&mesa=1&preview=1';
       frame.style.display = 'block';
       placeholder.style.display = 'none';
     } else {
       if (btn) btn.textContent = '🎨 Generar carta digital';
+      if (estadoEl) estadoEl.innerHTML = 'Todavía no la has generado';
       frame.style.display = 'none';
       frame.removeAttribute('src');
       placeholder.style.display = 'block';
       const paleta = PALETAS_CARTA.moderno;
       placeholder.innerHTML = `
-        <div style="background:linear-gradient(135deg, ${paleta.color1}, ${paleta.color2});" class="px-4 pt-8 pb-6 text-left">
-          <span class="inline-block text-xs font-semibold text-white/80 bg-white/15 rounded-full px-3 py-1">Ejemplo</span>
-          <h1 class="text-lg font-extrabold text-white mt-2">Tu Restaurante</h1>
-          <p class="text-xs text-white/85 mt-1 italic">Así de personalizada quedaría tu carta digital</p>
+        <div style="background:linear-gradient(135deg, ${paleta.color1}, ${paleta.color2}); border-radius:0 0 20px 20px;" class="px-4 pt-8 pb-6 text-left relative overflow-hidden">
+          <div style="position:absolute; top:-24px; right:-20px; width:100px; height:100px; background:rgba(255,255,255,0.08); border-radius:9999px;"></div>
+          <div class="relative">
+            <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-white/15 rounded-full px-2.5 py-1">🍽️ Ejemplo</span>
+            <h1 class="text-base font-extrabold text-white mt-2">Tu Restaurante</h1>
+            <p class="text-[11px] text-white/90 mt-1 italic">"Así de personalizada quedaría tu carta"</p>
+          </div>
         </div>
-        <div class="px-4 py-4 space-y-2.5">
-          <div class="flex items-center gap-2.5 rounded-lg border border-slate-200 bg-white p-2.5">
-            <div class="w-9 h-9 rounded-md bg-slate-100 shrink-0"></div>
-            <div class="min-w-0 flex-1"><p class="text-xs font-semibold text-navy truncate">Plato de ejemplo</p><p class="text-[10px] text-slate-400">Disponible</p></div>
-            <p class="text-xs font-semibold text-navy shrink-0">12€</p>
+        <div class="px-4 pt-4 pb-3">
+          <p class="text-[10px] font-bold uppercase tracking-wide mb-2" style="color:${paleta.color1};">Nuestra carta</p>
+          <div class="space-y-2">
+            <div class="flex items-center gap-2.5 rounded-lg bg-white p-2.5" style="border-left:3px solid ${paleta.color1}; box-shadow:0 1px 2px rgba(16,24,40,0.04);">
+              <div class="w-9 h-9 rounded-md shrink-0" style="background:${paleta.color1}14;"></div>
+              <div class="min-w-0 flex-1"><p class="text-xs font-semibold text-navy truncate">Plato de ejemplo</p><p class="text-[10px] text-slate-400">Disponible</p></div>
+              <p class="text-xs font-bold shrink-0" style="color:${paleta.color1};">12€</p>
+            </div>
+            <div class="flex items-center gap-2.5 rounded-lg bg-white p-2.5" style="border-left:3px solid ${paleta.color1}; box-shadow:0 1px 2px rgba(16,24,40,0.04);">
+              <div class="w-9 h-9 rounded-md shrink-0" style="background:${paleta.color1}14;"></div>
+              <div class="min-w-0 flex-1"><p class="text-xs font-semibold text-navy truncate">Otro plato</p><p class="text-[10px] text-slate-400">Disponible</p></div>
+              <p class="text-xs font-bold shrink-0" style="color:${paleta.color1};">9€</p>
+            </div>
+            <div class="flex items-center gap-2.5 rounded-lg bg-white p-2.5" style="border-left:3px solid ${paleta.color1}; box-shadow:0 1px 2px rgba(16,24,40,0.04);">
+              <div class="w-9 h-9 rounded-md shrink-0" style="background:${paleta.color1}14;"></div>
+              <div class="min-w-0 flex-1"><p class="text-xs font-semibold text-navy truncate">Postre</p><p class="text-[10px] text-slate-400">Disponible</p></div>
+              <p class="text-xs font-bold shrink-0" style="color:${paleta.color1};">5€</p>
+            </div>
           </div>
-          <div class="flex items-center gap-2.5 rounded-lg border border-slate-200 bg-white p-2.5">
-            <div class="w-9 h-9 rounded-md bg-slate-100 shrink-0"></div>
-            <div class="min-w-0 flex-1"><p class="text-xs font-semibold text-navy truncate">Otro plato</p><p class="text-[10px] text-slate-400">Disponible</p></div>
-            <p class="text-xs font-semibold text-navy shrink-0">9€</p>
-          </div>
-          <div class="flex items-center gap-2.5 rounded-lg border border-slate-200 bg-white p-2.5">
-            <div class="w-9 h-9 rounded-md bg-slate-100 shrink-0"></div>
-            <div class="min-w-0 flex-1"><p class="text-xs font-semibold text-navy truncate">Postre</p><p class="text-[10px] text-slate-400">Disponible</p></div>
-            <p class="text-xs font-semibold text-navy shrink-0">5€</p>
-          </div>
+          <p class="text-center text-[9px] text-slate-300 mt-4">Carta digital creada con Restora</p>
         </div>
       `;
     }
@@ -3703,6 +3725,15 @@
     moderno: { label: 'Moderno (azul/gris)', color1: '#1d4ed8', color2: '#334155' },
     pastel: { label: 'Pastel (rosa/crema)', color1: '#db2777', color2: '#b45309' },
   };
+  const TIPO_EMOJI = {
+    'Italiano': '🍝',
+    'Japonés / Asiático': '🍣',
+    'Casual / Bar': '🍺',
+    'Alta cocina': '🍷',
+    'Cafetería / Brunch': '☕',
+    'Mediterráneo': '🫒',
+    'Otro': '🍽️',
+  };
   let publicMenuData = null;
   let publicMenuCuentaId = null;
   let publicMenuMesaNumero = null;
@@ -3736,10 +3767,13 @@
     const body = document.getElementById('publicMenuBody');
     const nombre = publicMenuData.restaurant_name || 'Restaurante';
     const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
+    const cd = publicMenuData.cartaDigital;
+    const temaActivo = !!(cd && cd.activada);
+    const paleta = temaActivo ? (PALETAS_CARTA[cd.paleta] || PALETAS_CARTA.moderno) : null;
     const itemsHtml = menu.length
       ? menu.map((m, idx) => {
           const disponible = m.estado === 'Disponible';
-          const foto = m.foto ? `<img src="${m.foto}" class="w-14 h-14 rounded-lg object-cover shrink-0">` : `<div class="w-14 h-14 rounded-lg bg-slate-100 shrink-0"></div>`;
+          const foto = m.foto ? `<img src="${m.foto}" class="w-14 h-14 rounded-lg object-cover shrink-0">` : `<div class="w-14 h-14 rounded-lg ${temaActivo ? '' : 'bg-slate-100'} shrink-0" ${temaActivo ? `style="background:${paleta.color1}14;"` : ''}></div>`;
           const qty = publicPedidoCarrito[idx] || 0;
           const stepper = disponible ? `
             <div class="flex items-center gap-1.5 shrink-0">
@@ -3747,40 +3781,45 @@
               <span class="text-sm font-semibold text-navy w-5 text-center">${qty}</span>
               <button type="button" onclick="cambiarCantidadPublico(${idx}, 1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">+</button>
             </div>` : '';
-          return `<div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 ${disponible ? '' : 'opacity-50'}">
+          const cardStyle = temaActivo ? `style="border-left:3px solid ${paleta.color1}; box-shadow:0 1px 2px rgba(16,24,40,0.04);"` : '';
+          const cardClass = temaActivo ? 'rounded-xl bg-white p-3' : 'rounded-xl border border-slate-200 bg-white p-3';
+          const precioStyle = temaActivo ? `style="color:${paleta.color1};"` : '';
+          return `<div class="flex items-center gap-3 ${cardClass} ${disponible ? '' : 'opacity-50'}" ${cardStyle}>
             ${foto}
             <div class="min-w-0 flex-1 text-left">
               <p class="text-sm font-semibold text-navy truncate">${m.nombre}</p>
               <p class="text-xs text-slate-400 mt-0.5">${disponible ? 'Disponible' : 'Agotado'}</p>
             </div>
-            <p class="text-sm font-semibold text-navy shrink-0">${m.precio}</p>
+            <p class="text-sm font-bold shrink-0 ${temaActivo ? '' : 'text-navy'}" ${precioStyle}>${m.precio}</p>
             ${stepper}
           </div>`;
         }).join('')
       : `<p class="text-sm text-slate-400 mt-6">Este restaurante todavía no ha publicado su menú.</p>`;
     const totalItems = Object.values(publicPedidoCarrito).reduce((a, b) => a + b, 0);
     const total = menu.reduce((sum, m, idx) => sum + precioToNumero(m.precio) * (publicPedidoCarrito[idx] || 0), 0);
-    const cd = publicMenuData.cartaDigital;
-    const headerHtml = (cd && cd.activada)
-      ? (() => {
-          const paleta = PALETAS_CARTA[cd.paleta] || PALETAS_CARTA.moderno;
-          return `
-            <div class="-mx-5 -mt-10 px-5 pt-10 pb-8 mb-6 text-left" style="background:linear-gradient(135deg, ${paleta.color1}, ${paleta.color2});">
-              ${cd.tipoRestaurante ? `<span class="inline-block text-xs font-semibold text-white/80 bg-white/15 rounded-full px-3 py-1">${cd.tipoRestaurante}</span>` : ''}
-              <h1 class="text-2xl font-extrabold text-white mt-3">${nombre}</h1>
-              ${cd.tagline ? `<p class="text-sm text-white/85 mt-1.5 italic">${cd.tagline}</p>` : ''}
-              <p class="text-xs font-semibold text-white/70 mt-3">Mesa ${publicMenuMesaNumero}</p>
-            </div>
-          `;
-        })()
+    const headerHtml = temaActivo
+      ? `
+        <div class="-mx-5 -mt-10 px-6 pt-10 pb-9 mb-6 text-left relative overflow-hidden" style="background:linear-gradient(135deg, ${paleta.color1}, ${paleta.color2}); border-radius:0 0 28px 28px;">
+          <div style="position:absolute; top:-34px; right:-28px; width:140px; height:140px; background:rgba(255,255,255,0.08); border-radius:9999px;"></div>
+          <div style="position:absolute; bottom:-46px; left:-24px; width:120px; height:120px; background:rgba(255,255,255,0.06); border-radius:9999px;"></div>
+          <div class="relative">
+            ${cd.tipoRestaurante ? `<span class="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-white/15 rounded-full px-3 py-1">${TIPO_EMOJI[cd.tipoRestaurante] || '🍽️'} ${cd.tipoRestaurante}</span>` : ''}
+            <h1 class="text-[26px] leading-tight font-extrabold text-white mt-3">${nombre}</h1>
+            ${cd.tagline ? `<p class="text-sm text-white/90 mt-1.5 italic">"${cd.tagline}"</p>` : ''}
+            <p class="text-xs font-semibold text-white/70 mt-4">Mesa ${publicMenuMesaNumero}</p>
+          </div>
+        </div>
+        <p class="text-xs font-bold uppercase tracking-wide mb-3" style="color:${paleta.color1};">Nuestra carta</p>
+      `
       : `<p class="text-xs font-semibold text-accent">Mesa ${publicMenuMesaNumero}</p>
          <h1 class="text-2xl font-extrabold text-navy mt-1">${nombre}</h1>
          <p class="text-sm text-slate-500 mt-1">Carta del restaurante · pide desde aquí</p>`;
     body.innerHTML = `
       <div class="text-left" style="${totalItems > 0 ? 'padding-bottom:88px' : ''}">
         ${headerHtml}
-        <div class="mt-6 space-y-3">${itemsHtml}</div>
+        <div class="${temaActivo ? '' : 'mt-6'} space-y-3">${itemsHtml}</div>
         <p id="pubPedError" class="text-xs text-rose-600 hidden mt-3"></p>
+        ${temaActivo ? `<p class="text-center text-[11px] text-slate-300 mt-8">Carta digital creada con Restora</p>` : ''}
       </div>
       ${totalItems > 0 ? `
         <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg px-4 py-3 sm:px-6" style="z-index:40;">
