@@ -4882,10 +4882,7 @@
     "Tarde": ["Tarda", "Afternoon"],
   };
 
-  let currentLang = (function () {
-    try { return localStorage.getItem('restoraLang') || 'es'; } catch (e) { return 'es'; }
-  })();
-  if (!['es', 'ca', 'en'].includes(currentLang)) currentLang = 'es';
+  let currentLang = 'es';
 
   function i18nPick(entry) { return currentLang === 'ca' ? entry[0] : entry[1]; }
 
@@ -4937,7 +4934,6 @@
 
   function setLang(lang) {
     currentLang = ['es', 'ca', 'en'].includes(lang) ? lang : 'es';
-    try { localStorage.setItem('restoraLang', currentLang); } catch (e) {}
     document.documentElement.setAttribute('lang', currentLang);
     translateTree(document.body);
     const d = document.getElementById('langSwitcherDesktop'); if (d) d.value = currentLang;
