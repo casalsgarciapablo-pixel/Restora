@@ -4314,6 +4314,17 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
   window.addEventListener('resize', () => ajustarEscalaMockup());
 
+  function ajustarHeroGlow() {
+    const isMobile = window.innerWidth <= 880;
+    document.querySelectorAll('#landingRoot .hero-glow svg').forEach(svg => {
+      if (!svg.dataset.parDesktop) svg.dataset.parDesktop = svg.getAttribute('preserveAspectRatio');
+      const align = svg.dataset.parDesktop.split(' ')[0];
+      svg.setAttribute('preserveAspectRatio', isMobile ? align + ' meet' : svg.dataset.parDesktop);
+    });
+  }
+  ajustarHeroGlow();
+  window.addEventListener('resize', ajustarHeroGlow);
+
   (function initScrollReveal() {
     const items = document.querySelectorAll('#landingRoot .reveal');
     if (!('IntersectionObserver' in window)) {
