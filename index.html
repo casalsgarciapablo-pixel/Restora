@@ -167,6 +167,21 @@
   #appRoot ::-webkit-scrollbar-thumb:hover { background: rgba(11,33,66,0.28); }
   #appRoot * { scrollbar-width: thin; scrollbar-color: rgba(11,33,66,0.15) transparent; }
 
+  /* ============ Landing motion layer ============ */
+  @keyframes waveDrift { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-26px, 16px); } }
+  @keyframes waveDriftAlt { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(30px, -14px); } }
+  #landingRoot .hero-glow path { animation: waveDrift 13s ease-in-out infinite; }
+  #landingRoot section .hero-glow path { animation: waveDriftAlt 17s ease-in-out infinite; }
+  @keyframes heroIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  #landingRoot .hero-title { animation: heroIn .7s cubic-bezier(.2,.8,.3,1) both; }
+  #landingRoot .hero-sub { animation: heroIn .7s .12s cubic-bezier(.2,.8,.3,1) both; }
+  #landingRoot .hero-mock-wrap { animation: heroIn .8s .22s cubic-bezier(.2,.8,.3,1) both; }
+  @keyframes chipFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  #landingRoot .float-chip { animation: chipFloat 4.5s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    #landingRoot .hero-glow path, #landingRoot .hero-title, #landingRoot .hero-sub, #landingRoot .hero-mock-wrap, #landingRoot .float-chip, .marquee-track { animation: none !important; }
+  }
+
   /* ============ SaaS design system: neutral ink, hairline borders, layered depth (landing untouched) ============ */
   #appRoot { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 
@@ -393,7 +408,7 @@
   </div>
 
   <!-- Product mock window -->
-  <div class="max-w-5xl mx-auto px-6 pb-28 -mt-2 relative">
+  <div class="hero-mock-wrap max-w-5xl mx-auto px-6 pb-28 -mt-2 relative">
     <div class="rounded-2xl bg-white card-shadow border-2 border-slate-300 overflow-hidden relative">
       <!-- toolbar -->
       <div class="flex items-center justify-between px-5 py-3 border-b border-slate-100">
@@ -442,30 +457,30 @@
             <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
               <span class="w-7 h-7 rounded-md bg-emerald-100 text-emerald-600 flex items-center justify-center mb-1.5"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M5 20V10M12 20V4M19 20v-7"/></svg></span>
               <p class="text-[11px] text-slate-500">Ventas hoy</p>
-              <p class="text-lg font-bold text-navy mt-0.5">2.480€</p>
+              <p class="text-lg font-bold text-navy mt-0.5" data-countup="2480" data-suffix="€">2.480€</p>
               <p class="text-[11px] text-emerald-600 font-medium mt-0.5">↑ 12% vs ayer</p>
             </div>
             <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
               <span class="w-7 h-7 rounded-md bg-violet-100 text-violet-600 flex items-center justify-center mb-1.5"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M3 8h18M5 8v10M19 8v10M9 8v3M15 8v3"/></svg></span>
               <p class="text-[11px] text-slate-500">Mesas ocupadas</p>
-              <p class="text-lg font-bold text-navy mt-0.5">14<span class="text-slate-400 text-sm">/18</span></p>
+              <p class="text-lg font-bold text-navy mt-0.5"><span data-countup="14">14</span><span class="text-slate-400 text-sm">/18</span></p>
               <p class="text-[11px] text-emerald-600 font-medium mt-0.5">↑ 3 vs ayer</p>
             </div>
             <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
               <span class="w-7 h-7 rounded-md bg-amber-100 text-amber-600 flex items-center justify-center mb-1.5"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path stroke-linecap="round" d="M9 8h6M9 12h6"/></svg></span>
               <p class="text-[11px] text-slate-500">Ticket medio</p>
-              <p class="text-lg font-bold text-navy mt-0.5">32,40€</p>
+              <p class="text-lg font-bold text-navy mt-0.5" data-countup="32.4" data-decimals="2" data-suffix="€">32,40€</p>
               <p class="text-[11px] text-rose-500 font-medium mt-0.5">↓ 2% vs ayer</p>
             </div>
             <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
               <span class="w-7 h-7 rounded-md bg-sky-100 text-sky-600 flex items-center justify-center mb-1.5"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M8 3v4M16 3v4M3 10h18"/></svg></span>
               <p class="text-[11px] text-slate-500">Reservas hoy</p>
-              <p class="text-lg font-bold text-navy mt-0.5">9</p>
+              <p class="text-lg font-bold text-navy mt-0.5" data-countup="9">9</p>
               <p class="text-[11px] text-emerald-600 font-medium mt-0.5">↑ 5 vs ayer</p>
             </div>
           </div>
 
-          <div class="hidden sm:block absolute z-20" style="right:4%; top:258px;">
+          <div class="float-chip hidden sm:block absolute z-20" style="right:4%; top:258px;">
             <svg class="w-4 h-4 text-navy -mb-0.5 ml-1" fill="currentColor" viewBox="0 0 16 16"><path d="M2 1l11 6.5-5 1-2.5 4.5L2 1z"/></svg>
             <span class="block bg-accent text-white text-xs font-semibold px-3 py-1.5 rounded-full rounded-tl-none shadow-lg">Elena</span>
           </div>
@@ -4450,6 +4465,50 @@
       });
     }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
     items.forEach(el => io.observe(el));
+  })();
+
+  (function initHeroCountUp() {
+    const els = document.querySelectorAll('#landingRoot [data-countup]');
+    if (!els.length || !('IntersectionObserver' in window)) return;
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const fmt = (el, v) => {
+      const dec = parseInt(el.dataset.decimals || '0', 10);
+      el.textContent = v.toLocaleString('es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec }) + (el.dataset.suffix || '');
+    };
+    const animate = (el) => {
+      const target = parseFloat(el.dataset.countup);
+      const dur = 950;
+      const t0 = performance.now();
+      const step = (now) => {
+        const p = Math.min((now - t0) / dur, 1);
+        fmt(el, target * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    };
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { animate(e.target); io.unobserve(e.target); } });
+    }, { threshold: 0.4 });
+    els.forEach(el => io.observe(el));
+  })();
+
+  (function initHeroParallax() {
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const glow = document.querySelector('#landingRoot .hero-glow');
+    if (!glow) return;
+    let tx = 0, ty = 0, cx = 0, cy = 0, raf = null;
+    const tick = () => {
+      cx += (tx - cx) * 0.06;
+      cy += (ty - cy) * 0.06;
+      glow.style.transform = 'translate3d(' + cx.toFixed(2) + 'px,' + cy.toFixed(2) + 'px,0)';
+      if (Math.abs(tx - cx) > 0.1 || Math.abs(ty - cy) > 0.1) { raf = requestAnimationFrame(tick); } else { raf = null; }
+    };
+    window.addEventListener('mousemove', (e) => {
+      if (window.innerWidth <= 880) return;
+      tx = (e.clientX / window.innerWidth - 0.5) * 28;
+      ty = (e.clientY / window.innerHeight - 0.5) * 18;
+      if (!raf) raf = requestAnimationFrame(tick);
+    });
   })();
 
   document.querySelectorAll('a[href^="#"]').forEach(a => {
