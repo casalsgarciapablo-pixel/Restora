@@ -4320,6 +4320,11 @@
       if (!svg.dataset.parDesktop) svg.dataset.parDesktop = svg.getAttribute('preserveAspectRatio');
       const align = svg.dataset.parDesktop.split(' ')[0];
       svg.setAttribute('preserveAspectRatio', isMobile ? align + ' meet' : svg.dataset.parDesktop);
+      svg.querySelectorAll('path').forEach(path => {
+        if (!path.dataset.strokeDesktop) path.dataset.strokeDesktop = path.getAttribute('stroke-width');
+        const base = parseFloat(path.dataset.strokeDesktop);
+        path.setAttribute('stroke-width', isMobile ? base * 1.6 : path.dataset.strokeDesktop);
+      });
     });
   }
   ajustarHeroGlow();
