@@ -4674,7 +4674,7 @@
     const W = 680, H = 262, padL = 54, padR = 30, padT = 24, padB = 32;
     const pw = W - padL - padR, ph = H - padT - padB;
     const max = niceCeil(Math.max.apply(null, data.map(d => d.value).concat(1)));
-    const n = data.length, slot = pw / n, bw = Math.min(34, slot - 16), dx = 10, dy = 7;
+    const n = data.length, slot = pw / n, bw = Math.min(64, slot - 14), dx = 10, dy = 7;
     const light = dashShade(opts.color, 0.24), dark = dashShade(opts.color, -0.26);
     const grid = [0, 0.25, 0.5, 0.75, 1].map(f => {
       const yy = padT + ph - f * ph;
