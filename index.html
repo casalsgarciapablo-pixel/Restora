@@ -76,7 +76,7 @@
   .phone-mockup { width: 260px; max-width: 100%; aspect-ratio: 9 / 19.5; background: #111827; border-radius: 2.5rem; padding: 12px; box-shadow: 0 20px 40px -12px rgba(11,33,66,0.35); position: relative; }
   .phone-mockup-notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 90px; height: 18px; background: #111827; border-radius: 0 0 12px 12px; z-index: 2; }
   .phone-mockup-screen { position: relative; width: 100%; height: 100%; background: #fff; border-radius: 1.75rem; overflow: hidden; }
-  .phone-mockup-iframe { width: 100%; height: 100%; border: 0; display: none; }
+  .phone-mockup-iframe { width: 375px; height: 812px; border: 0; display: none; transform-origin: top left; }
   .phone-mockup-placeholder { width: 100%; height: 100%; overflow-y: auto; }
 
   /* ============ Mobile / tablet responsive layer (desktop >880px untouched) ============ */
@@ -1942,6 +1942,7 @@
       frame.src = location.origin + location.pathname + '?cuenta=' + encodeURIComponent(acc.userId) + '&mesa=1&preview=1';
       frame.style.display = 'block';
       placeholder.style.display = 'none';
+      ajustarEscalaMockup();
     } else {
       if (btn) btn.textContent = '🎨 Generar carta digital';
       if (estadoEl) estadoEl.innerHTML = 'Todavía no la has generado';
@@ -1981,6 +1982,17 @@
         </div>
       `;
     }
+  }
+  function ajustarEscalaMockup() {
+    const screen = document.querySelector('.phone-mockup-screen');
+    const frame = document.getElementById('cartaDigitalPreviewFrame');
+    if (!screen || !frame) return;
+    const REF_WIDTH = 375;
+    const rect = screen.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const scale = rect.width / REF_WIDTH;
+    frame.style.height = Math.ceil(rect.height / scale) + 'px';
+    frame.style.transform = 'scale(' + scale + ')';
   }
   function abrirGenerarCartaDigital() {
     document.getElementById('modalCard').classList.remove('modal-wide');
@@ -2445,6 +2457,7 @@
     if (el) el.classList.add('active');
     document.getElementById('crumb').textContent = sectionNames[name];
     toggleSidebarMobile(false);
+    if (name === 'restaurante') setTimeout(ajustarEscalaMockup, 0);
   }
   function toggleSidebarMobile(force) {
     const aside = document.querySelector('.app-sidebar');
@@ -4204,6 +4217,7 @@
   }
 
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+  window.addEventListener('resize', () => ajustarEscalaMockup());
 
   (function initScrollReveal() {
     const items = document.querySelectorAll('#landingRoot .reveal');
