@@ -1229,27 +1229,55 @@
       </div>
 
       <div class="mt-4 rounded-2xl border border-slate-200 bg-white overflow-hidden">
-        <div class="px-5 pt-5">
-          <div class="dash-seg" id="dashSeg">
-            <button data-view="ingresos-dia" class="active" onclick="setDashView('ingresos-dia')">Ingresos</button>
-            <button data-view="platos-top" onclick="setDashView('platos-top')">Platos top</button>
-            <button data-view="canal" onclick="setDashView('canal')">Canales</button>
-            <button data-view="ticket-dia" onclick="setDashView('ticket-dia')">Ticket medio</button>
-            <button data-view="comensales-dia" onclick="setDashView('comensales-dia')">Comensales</button>
-            <button data-view="mesas" onclick="setDashView('mesas')">Por mesa</button>
-          </div>
-          <div class="mt-4 flex items-end justify-between flex-wrap gap-2">
-            <div>
-              <p id="dashChartTitle" class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Ingresos por día</p>
-              <div class="flex items-center gap-2.5 mt-1">
-                <p id="dashHeroValue" class="text-[26px] font-bold text-navy tracking-tight tabular-nums leading-none">0€</p>
-                <span id="dashHeroTrend" class="kpi-trend hidden"></span>
-              </div>
-              <p id="dashChartSubtitle" class="text-xs text-slate-400 mt-1.5">Evolución diaria de tus ingresos</p>
+        <div class="flex items-start justify-between flex-wrap gap-3 px-5 pt-5">
+          <div>
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Ingresos</p>
+            <div class="flex items-center gap-2.5 mt-1">
+              <p id="dashRevValue" class="text-[26px] font-bold text-navy tracking-tight tabular-nums leading-none">0€</p>
+              <span id="dashRevTrend" class="kpi-trend hidden"></span>
             </div>
+            <p id="dashRevSubtitle" class="text-xs text-slate-400 mt-1.5">Evolución diaria de tus ingresos</p>
+          </div>
+          <div class="dash-seg" id="dashRevSeg">
+            <button data-p="dia" class="active" onclick="setDashRevPeriodo('dia')">Día</button>
+            <button data-p="semana" onclick="setDashRevPeriodo('semana')">Semana</button>
+            <button data-p="mes" onclick="setDashRevPeriodo('mes')">Mes</button>
+            <button data-p="anio" onclick="setDashRevPeriodo('anio')">Año</button>
           </div>
         </div>
-        <div id="dashChartArea" class="px-5 pb-5 pt-3" style="position:relative"></div>
+        <div id="dashRevArea" class="px-5 pb-5 pt-3" style="position:relative"></div>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Platos más vendidos</p>
+          <p class="text-xs text-slate-400 mt-1 mb-3">Ranking por unidades vendidas</p>
+          <div id="dashChartPlatos"></div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Pedidos por canal</p>
+          <p class="text-xs text-slate-400 mt-1 mb-1">De dónde llegan tus pedidos</p>
+          <div id="dashChartCanal"></div>
+        </div>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="rounded-2xl border border-slate-200 bg-white p-5" style="position:relative">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Ticket medio por día</p>
+          <p class="text-xs text-slate-400 mt-1 mb-3">Gasto medio por pedido cada día</p>
+          <div id="dashChartTicket" style="position:relative"></div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5" style="position:relative">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Comensales por día</p>
+          <p class="text-xs text-slate-400 mt-1 mb-3">Afluencia diaria de tu restaurante</p>
+          <div id="dashChartComensales" style="position:relative"></div>
+        </div>
+      </div>
+
+      <div class="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Ingresos por mesa</p>
+        <p class="text-xs text-slate-400 mt-1 mb-3">Qué mesas facturan más</p>
+        <div id="dashChartMesas"></div>
       </div>
     </section>
 
@@ -4428,7 +4456,7 @@
     renderKpiExtra('kpiPedidos', dias.map(d => d.count), '#F59E0B');
     renderKpiExtra('kpiTicket', dias.map(d => d.count ? d.ingresos / d.count : 0), '#7C3AED', true);
     renderKpiExtra('kpiComensales', dias.map(d => d.comensales), '#0D9488');
-    renderDashboardChart();
+    renderAllDashboardCharts();
   }
   function renderKpiExtra(baseId, serie, color, esMedia) {
     const spark = document.getElementById(baseId + 'Spark');
@@ -4529,25 +4557,16 @@
     </div>`;
   }
 
-  let dashPendingHover = null;
-  const DASH_GEO = {};
-
-  function svgArea(data, opts) {
-    const W = 680, H = 262, padL = 54, padR = 26, padT = 22, padB = 32;
+  function svgArea(data, opts, elId) {
+    const W = 680, H = 262, padL = 54, padR = 20, padT = 20, padB = 32;
     const pw = W - padL - padR, ph = H - padT - padB;
     const max = niceCeil(Math.max.apply(null, data.map(d => d.value).concat(1)));
-    const n = data.length, dx = 8, dy = 11;
+    const n = data.length;
     const X = i => n === 1 ? padL + pw / 2 : padL + (i / (n - 1)) * pw;
     const Y = v => padT + ph - (v / max) * ph;
     const pts = data.map((d, i) => [X(i), Y(d.value)]);
-    const frontPts = pts.map(p => [p[0] + dx, p[1] + dy]);
-    const topLine = smoothPath(pts);
-    const frontLine = smoothPath(frontPts);
-    const base = padT + ph;
-    const areaFill = frontLine + ` L ${frontPts[n - 1][0].toFixed(1)} ${base} L ${frontPts[0][0].toFixed(1)} ${base} Z`;
-    let ribbon = topLine + ` L ${frontPts[n - 1][0].toFixed(1)} ${frontPts[n - 1][1].toFixed(1)} `;
-    for (let i = n - 1; i >= 0; i--) ribbon += `L ${frontPts[i][0].toFixed(1)} ${frontPts[i][1].toFixed(1)} `;
-    ribbon += 'Z';
+    const line = smoothPath(pts);
+    const area = line + ` L ${X(n - 1)} ${padT + ph} L ${X(0)} ${padT + ph} Z`;
     const grid = [0, 0.25, 0.5, 0.75, 1].map(f => {
       const yy = padT + ph - f * ph;
       return `<line x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}" stroke="#EEF0F4" stroke-width="1"/><text x="${padL - 10}" y="${yy + 3.5}" text-anchor="end" font-size="10.5" fill="#94A3B8">${opts.fmt(max * f)}</text>`;
@@ -4555,18 +4574,15 @@
     const step = Math.max(1, Math.ceil(n / 7));
     const xlabels = data.map((d, i) => (i % step === 0 || i === n - 1) ? `<text x="${X(i)}" y="${H - 10}" text-anchor="middle" font-size="10.5" fill="#94A3B8">${svgEsc(d.label)}</text>` : '').join('');
     const dots = pts.map((p, i) => `<circle class="dash-dot-anim" style="animation-delay:${0.5 + i * 0.03}s" cx="${p[0]}" cy="${p[1]}" r="3.2" fill="#fff" stroke="${opts.color}" stroke-width="2"/>`).join('');
-    Object.assign(DASH_GEO, { W, H, padT, plotH: ph, color: opts.color });
-    dashPendingHover = { pts, labels: data.map(d => d.label), values: data.map(d => d.value), fmt: opts.fmt };
-    return `<svg id="dashSvg" viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-height:290px">
-      <defs>
-        <linearGradient id="dashAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${opts.color}" stop-opacity="0.20"/><stop offset="100%" stop-color="${opts.color}" stop-opacity="0"/></linearGradient>
-        <linearGradient id="dashRibGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${dashShade(opts.color, 0.12)}"/><stop offset="100%" stop-color="${dashShade(opts.color, -0.28)}"/></linearGradient>
-      </defs>
-      ${grid}<path class="dash-area-anim" d="${areaFill}" fill="url(#dashAreaGrad)"/><path class="dash-area-anim" d="${ribbon}" fill="url(#dashRibGrad)"/><path class="dash-line-anim" pathLength="1" d="${topLine}" fill="none" stroke="${opts.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${dots}${xlabels}<g id="dashHover"></g>
+    const gid = 'ag' + Math.random().toString(36).slice(2, 7);
+    const html = `<svg id="${elId}" viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-height:290px">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${opts.color}" stop-opacity="0.20"/><stop offset="100%" stop-color="${opts.color}" stop-opacity="0"/></linearGradient></defs>
+      ${grid}<path class="dash-area-anim" d="${area}" fill="url(#${gid})"/><path class="dash-line-anim" pathLength="1" d="${line}" fill="none" stroke="${opts.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${dots}${xlabels}<g class="dash-hover-g"></g>
     </svg>`;
+    return { html, hover: { pts, labels: data.map(d => d.label), values: data.map(d => d.value), fmt: opts.fmt, geo: { W, H, padT, plotH: ph, color: opts.color } } };
   }
 
-  function svgVBar(data, opts) {
+  function svgVBar(data, opts, elId) {
     const W = 680, H = 262, padL = 54, padR = 30, padT = 24, padB = 32;
     const pw = W - padL - padR, ph = H - padT - padB;
     const max = niceCeil(Math.max.apply(null, data.map(d => d.value).concat(1)));
@@ -4577,22 +4593,22 @@
       return `<line x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}" stroke="#EEF0F4" stroke-width="1"/><text x="${padL - 10}" y="${yy + 3.5}" text-anchor="end" font-size="10.5" fill="#94A3B8">${opts.fmt(max * f)}</text>`;
     }).join('');
     const step = Math.max(1, Math.ceil(n / 8));
+    const gid = 'bg' + Math.random().toString(36).slice(2, 7);
     const pts = [], bars = data.map((d, i) => {
       const x = padL + i * slot + slot / 2 - bw / 2;
       const bh = Math.max(1, (d.value / max) * ph), y = padT + ph - bh;
       pts.push([x + bw / 2, y]);
       const lab = (i % step === 0 || i === n - 1) ? `<text x="${x + bw / 2}" y="${H - 10}" text-anchor="middle" font-size="10.5" fill="#94A3B8">${svgEsc(d.label)}</text>` : '';
-      const front = `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw}" height="${bh.toFixed(1)}" rx="1.5" fill="url(#dashBarGrad)"/>`;
+      const front = `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw}" height="${bh.toFixed(1)}" rx="1.5" fill="url(#${gid})"/>`;
       const top = `<path d="M ${x.toFixed(1)} ${y.toFixed(1)} L ${(x + dx).toFixed(1)} ${(y - dy).toFixed(1)} L ${(x + bw + dx).toFixed(1)} ${(y - dy).toFixed(1)} L ${(x + bw).toFixed(1)} ${y.toFixed(1)} Z" fill="${light}"/>`;
       const side = `<path d="M ${(x + bw).toFixed(1)} ${y.toFixed(1)} L ${(x + bw + dx).toFixed(1)} ${(y - dy).toFixed(1)} L ${(x + bw + dx).toFixed(1)} ${(y - dy + bh).toFixed(1)} L ${(x + bw).toFixed(1)} ${(y + bh).toFixed(1)} Z" fill="${dark}"/>`;
       return `<g class="dash-bar-anim" style="animation-delay:${i * 0.04}s">${side}${top}${front}</g>${lab}`;
     }).join('');
-    Object.assign(DASH_GEO, { W, H, padT, plotH: ph, color: opts.color });
-    dashPendingHover = { pts, labels: data.map(d => d.label), values: data.map(d => d.value), fmt: opts.fmt, bar: true };
-    return `<svg id="dashSvg" viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-height:290px">
-      <defs><linearGradient id="dashBarGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${opts.color}"/><stop offset="100%" stop-color="${dashShade(opts.color, -0.12)}"/></linearGradient></defs>
-      ${grid}${bars}<g id="dashHover"></g>
+    const html = `<svg id="${elId}" viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-height:290px">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${opts.color}"/><stop offset="100%" stop-color="${dashShade(opts.color, -0.12)}"/></linearGradient></defs>
+      ${grid}${bars}<g class="dash-hover-g"></g>
     </svg>`;
+    return { html, hover: { pts, labels: data.map(d => d.label), values: data.map(d => d.value), fmt: opts.fmt, bar: true, geo: { W, H, padT, plotH: ph, color: opts.color } } };
   }
 
   function svgHBar(data, opts) {
@@ -4602,11 +4618,12 @@
     const full = W - barX - padR - dx;
     const light = dashShade(opts.color, 0.22), dark = dashShade(opts.color, -0.28);
     const bh = rowH - 18;
+    const gid = 'hg' + Math.random().toString(36).slice(2, 7);
     const rows = data.map((d, i) => {
       const y = padT + i * rowH + 8;
       const bw = Math.max(4, (d.value / max) * full);
       const delay = (0.06 + i * 0.07).toFixed(2);
-      const front = `<rect class="dash-hbar-anim" style="animation-delay:${delay}s" x="${barX}" y="${y}" width="${bw}" height="${bh}" rx="2" fill="url(#dashHGrad)"/>`;
+      const front = `<rect class="dash-hbar-anim" style="animation-delay:${delay}s" x="${barX}" y="${y}" width="${bw}" height="${bh}" rx="2" fill="url(#${gid})"/>`;
       const top = `<path class="dash-hbar-anim" style="animation-delay:${delay}s" d="M ${barX} ${y} L ${barX + dx} ${y - dy} L ${barX + bw + dx} ${y - dy} L ${barX + bw} ${y} Z" fill="${light}"/>`;
       const cap = `<path class="dash-hbar-val" style="animation-delay:${delay}s" d="M ${barX + bw} ${y} L ${barX + bw + dx} ${y - dy} L ${barX + bw + dx} ${y - dy + bh} L ${barX + bw} ${y + bh} Z" fill="${dark}"/>`;
       return `<text x="${labelW}" y="${y + bh / 2 + 4}" text-anchor="end" font-size="12" fill="#334155">${svgEsc(truncar(d.label, 20))}</text>
@@ -4615,7 +4632,7 @@
         <text class="dash-hbar-val" style="animation-delay:${(parseFloat(delay) + 0.35).toFixed(2)}s" x="${barX + bw + dx + 8}" y="${y + bh / 2 + 4}" font-size="11.5" font-weight="700" fill="#16161D">${opts.fmt(d.value)}</text>`;
     }).join('');
     return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">
-      <defs><linearGradient id="dashHGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="${dashShade(opts.color, -0.1)}"/><stop offset="100%" stop-color="${opts.color}"/></linearGradient></defs>
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="${dashShade(opts.color, -0.1)}"/><stop offset="100%" stop-color="${opts.color}"/></linearGradient></defs>
       ${rows}</svg>`;
   }
 
@@ -4676,20 +4693,15 @@
     </div>`;
   }
 
-  function chartIngresosDia(pedidos) {
+  function chartTicketDia(pedidos, elId) {
     const dias = pedidosPorDia(pedidos);
     if (!dias.length) return svgEmpty('Aún no hay pedidos registrados');
-    return svgArea(dias.map(d => ({ label: fmtDia(d.date), value: d.ingresos })), { color: '#4F46E5', fmt: fmtEur0 });
+    return svgVBar(dias.map(d => ({ label: fmtDia(d.date), value: d.count ? d.ingresos / d.count : 0 })), { color: '#6366F1', color2: '#4F46E5', fmt: fmtEur0 }, elId);
   }
-  function chartTicketDia(pedidos) {
+  function chartComensalesDia(pedidos, elId) {
     const dias = pedidosPorDia(pedidos);
     if (!dias.length) return svgEmpty('Aún no hay pedidos registrados');
-    return svgVBar(dias.map(d => ({ label: fmtDia(d.date), value: d.count ? d.ingresos / d.count : 0 })), { color: '#6366F1', color2: '#4F46E5', fmt: fmtEur0 });
-  }
-  function chartComensalesDia(pedidos) {
-    const dias = pedidosPorDia(pedidos);
-    if (!dias.length) return svgEmpty('Aún no hay pedidos registrados');
-    return svgVBar(dias.map(d => ({ label: fmtDia(d.date), value: d.comensales })), { color: '#34D399', color2: '#10B981', fmt: n => String(Math.round(n)) });
+    return svgVBar(dias.map(d => ({ label: fmtDia(d.date), value: d.comensales })), { color: '#34D399', color2: '#10B981', fmt: n => String(Math.round(n)) }, elId);
   }
   function chartPlatosTop(pedidos) {
     const map = new Map();
@@ -4720,53 +4732,58 @@
     return svgDonut(segs);
   }
 
-  function heroIngresos(p) { const d = pedidosPorDia(p); return { value: fmtEur0(d.reduce((a, b) => a + b.ingresos, 0)), delta: deltaSuma(d.map(x => x.ingresos)) }; }
-  function heroTicket(p) { const d = pedidosPorDia(p); const c = p.length, t = c ? p.reduce((a, b) => a + (b.total || 0), 0) / c : 0; return { value: fmtEur0(t), delta: deltaMedia(d.map(x => x.count ? x.ingresos / x.count : 0)) }; }
-  function heroComensales(p) { const d = pedidosPorDia(p); return { value: String(p.reduce((a, b) => a + (b.personas || 0), 0)), delta: deltaSuma(d.map(x => x.comensales)) }; }
-  function heroPlatos(p) { let t = 0; p.forEach(x => (x.platos || []).forEach(pl => t += pl.cantidad || 0)); return { value: t + (t === 1 ? ' ud' : ' uds'), delta: null }; }
-  function heroMesas(p) { return { value: fmtEur0(p.reduce((a, b) => a + (b.total || 0), 0)), delta: null }; }
-  function heroCanal(p) { return { value: String(p.length), delta: null }; }
+  function ingresosPorPeriodo(pedidos, periodo) {
+    const map = new Map();
+    if (periodo === 'dia') {
+      pedidosPorDia(pedidos).forEach(d => map.set(d.date.getTime(), { date: d.date, value: d.ingresos }));
+    } else if (periodo === 'semana') {
+      pedidos.forEach(p => {
+        let d = new Date(p.fecha); if (isNaN(d)) d = new Date();
+        const monday = new Date(d); const wd = (monday.getDay() + 6) % 7;
+        monday.setDate(monday.getDate() - wd); monday.setHours(0, 0, 0, 0);
+        const key = monday.getTime();
+        if (!map.has(key)) map.set(key, { date: monday, value: 0 });
+        map.get(key).value += p.total || 0;
+      });
+    } else if (periodo === 'mes') {
+      pedidos.forEach(p => {
+        let d = new Date(p.fecha); if (isNaN(d)) d = new Date();
+        const key = d.getFullYear() * 12 + d.getMonth();
+        if (!map.has(key)) map.set(key, { date: new Date(d.getFullYear(), d.getMonth(), 1), value: 0 });
+        map.get(key).value += p.total || 0;
+      });
+    } else {
+      pedidos.forEach(p => {
+        let d = new Date(p.fecha); if (isNaN(d)) d = new Date();
+        const key = d.getFullYear();
+        if (!map.has(key)) map.set(key, { date: new Date(key, 0, 1), value: 0 });
+        map.get(key).value += p.total || 0;
+      });
+    }
+    const arr = Array.from(map.values()).sort((a, b) => a.date - b.date);
+    const sliced = periodo === 'dia' ? arr.slice(-14) : periodo === 'semana' ? arr.slice(-12) : periodo === 'mes' ? arr.slice(-12) : arr.slice(-8);
+    const fmtLabel = periodo === 'dia' || periodo === 'semana' ? fmtDia : periodo === 'mes' ? (d => DASH_MESES[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2)) : (d => String(d.getFullYear()));
+    return sliced.map(o => ({ label: fmtLabel(o.date), value: o.value }));
+  }
 
-  const DASH_VIEWS = {
-    'ingresos-dia': { title: 'Ingresos por día', sub: 'Evolución diaria de tus ingresos', render: chartIngresosDia, hero: heroIngresos },
-    'platos-top': { title: 'Platos más vendidos', sub: 'Ranking por unidades vendidas', render: chartPlatosTop, hero: heroPlatos },
-    'canal': { title: 'Pedidos por canal', sub: 'De dónde llegan tus pedidos', render: chartCanal, hero: heroCanal },
-    'ticket-dia': { title: 'Ticket medio por día', sub: 'Gasto medio por pedido cada día', render: chartTicketDia, hero: heroTicket },
-    'comensales-dia': { title: 'Comensales por día', sub: 'Afluencia diaria de tu restaurante', render: chartComensalesDia, hero: heroComensales },
-    'mesas': { title: 'Ingresos por mesa', sub: 'Qué mesas facturan más', render: chartMesas, hero: heroMesas },
-  };
-  let dashView = 'ingresos-dia';
-  function setDashView(key) {
-    if (!DASH_VIEWS[key]) return;
-    dashView = key;
-    document.querySelectorAll('#dashSeg button').forEach(b => b.classList.toggle('active', b.dataset.view === key));
-    renderDashboardChart();
+  function mountChart(containerId, result) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    if (result && typeof result === 'object' && result.html) {
+      el.innerHTML = result.html;
+      if (result.hover) attachChartHover(containerId, result.hover);
+    } else {
+      el.innerHTML = result;
+    }
   }
-  function renderDashboardChart() {
-    const acc = getCurrentAccount();
-    if (!acc) return;
-    const view = DASH_VIEWS[dashView] || DASH_VIEWS['ingresos-dia'];
-    const pedidos = acc.data.pedidos;
-    const t = document.getElementById('dashChartTitle'); if (t) t.textContent = view.title;
-    const s = document.getElementById('dashChartSubtitle'); if (s) s.textContent = view.sub;
-    const h = view.hero(pedidos);
-    const hv = document.getElementById('dashHeroValue'); if (hv) hv.textContent = h.value;
-    setTrend('dashHeroTrend', h.delta);
-    dashPendingHover = null;
-    const area = document.getElementById('dashChartArea');
-    if (!area) return;
-    const existingTip = document.getElementById('dashTooltip');
-    area.innerHTML = view.render(pedidos);
-    if (existingTip) area.appendChild(existingTip);
-    if (dashPendingHover) attachChartHover(dashPendingHover);
-  }
-  function attachChartHover(state) {
-    const svg = document.getElementById('dashSvg');
-    const area = document.getElementById('dashChartArea');
+  function attachChartHover(containerId, state) {
+    const area = document.getElementById(containerId);
+    const svg = area && area.querySelector('svg');
     if (!svg || !area) return;
-    let tip = document.getElementById('dashTooltip');
-    if (!tip) { tip = document.createElement('div'); tip.id = 'dashTooltip'; tip.className = 'dash-tooltip'; area.appendChild(tip); }
-    const hoverG = svg.querySelector('#dashHover');
+    let tip = area.querySelector('.dash-tooltip');
+    if (!tip) { tip = document.createElement('div'); tip.className = 'dash-tooltip'; area.appendChild(tip); }
+    const hoverG = svg.querySelector('.dash-hover-g');
+    const geo = state.geo;
     svg.addEventListener('mousemove', (e) => {
       const spt = svg.createSVGPoint(); spt.x = e.clientX; spt.y = e.clientY;
       const ctm = svg.getScreenCTM(); if (!ctm) return;
@@ -4774,17 +4791,51 @@
       let idx = 0, best = Infinity;
       state.pts.forEach((p, i) => { const dd = Math.abs(p[0] - loc.x); if (dd < best) { best = dd; idx = i; } });
       const p = state.pts[idx];
-      const topY = DASH_GEO.padT, botY = DASH_GEO.padT + DASH_GEO.plotH;
+      const topY = geo.padT, botY = geo.padT + geo.plotH;
       hoverG.innerHTML = `<line x1="${p[0]}" y1="${topY}" x2="${p[0]}" y2="${botY}" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3 3"/>` +
-        (state.bar ? '' : `<circle cx="${p[0]}" cy="${p[1]}" r="4.5" fill="#fff" stroke="${DASH_GEO.color}" stroke-width="2.5"/>`);
+        (state.bar ? '' : `<circle cx="${p[0]}" cy="${p[1]}" r="4.5" fill="#fff" stroke="${geo.color}" stroke-width="2.5"/>`);
       const rect = svg.getBoundingClientRect(), aRect = area.getBoundingClientRect();
-      const sx = rect.width / DASH_GEO.W, sy = rect.height / DASH_GEO.H;
+      const sx = rect.width / geo.W, sy = rect.height / geo.H;
       tip.innerHTML = `<div class="dt-val">${state.fmt(state.values[idx])}</div><div class="dt-lab">${svgEsc(state.labels[idx])}</div>`;
       tip.style.left = (rect.left - aRect.left + p[0] * sx) + 'px';
-      tip.style.top = (rect.top - aRect.top + (state.bar ? p[1] : p[1]) * sy) + 'px';
+      tip.style.top = (rect.top - aRect.top + p[1] * sy) + 'px';
       tip.classList.add('show');
     });
     svg.addEventListener('mouseleave', () => { tip.classList.remove('show'); hoverG.innerHTML = ''; });
+  }
+
+  const DASH_REV_SUB = {
+    dia: 'Evolución diaria de tus ingresos', semana: 'Evolución semanal de tus ingresos',
+    mes: 'Evolución mensual de tus ingresos', anio: 'Evolución anual de tus ingresos',
+  };
+  let dashRevPeriodo = 'dia';
+  function setDashRevPeriodo(p) {
+    if (!DASH_REV_SUB[p]) return;
+    dashRevPeriodo = p;
+    document.querySelectorAll('#dashRevSeg button').forEach(b => b.classList.toggle('active', b.dataset.p === p));
+    renderRevenueCard();
+  }
+  function renderRevenueCard() {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+    const data = ingresosPorPeriodo(acc.data.pedidos, dashRevPeriodo);
+    const total = data.reduce((a, b) => a + b.value, 0);
+    const hv = document.getElementById('dashRevValue'); if (hv) hv.textContent = fmtEur0(total);
+    setTrend('dashRevTrend', deltaSuma(data.map(d => d.value)));
+    const sub = document.getElementById('dashRevSubtitle'); if (sub) sub.textContent = DASH_REV_SUB[dashRevPeriodo];
+    if (!data.length) { mountChart('dashRevArea', svgEmpty('Aún no hay pedidos registrados')); return; }
+    mountChart('dashRevArea', svgArea(data, { color: '#4F46E5', fmt: fmtEur0 }, 'dashRevSvg'));
+  }
+  function renderAllDashboardCharts() {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+    const pedidos = acc.data.pedidos;
+    renderRevenueCard();
+    mountChart('dashChartPlatos', chartPlatosTop(pedidos));
+    mountChart('dashChartCanal', chartCanal(pedidos));
+    mountChart('dashChartTicket', chartTicketDia(pedidos, 'dashTicketSvg'));
+    mountChart('dashChartComensales', chartComensalesDia(pedidos, 'dashComensalesSvg'));
+    mountChart('dashChartMesas', chartMesas(pedidos));
   }
 
   // ---- Configuración: integraciones locales ----
@@ -5722,6 +5773,10 @@
     "Canales": ["Canals", "Channels"],
     "Comensales": ["Comensals", "Guests"],
     "Por mesa": ["Per taula", "By table"],
+    "Día": ["Dia", "Day"],
+    "Semana": ["Setmana", "Week"],
+    "Mes": ["Mes", "Month"],
+    "Año": ["Any", "Year"],
   };
 
   let currentLang = 'es';
