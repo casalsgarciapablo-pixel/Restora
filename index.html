@@ -4160,11 +4160,13 @@
     showToast(i == null ? 'Ingrediente añadido' : 'Ingrediente actualizado');
   }
 
+  let recetaEdit = null;
   function abrirEditarReceta(i) {
     const acc = getCurrentAccount();
     const m = acc.data.menu[i];
     document.getElementById('modalCard').classList.remove('modal-wide');
     if (!acc.data.inventario.length) {
+      recetaEdit = null;
       document.getElementById('modalBody').innerHTML = `
         <h3 class="text-xl font-bold text-navy">Receta: ${m.nombre}</h3>
         <p class="mt-1.5 text-sm text-slate-500">Primero necesitas ingredientes en el inventario para poder asignarlos a este plato.</p>
@@ -4173,36 +4175,79 @@
       document.getElementById('modalOverlay').classList.add('open');
       return;
     }
-    const receta = Array.isArray(m.receta) ? m.receta : [];
-    const filas = acc.data.inventario.map((p, j) => {
-      const r = receta.find(x => String(x.producto).trim().toLowerCase() === String(p.producto).trim().toLowerCase());
-      const v = r ? invNum(r.cantidad) : null;
-      return `<div class="flex items-center justify-between gap-3 py-2 border-b border-slate-100">
-        <span class="text-sm text-navy">${p.producto}</span>
-        <span class="flex items-center gap-2 shrink-0">
-          <input id="rec_${j}" type="number" step="any" min="0" value="${v != null ? v : ''}" placeholder="0" class="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
-          <span class="text-xs text-slate-400" style="min-width:2.5rem">${p.unidad || ''}</span>
-        </span>
-      </div>`;
-    }).join('');
-    document.getElementById('modalBody').innerHTML = `
-      <h3 class="text-xl font-bold text-navy">Receta: ${m.nombre}</h3>
-      <p class="mt-1.5 text-sm text-slate-500">Cantidad de cada ingrediente por ración. Deja vacío lo que no lleve.</p>
-      <div class="mt-4 max-h-72 overflow-y-auto pr-1">${filas}</div>
-      <button type="button" onclick="submitReceta(${i})" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar receta</button>
-    `;
+    recetaEdit = {
+      platoIdx: i,
+      filas: (Array.isArray(m.receta) ? m.receta : []).map(r => ({ producto: r.producto, cantidad: invNum(r.cantidad) != null ? invNum(r.cantidad) : '' })),
+    };
+    renderRecetaEditor();
     document.getElementById('modalOverlay').classList.add('open');
   }
-  function submitReceta(i) {
+  function renderRecetaEditor() {
+    const acc = getCurrentAccount();
+    const m = acc.data.menu[recetaEdit.platoIdx];
+    const usados = recetaEdit.filas.map(f => String(f.producto).trim().toLowerCase());
+    const disponibles = acc.data.inventario.filter(p => !usados.includes(String(p.producto).trim().toLowerCase()));
+    let tabla;
+    if (!recetaEdit.filas.length) {
+      tabla = `<p class="text-sm text-slate-400 py-6 text-center border border-dashed border-slate-200 rounded-lg">Este plato aún no tiene ingredientes. Añade abajo los que usa.</p>`;
+    } else {
+      const filas = recetaEdit.filas.map((f, idx) => {
+        const ing = findIngrediente(acc, f.producto);
+        const unidad = ing && ing.unidad ? ing.unidad : '';
+        return `<div class="flex items-center gap-2 py-2 border-b border-slate-100">
+          <span class="text-sm text-navy flex-1">${f.producto}</span>
+          <input type="number" step="any" min="0" value="${f.cantidad}" oninput="recetaSetCantidad(${idx}, this.value)" placeholder="0" class="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+          <span class="text-xs text-slate-400 text-left" style="min-width:2.2rem">${unidad}</span>
+          <button onclick="recetaRemoveFila(${idx})" class="text-slate-300 hover:text-rose-500 transition text-sm" title="Quitar">✕</button>
+        </div>`;
+      }).join('');
+      tabla = `<div class="max-h-56 overflow-y-auto pr-1">
+        <div class="flex items-center gap-2 pb-1.5 border-b border-slate-200 text-[11px] font-semibold text-slate-400">
+          <span class="flex-1">Ingrediente</span><span class="w-20 text-right">Por ración</span><span style="min-width:2.2rem"></span><span class="w-4"></span>
+        </div>
+        ${filas}
+      </div>`;
+    }
+    const opciones = disponibles.map(p => `<option value="${String(p.producto).replace(/"/g, '&quot;')}">${p.producto}${p.unidad ? ' (' + p.unidad + ')' : ''}</option>`).join('');
+    const anadir = disponibles.length
+      ? `<div class="mt-3 flex items-center gap-2">
+          <select id="recNuevoIng" class="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${opciones}</select>
+          <button onclick="recetaAddFila()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2 shrink-0">+ Añadir</button>
+        </div>`
+      : `<p class="mt-3 text-xs text-slate-400">Ya has añadido todos los ingredientes disponibles.</p>`;
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Receta: ${m.nombre}</h3>
+      <p class="mt-1.5 text-sm text-slate-500">Añade solo los ingredientes que usa este plato, con la cantidad por ración.</p>
+      <div class="mt-4">${tabla}</div>
+      ${anadir}
+      <button type="button" onclick="submitReceta()" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar receta</button>
+    `;
+  }
+  function recetaAddFila() {
+    const sel = document.getElementById('recNuevoIng');
+    if (!sel || !sel.value) return;
+    if (recetaEdit.filas.some(f => String(f.producto).trim().toLowerCase() === sel.value.trim().toLowerCase())) return;
+    recetaEdit.filas.push({ producto: sel.value, cantidad: '' });
+    renderRecetaEditor();
+  }
+  function recetaRemoveFila(idx) {
+    recetaEdit.filas.splice(idx, 1);
+    renderRecetaEditor();
+  }
+  function recetaSetCantidad(idx, val) {
+    if (recetaEdit && recetaEdit.filas[idx]) recetaEdit.filas[idx].cantidad = val;
+  }
+  function submitReceta() {
+    if (!recetaEdit) return;
     const acc = getCurrentAccount();
     const receta = [];
-    acc.data.inventario.forEach((p, j) => {
-      const el = document.getElementById('rec_' + j);
-      const v = el ? invNum(el.value) : null;
-      if (v && v > 0) receta.push({ producto: p.producto, cantidad: v });
+    recetaEdit.filas.forEach(f => {
+      const v = invNum(f.cantidad);
+      if (v && v > 0) receta.push({ producto: f.producto, cantidad: v });
     });
-    acc.data.menu[i].receta = receta;
+    acc.data.menu[recetaEdit.platoIdx].receta = receta;
     saveCurrentAccountData(acc.data);
+    recetaEdit = null;
     closeModal();
     renderInventario();
     showToast('Receta guardada');
