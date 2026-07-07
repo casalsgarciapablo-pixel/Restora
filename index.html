@@ -2053,6 +2053,7 @@
   function goToLanding() {
     document.getElementById('appRoot').style.display = 'none';
     document.getElementById('landingRoot').style.display = 'block';
+    if (currentLang !== 'es') setLang('es');
     window.scrollTo(0, 0);
   }
 
