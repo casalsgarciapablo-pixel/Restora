@@ -42,19 +42,16 @@
   .marquee-wrap:hover .marquee-track { animation-play-state: paused; }
   @keyframes marquee-right { from { transform: translateX(-50%); } to { transform: translateX(0%); } }
   @media (min-width: 640px) { .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  .nav-item { transition: background-color .15s, color .15s, transform .15s, box-shadow .15s; cursor: pointer; border-left: 3px solid transparent; color: #000000; font-weight: 500; }
-  .nav-item:hover { transform: translateX(2px); background: #f8fafc; }
-  .nav-item.active { background: linear-gradient(90deg, rgba(79,63,255,0.09), rgba(79,63,255,0.02)); color: #000000; font-weight: 500; border-left-color: #4F3FFF; }
-  .nav-item span { transition: transform .15s ease; }
-  .nav-item:hover span { transform: scale(1.08); }
+  .nav-item { transition: background-color .15s, color .15s, box-shadow .15s; cursor: pointer; color: #101014; font-weight: 500; border-radius: 10px; }
+  .nav-item:hover { background: rgba(255,255,255,0.55); }
+  .nav-item.active { background: #ffffff; color: #101014; font-weight: 600; box-shadow: 0 1px 2px rgba(22,22,29,0.06), 0 4px 12px -6px rgba(22,22,29,0.12), inset 0 0 0 1px rgba(22,22,29,0.04); }
   .app-section { display: none; }
   .app-section.active { display: block; animation: sectionIn .35s ease; }
   @keyframes sectionIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes kpiPop { 0% { transform: scale(1); } 35% { transform: scale(1.12); } 100% { transform: scale(1); } }
   .kpi-pop { animation: kpiPop .35s ease; }
   .kpi-tile, .lift-card { transition: transform .18s ease, box-shadow .18s ease; }
-  .kpi-tile:hover, .lift-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px -10px rgba(11,33,66,0.18); }
-  #appRoot { background: #F7F8FC; }
+  .kpi-tile:hover, .lift-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -10px rgba(22,22,29,0.16), 0 1px 2px rgba(22,22,29,0.05); }
   #appRoot table tbody tr { transition: background-color .12s ease; }
   #appRoot table tbody tr:hover { background-color: #f8fafc; }
   .mesa-item { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
@@ -119,7 +116,6 @@
   #appRoot .focus\:border-accent:focus, #ticketRoot .focus\:border-accent:focus, #informeRoot .focus\:border-accent:focus, #publicMenuRoot .focus\:border-accent:focus, #publicReservaRoot .focus\:border-accent:focus { border-color: var(--saas-accent) !important; }
   #appRoot { background: #F5F5F7; }
   #appRoot .app-sidebar, #appRoot .app-topbar { background-color: #E7E4FA !important; }
-  .nav-item.active { background: linear-gradient(90deg, rgba(79,70,229,0.09), rgba(79,70,229,0.02)); border-left-color: #4F46E5; }
   .sidebar-mobile-btn { color: #0d0d14; }
   .toast { background: #101018; }
 
@@ -139,9 +135,6 @@
 
   /* Topbar: subtle separation from content */
   .app-topbar { box-shadow: 0 1px 0 rgba(16,24,40,0.05), 0 2px 10px -6px rgba(16,24,40,0.08); position: relative; z-index: 30; }
-
-  /* Sidebar icon chips: gentle depth */
-  .app-sidebar .nav-item span, aside .nav-item span { box-shadow: inset 0 0 0 1px rgba(11,33,66,0.03); }
 
   /* Tables: refined header row */
   #appRoot table thead tr th { font-size: 10.5px; letter-spacing: 0.045em; text-transform: uppercase; font-weight: 700; }
@@ -173,6 +166,70 @@
   #appRoot ::-webkit-scrollbar-thumb { background: rgba(11,33,66,0.15); border-radius: 999px; }
   #appRoot ::-webkit-scrollbar-thumb:hover { background: rgba(11,33,66,0.28); }
   #appRoot * { scrollbar-width: thin; scrollbar-color: rgba(11,33,66,0.15) transparent; }
+
+  /* ============ SaaS design system: neutral ink, hairline borders, layered depth (landing untouched) ============ */
+  #appRoot { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+  /* Ink and neutrals: zinc instead of navy/slate for a quieter, enterprise feel */
+  #appRoot .text-navy { color: #16161D; }
+  #appRoot .text-slate-500 { color: #5C5C66; }
+  #appRoot .text-slate-400 { color: #8B8B96; }
+  #appRoot .border-slate-200 { border-color: #E7E7EE; }
+  #appRoot .border-slate-100 { border-color: #EFEFF4; }
+
+  /* Sidebar rail: monochrome icons, white pill for the active item */
+  #appRoot .app-sidebar { border-right: 1px solid rgba(22,22,29,0.07); padding: 18px 12px; }
+  #appRoot .app-sidebar .nav-item { padding: 8px 10px; font-size: 13.5px; letter-spacing: -0.006em; }
+  #appRoot .app-sidebar .nav-item > span { background: transparent !important; color: #55555F !important; width: 22px; height: 22px; }
+  #appRoot .app-sidebar .nav-item > span svg { width: 16px; height: 16px; }
+  #appRoot .app-sidebar .nav-item.active > span { color: var(--saas-accent) !important; }
+  #appRoot .app-sidebar > ul + ul { border-top-color: rgba(22,22,29,0.08); }
+
+  /* Topbar: hairline separation, refined avatar and exit action */
+  #appRoot .app-topbar { border-bottom: 1px solid rgba(22,22,29,0.07); }
+  #appRoot #avatarInitials { background: linear-gradient(135deg, #DDD9F9, #B9B3F2); color: #3730A3; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.5), 0 1px 2px rgba(22,22,29,0.12); }
+  #appRoot .app-topbar a[onclick*="logout"] { border: 1px solid rgba(22,22,29,0.12); background: rgba(255,255,255,0.55); border-radius: 8px; padding: 5px 12px; color: #3F3F46; transition: background-color .15s ease, border-color .15s ease; }
+  #appRoot .app-topbar a[onclick*="logout"]:hover { background: #fff; border-color: rgba(22,22,29,0.22); color: #16161D; }
+
+  /* Section headers: confident scale, monochrome icon chip */
+  #appRoot .app-section > div:first-child p.text-sm.font-semibold { font-size: 17px; font-weight: 700; letter-spacing: -0.015em; }
+  #appRoot .app-section > div:first-child p.text-xs { margin-top: 2px; font-size: 12.5px; }
+  #appRoot .app-section > div:first-child span.w-9 { background: #fff !important; color: #3F3F46 !important; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(22,22,29,0.08), 0 1px 2px rgba(22,22,29,0.05); }
+
+  /* KPI tiles: white, hairline border, large tabular numbers */
+  #appRoot .kpi-tile { background: #fff; border: 1px solid #E9E9EF; border-radius: 14px; padding: 14px 16px; }
+  #appRoot .kpi-tile p.text-lg { font-size: 22px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+
+  /* Cards: consistent hairline border + layered shadow */
+  #appRoot .rounded-xl.border.bg-white, #appRoot .rounded-2xl.border.bg-white { border-color: #E9E9EF; box-shadow: 0 1px 2px rgba(22,22,29,0.04), 0 1px 3px rgba(22,22,29,0.03); }
+  #appRoot .border-dashed { border-color: #DCDCE5 !important; background: #FCFCFD; }
+
+  /* Tables: quiet header band, soft row dividers */
+  #appRoot table thead th { background: #FAFAFC; color: #73737E; }
+  #appRoot table tbody td { border-color: #F2F2F6; }
+  #appRoot table tbody tr:hover { background-color: #FAFAFD; }
+
+  /* Secondary buttons: white with hairline border (replaces flat gray) */
+  #appRoot button.bg-slate-100, #appRoot a.bg-slate-100 { background: #fff !important; color: #26262E; box-shadow: inset 0 0 0 1px #E3E3EA, 0 1px 2px rgba(22,22,29,0.05); transition: background-color .15s ease, box-shadow .15s ease; }
+  #appRoot button.bg-slate-100:hover, #appRoot a.bg-slate-100:hover { background: #F7F7FA !important; box-shadow: inset 0 0 0 1px #D9D9E2, 0 1px 2px rgba(22,22,29,0.06); }
+
+  /* Inputs: crisp borders, soft accent focus ring */
+  #appRoot input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]), #appRoot select, #appRoot textarea,
+  #modalCard input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]), #modalCard select, #modalCard textarea {
+    background-color: #fff; border-color: #E3E3EA; box-shadow: 0 1px 2px rgba(22,22,29,0.04);
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  #appRoot input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]):focus, #appRoot select:focus, #appRoot textarea:focus,
+  #modalCard input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]):focus, #modalCard select:focus, #modalCard textarea:focus {
+    border-color: #4F46E5; box-shadow: 0 0 0 3px rgb(79 70 229 / 0.13); outline: none;
+  }
+
+  /* Modal: deeper, softer elevation */
+  #modalCard { border-radius: 18px; box-shadow: 0 1px 2px rgba(22,22,29,0.08), 0 24px 60px -16px rgba(22,22,29,0.35); }
+  .modal-overlay { backdrop-filter: blur(4px); }
+
+  /* Notifications dropdown */
+  .notif-panel { border-color: #E9E9EF; border-radius: 14px; box-shadow: 0 12px 32px -8px rgba(22,22,29,0.16), 0 2px 8px rgba(22,22,29,0.06); }
 
   /* ============ Mobile / tablet responsive layer (desktop >880px untouched) ============ */
   .platos-grid { column-gap: 3rem; }
