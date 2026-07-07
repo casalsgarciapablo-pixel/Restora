@@ -213,6 +213,7 @@
   /* Topbar: hairline separation, refined avatar and exit action */
   #appRoot .app-topbar { border-bottom: 1px solid rgba(22,22,29,0.07); }
   #appRoot #avatarInitials { background: linear-gradient(135deg, #DFDAFF, #BCB0FF); color: #3A28D8; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.5), 0 1px 2px rgba(22,22,29,0.12); }
+  .app-brand-mark { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; background: linear-gradient(135deg, #6E60FF, #4F3FFF); box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 1px 2px rgba(22,22,29,0.18), 0 4px 10px -4px rgba(79,63,255,0.55); }
   #appRoot .app-topbar a[onclick*="logout"] { border: 1px solid rgba(22,22,29,0.12); background: rgba(255,255,255,0.55); border-radius: 8px; padding: 5px 12px; color: #3F3F46; transition: background-color .15s ease, border-color .15s ease; }
   #appRoot .app-topbar a[onclick*="logout"]:hover { background: #fff; border-color: rgba(22,22,29,0.22); color: #16161D; }
 
@@ -1161,7 +1162,10 @@
     <button type="button" onclick="toggleSidebarMobile()" class="sidebar-mobile-btn" aria-label="Abrir menú">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
-    <span id="topbarNombre" class="text-sm font-semibold text-navy" onclick="goToLanding()" style="cursor:pointer">Mi Restaurante</span>
+    <span onclick="goToLanding()" style="cursor:pointer" class="flex items-center gap-2.5">
+      <span class="app-brand-mark">R</span>
+      <span id="topbarNombre" class="text-sm font-semibold text-navy">Mi Restaurante</span>
+    </span>
   </div>
   <div class="topbar-search">
     <svg class="ts-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
