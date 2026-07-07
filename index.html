@@ -201,7 +201,7 @@
     .hero-sub { font-size: 1.05rem !important; }
     .hero-mock-aside { display: none !important; }
     #landingRoot > .relative.overflow-hidden > .hero-glow { top: 90px; }
-    #landingRoot > .relative.overflow-hidden > .hero-glow svg { transform: scaleY(2.1); transform-origin: top center; }
+    #landingRoot > .relative.overflow-hidden > .hero-glow svg { transform: scaleY(1.65); transform-origin: top center; }
 
     /* Section headings a bit more compact */
     #landingRoot h2 { font-size: 1.85rem !important; }
@@ -4363,35 +4363,14 @@
     }
     const d = 'M ' + top.map(pt => pt[0] + ',' + pt[1]).join(' L ') +
       ' L ' + bottom.slice().reverse().map(pt => pt[0] + ',' + pt[1]).join(' L ') + ' Z';
-
-    const svg = path.ownerSVGElement;
-    let defs = svg.querySelector('defs');
-    let grad = document.getElementById('heroWaveTaperGrad');
-    if (!grad) {
-      grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
-      grad.id = 'heroWaveTaperGrad';
-      grad.setAttribute('gradientUnits', 'userSpaceOnUse');
-      grad.innerHTML = '<stop offset="0%" stop-color="#8b9dff" stop-opacity="0.15"/>' +
-        '<stop offset="20%" stop-color="#8b9dff" stop-opacity="0.65"/>' +
-        '<stop offset="55%" stop-color="#7c93ff" stop-opacity="0.6"/>' +
-        '<stop offset="100%" stop-color="#7c93ff" stop-opacity="0"/>';
-      defs.appendChild(grad);
-    }
-    const startPt = path.getPointAtLength(0);
-    const endPt = path.getPointAtLength(len);
-    grad.setAttribute('x1', startPt.x);
-    grad.setAttribute('y1', startPt.y);
-    grad.setAttribute('x2', endPt.x);
-    grad.setAttribute('y2', endPt.y);
-
     let taperPath = taper;
     if (!taperPath) {
       taperPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       taperPath.id = 'heroWaveTaper';
+      taperPath.setAttribute('fill', 'url(#waveGrad)');
       taperPath.setAttribute('filter', 'url(#waveBlur)');
       path.parentNode.insertBefore(taperPath, path);
     }
-    taperPath.setAttribute('fill', 'url(#heroWaveTaperGrad)');
     taperPath.setAttribute('d', d);
     taperPath.style.display = '';
     path.style.display = 'none';
