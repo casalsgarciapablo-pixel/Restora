@@ -258,6 +258,9 @@
 
   /* ============ Mobile / tablet responsive layer (desktop >880px untouched) ============ */
   .platos-grid { column-gap: 3rem; }
+  .lang-switcher { background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 6px 10px; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; outline: none; }
+  .lang-switcher:hover { border-color: #cbd5e1; }
+  .landing-mobile-panel .lang-switcher { align-self: flex-start; margin-top: 12px; font-size: 15px; padding: 8px 14px; border-bottom: 1px solid #e2e8f0 !important; }
   .landing-mobile-btn { display: none; background: none; border: none; padding: 6px; color: #0b2142; cursor: pointer; }
   .landing-mobile-panel { display: none; }
   .sidebar-mobile-btn { display: none; background: none; border: none; padding: 4px; margin-right: 4px; color: #0b2142; cursor: pointer; }
@@ -398,6 +401,11 @@
       <a href="#blog" class="hover:text-navy transition">Blog</a>
     </nav>
     <div class="landing-header-actions flex items-center gap-3">
+      <select id="langSwitcherDesktop" onchange="setLang(this.value)" class="lang-switcher" aria-label="Idioma">
+        <option value="es">ES</option>
+        <option value="ca">CA</option>
+        <option value="en">EN</option>
+      </select>
       <a href="javascript:void(0)" onclick="openModal('staff-login')" class="text-slate-400 hover:text-navy transition text-xs sm:text-sm font-medium px-1 sm:px-2 whitespace-nowrap">Entrar como trabajador</a>
       <a href="javascript:void(0)" onclick="openModal('login')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Iniciar sesión</a>
       <a href="javascript:void(0)" onclick="openModal('signup')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5 whitespace-nowrap">Prueba gratis -></a>
@@ -1062,6 +1070,11 @@
   <a href="#funcionalidades" onclick="toggleLandingMobileNav(false)" class="hover:text-navy transition">Funcionalidades</a>
   <a href="#precios" onclick="toggleLandingMobileNav(false)" class="hover:text-navy transition">Precios</a>
   <a href="#blog" onclick="toggleLandingMobileNav(false)" class="hover:text-navy transition">Blog</a>
+  <select id="langSwitcherMobile" onchange="setLang(this.value)" class="lang-switcher" aria-label="Idioma">
+    <option value="es">Español</option>
+    <option value="ca">Català</option>
+    <option value="en">English</option>
+  </select>
   <div class="landing-mobile-panel-divider"></div>
   <a href="javascript:void(0)" onclick="openModal('staff-login')" class="hover:text-navy transition">Entrar como trabajador</a>
   <a href="javascript:void(0)" onclick="openModal('login')" class="hover:text-navy transition">Iniciar sesión</a>
@@ -2340,6 +2353,7 @@
     document.getElementById('cuentaIban').value = c.iban || '';
     document.getElementById('cuentaIdioma').value = c.idioma || 'es';
     document.getElementById('cuentaMoneda').value = c.moneda || 'EUR';
+    if ((c.idioma || 'es') !== currentLang) setLang(c.idioma || 'es');
     iaConversacionActualId = null;
     renderIAChat();
     notifications = [];
@@ -2367,6 +2381,7 @@
       moneda: document.getElementById('cuentaMoneda').value,
     };
     saveCurrentAccountData(acc.data);
+    setLang(acc.data.cuenta.idioma);
     showToast('Preferencias guardadas');
   }
 
@@ -4520,6 +4535,423 @@
       if (!raf) raf = requestAnimationFrame(tick);
     });
   })();
+
+  // ================= i18n: ES (source) -> [CA, EN] =================
+  const I18N = {
+    // Landing: barra superior y navegacion
+    "Ahora con recomendaciones por IA": ["Ara amb recomanacions per IA", "Now with AI recommendations"],
+    "Ver novedades ->": ["Veure novetats ->", "See what's new ->"],
+    "Plantillas": ["Plantilles", "Templates"],
+    "Funcionalidades": ["Funcionalitats", "Features"],
+    "Precios": ["Preus", "Pricing"],
+    "Entrar como trabajador": ["Entra com a treballador", "Staff sign in"],
+    "Iniciar sesión": ["Inicia la sessió", "Log in"],
+    "Prueba gratis ->": ["Prova gratis ->", "Try for free ->"],
+    // Landing: hero
+    "Menos Caos. Más": ["Menys caos. Més", "Less Chaos. More"],
+    "Servicio.": ["Servei.", "Service."],
+    "El software que tu equipo va a amar.": ["El programari que el teu equip estimarà.", "The software your team will love."],
+    "Y el único que": ["I l'únic que", "And the only one"],
+    "necesitarás jamás": ["necessitaràs mai", "you'll ever need"],
+    // Landing: maqueta del producto
+    "Sala": ["Sala", "Floor"],
+    "Turno noche": ["Torn de nit", "Night shift"],
+    "Compartir": ["Comparteix", "Share"],
+    "Panel de sala · Turno noche": ["Tauler de sala · Torn de nit", "Floor panel · Night shift"],
+    "Resumen en vivo de tu restaurante.": ["Resum en viu del teu restaurant.", "Live overview of your restaurant."],
+    "Ventas hoy": ["Vendes avui", "Sales today"],
+    "↑ 12% vs ayer": ["↑ 12% vs ahir", "↑ 12% vs yesterday"],
+    "Mesas ocupadas": ["Taules ocupades", "Tables occupied"],
+    "↑ 3 vs ayer": ["↑ 3 vs ahir", "↑ 3 vs yesterday"],
+    "Ticket medio": ["Tiquet mitjà", "Average ticket"],
+    "↓ 2% vs ayer": ["↓ 2% vs ahir", "↓ 2% vs yesterday"],
+    "Reservas hoy": ["Reserves avui", "Bookings today"],
+    "↑ 5 vs ayer": ["↑ 5 vs ahir", "↑ 5 vs yesterday"],
+    "Ingresos por mesa": ["Ingressos per taula", "Revenue by table"],
+    "(Cualquiera)": ["(Qualsevol)", "(Any)"],
+    "+ Añadir filtro": ["+ Afegeix filtre", "+ Add filter"],
+    "Mesa 1": ["Taula 1", "Table 1"],
+    "Mesa 4": ["Taula 4", "Table 4"],
+    "Terraza": ["Terrassa", "Terrace"],
+    "Barra": ["Barra", "Bar"],
+    "Pasa el cursor por una barra o pulsa una serie": ["Passa el cursor per una barra o prem una sèrie", "Hover over a bar or click a series"],
+    "Ago": ["Ag", "Aug"], "Sep": ["Set", "Sep"], "Dic": ["Des", "Dec"], "Ene": ["Gen", "Jan"], "Abr": ["Abr", "Apr"], "Mar": ["Març", "Mar"],
+    // Landing: logos y tipos de negocio
+    "Ayudando a estos restaurantes a crecer más rápido": ["Ajudant aquests restaurants a créixer més ràpid", "Helping these restaurants grow faster"],
+    "Pensado para": ["Pensat per a", "Built for"],
+    "tu tipo de negocio": ["el teu tipus de negoci", "your type of business"],
+    "Restora se adapta a la forma en la que trabaja tu local, sea cual sea.": ["Restora s'adapta a la manera com treballa el teu local, sigui quina sigui.", "Restora adapts to the way your venue works, whatever that is."],
+    "Restaurantes": ["Restaurants", "Restaurants"],
+    "Gestiona tu sala, tus mesas y tu cocina desde un mismo sitio, sin complicarte con hojas de cálculo.": ["Gestiona la teva sala, les teves taules i la teva cuina des d'un mateix lloc, sense complicar-te amb fulls de càlcul.", "Manage your floor, tables and kitchen from one place, without messing with spreadsheets."],
+    "Bares": ["Bars", "Bars"],
+    "Controla el aforo, las mesas y la rotación de tus clientes en los momentos de más ritmo.": ["Controla l'aforament, les taules i la rotació dels teus clients en els moments de més ritme.", "Keep track of capacity, tables and customer turnover during your busiest hours."],
+    "Delivery y Take away": ["Delivery i Take away", "Delivery & Take away"],
+    "Centraliza los pedidos de Glovo, Uber Eats y JustEat junto con los de sala, sin cambiar de pantalla.": ["Centralitza les comandes de Glovo, Uber Eats i JustEat juntament amb les de sala, sense canviar de pantalla.", "Bring Glovo, Uber Eats and JustEat orders together with dine-in ones, without switching screens."],
+    "Cafeterías": ["Cafeteries", "Coffee shops"],
+    "Un menú siempre actualizado y un inventario bajo control, para no quedarte sin lo básico a media mañana.": ["Un menú sempre actualitzat i un inventari sota control, per no quedar-te sense el bàsic a mig matí.", "An always up-to-date menu and inventory under control, so you never run out of basics mid-morning."],
+    // Landing: seccion funcionalidades
+    "Gestiona tu restaurante": ["Gestiona el teu restaurant", "Manage your restaurant"],
+    "como nunca antes,": ["com mai abans,", "like never before,"],
+    "sin complicaciones": ["sense complicacions", "without complications"],
+    "Enfócate en la cocina y el servicio, no en la tecnología.": ["Centra't en la cuina i el servei, no en la tecnologia.", "Focus on the kitchen and the service, not the technology."],
+    "Conecta, gestiona y visualiza mesas, pedidos y personal desde más de 50 herramientas sin instalaciones complejas.": ["Connecta, gestiona i visualitza taules, comandes i personal des de més de 50 eines sense instal·lacions complexes.", "Connect, manage and visualize tables, orders and staff from 50+ tools with no complex setup."],
+    "Ingresos totales (mes)": ["Ingressos totals (mes)", "Total revenue (month)"],
+    "pedidos": ["comandes", "orders"],
+    "ticket medio": ["tiquet mitjà", "avg. ticket"],
+    "Todos tus ingresos y estadísticas en un vistazo": ["Tots els teus ingressos i estadístiques d'un cop d'ull", "All your revenue and stats at a glance"],
+    "Ingresos totales, pedidos, ticket medio y tus platos más vendidos, actualizados cada día.": ["Ingressos totals, comandes, tiquet mitjà i els teus plats més venuts, actualitzats cada dia.", "Total revenue, orders, average ticket and your best-selling dishes, updated every day."],
+    "Ventas del día": ["Vendes del dia", "Today's sales"],
+    "Ocupación": ["Ocupació", "Occupancy"],
+    "Controla la sala en tiempo real, mesa por mesa": ["Controla la sala en temps real, taula per taula", "Watch your floor in real time, table by table"],
+    "Ventas, ticket medio y ocupación al momento, para saber cómo va tu turno de un vistazo.": ["Vendes, tiquet mitjà i ocupació al moment, per saber com va el teu torn d'un cop d'ull.", "Sales, average ticket and occupancy in the moment, so you know how your shift is going at a glance."],
+    "Integraciones": ["Integracions", "Integrations"],
+    "Conecta tu TPV, delivery y WhatsApp al instante.": ["Connecta el teu TPV, delivery i WhatsApp a l'instant.", "Connect your POS, delivery and WhatsApp instantly."],
+    "Sincroniza automáticamente tu terminal de venta, Glovo, Uber Eats y WhatsApp. Sin cambiar de pantalla.": ["Sincronitza automàticament el teu terminal de venda, Glovo, Uber Eats i WhatsApp. Sense canviar de pantalla.", "Automatically sync your POS terminal, Glovo, Uber Eats and WhatsApp. Without switching screens."],
+    "Noche": ["Nit", "Night"],
+    "Tipo": ["Tipus", "Type"],
+    "Reservados": ["Reservats", "Reserved"],
+    "Reservas y walk-ins, sin líos.": ["Reserves i walk-ins, sense embolics.", "Bookings and walk-ins, no mess."],
+    "Organiza las mesas reservadas y las de improviso por turno, desde el mismo panel.": ["Organitza les taules reservades i les d'improvís per torn, des del mateix tauler.", "Organize reserved and walk-in tables by shift, from the same panel."],
+    "Fecha": ["Data", "Date"],
+    "Plataforma": ["Plataforma", "Platform"],
+    "Pedidos a domicilio centralizados.": ["Comandes a domicili centralitzades.", "Delivery orders, centralized."],
+    "Todos tus pedidos de Glovo, Uber Eats y JustEat en una sola tabla, sin duplicar trabajo.": ["Totes les teves comandes de Glovo, Uber Eats i JustEat en una sola taula, sense duplicar feina.", "All your Glovo, Uber Eats and JustEat orders in one table, without duplicating work."],
+    "Nombre": ["Nom", "Name"],
+    "Puesto": ["Lloc", "Role"],
+    "Jefe de sala": ["Cap de sala", "Floor manager"],
+    "Tu equipo, siempre organizado.": ["El teu equip, sempre organitzat.", "Your team, always organized."],
+    "Turnos, roles y contacto de cada empleado en un mismo lugar, sin hojas sueltas.": ["Torns, rols i contacte de cada empleat en un mateix lloc, sense fulls solts.", "Shifts, roles and contact info for every employee in one place, no loose sheets."],
+    "¿Qué plato debería destacar hoy?": ["Quin plat hauria de destacar avui?", "Which dish should I highlight today?"],
+    "El salmón: baja stock y se vende un 20% más los viernes.": ["El salmó: baixa d'estoc i es ven un 20% més els divendres.", "The salmon: low stock and it sells 20% more on Fridays."],
+    "Un asistente que conoce tu negocio.": ["Un assistent que coneix el teu negoci.", "An assistant that knows your business."],
+    "Pregúntale lo que necesites y recibe recomendaciones basadas en tus ventas, sala y cocina.": ["Pregunta-li el que necessitis i rep recomanacions basades en les teves vendes, sala i cuina.", "Ask it anything and get recommendations based on your sales, floor and kitchen."],
+    "¿Qué quieres hacer?": ["Què vols fer?", "What do you want to do?"],
+    "Crear pedido": ["Crea una comanda", "Create order"],
+    "Mostrar/ocultar mesas": ["Mostra/amaga taules", "Show/hide tables"],
+    "Abrir editor de menú": ["Obre l'editor de menú", "Open menu editor"],
+    "Edita tu carta en segundos.": ["Edita la teva carta en segons.", "Edit your menu in seconds."],
+    "Actualiza platos, precios y disponibilidad al instante desde cualquier dispositivo.": ["Actualitza plats, preus i disponibilitat a l'instant des de qualsevol dispositiu.", "Update dishes, prices and availability instantly from any device."],
+    "Nunca te quedes sin stock.": ["No et quedis mai sense estoc.", "Never run out of stock."],
+    "Alertas automáticas cuando un producto está por debajo del mínimo, antes de que afecte al servicio.": ["Alertes automàtiques quan un producte està per sota del mínim, abans que afecti el servei.", "Automatic alerts when a product falls below minimum, before it affects service."],
+    // Landing: mini-funcionalidades
+    "¿Necesitas más?": ["Necessites més?", "Need more?"],
+    "Te cubrimos.": ["Et cobrim.", "We've got you."],
+    "Los detalles importan, y hemos puesto mucho cariño en cada uno de ellos.": ["Els detalls importen, i hi hem posat molta cura en cadascun.", "Details matter, and we've put a lot of care into every one of them."],
+    "Estado de mesas en vivo": ["Estat de taules en viu", "Live table status"],
+    "Ve qué mesas están libres, ocupadas o reservadas de un vistazo.": ["Mira quines taules estan lliures, ocupades o reservades d'un cop d'ull.", "See which tables are free, occupied or reserved at a glance."],
+    "Ventas por mesa, mes a mes": ["Vendes per taula, mes a mes", "Sales by table, month by month"],
+    "Activa o desactiva cada mesa en la gráfica para comparar su rendimiento.": ["Activa o desactiva cada taula al gràfic per comparar-ne el rendiment.", "Toggle each table on the chart to compare its performance."],
+    "Pedidos con estado al instante": ["Comandes amb estat a l'instant", "Orders with instant status"],
+    "Pendiente, en cocina o listo: sabrás en qué punto va cada mesa.": ["Pendent, a cuina o llest: sabràs en quin punt va cada taula.", "Pending, in the kitchen or ready: you'll know where every table stands."],
+    "Reservas con mesa asignada": ["Reserves amb taula assignada", "Bookings with assigned table"],
+    "Hora, comensales y mesa de cada reserva, siempre a mano.": ["Hora, comensals i taula de cada reserva, sempre a mà.", "Time, guests and table for every booking, always at hand."],
+    "Turnos y roles de tu equipo": ["Torns i rols del teu equip", "Your team's shifts and roles"],
+    "Consulta el rol y el turno de cada empleado en un momento.": ["Consulta el rol i el torn de cada empleat en un moment.", "Check each employee's role and shift in a moment."],
+    "Perfil de tu restaurante": ["Perfil del teu restaurant", "Your restaurant profile"],
+    "Edita nombre, dirección, mesas y contacto cuando quieras.": ["Edita nom, adreça, taules i contacte quan vulguis.", "Edit name, address, tables and contact whenever you want."],
+    "Conecta tu TPV": ["Connecta el teu TPV", "Connect your POS"],
+    "Sincroniza tu terminal de venta y véelo conectado en Configuración.": ["Sincronitza el teu terminal de venda i veu-lo connectat a Configuració.", "Sync your POS terminal and see it connected in Settings."],
+    "Delivery sin cambiar de app": ["Delivery sense canviar d'app", "Delivery without switching apps"],
+    "Glovo, Uber Eats y JustEat, cada pedido con su estado.": ["Glovo, Uber Eats i JustEat, cada comanda amb el seu estat.", "Glovo, Uber Eats and JustEat, every order with its status."],
+    "Alertas de stock": ["Alertes d'estoc", "Stock alerts"],
+    "Sabrás cuándo un producto está bajo mínimos antes de que falte.": ["Sabràs quan un producte està sota mínims abans que falti.", "You'll know when a product is running low before it's missing."],
+    "Recomendaciones de tu Ayudante IA": ["Recomanacions del teu Ajudant IA", "Recommendations from your AI Assistant"],
+    "Pregúntale sobre tu negocio y recibe respuestas basadas en tus datos.": ["Pregunta-li sobre el teu negoci i rep respostes basades en les teves dades.", "Ask it about your business and get answers based on your data."],
+    "Guardado al instante": ["Desat a l'instant", "Saved instantly"],
+    "Confirmación inmediata cada vez que guardas un cambio.": ["Confirmació immediata cada cop que deses un canvi.", "Immediate confirmation every time you save a change."],
+    "Cierra sesión cuando quieras": ["Tanca la sessió quan vulguis", "Log out whenever you want"],
+    "Sal de tu cuenta con un clic desde Configuración.": ["Surt del teu compte amb un clic des de Configuració.", "Sign out of your account with one click from Settings."],
+    // Landing: precios
+    "Un plan para": ["Un pla per a", "A plan for"],
+    "cada etapa": ["cada etapa", "every stage"],
+    "Sin permanencia. Cambia de plan cuando quieras.": ["Sense permanència. Canvia de pla quan vulguis.", "No lock-in. Change plans anytime."],
+    "/mes": ["/mes", "/mo"],
+    "Para empezar a digitalizar tu restaurante.": ["Per començar a digitalitzar el teu restaurant.", "To start digitizing your restaurant."],
+    "Hasta 8 mesas con QR": ["Fins a 8 taules amb QR", "Up to 8 tables with QR"],
+    "Menú digital básico": ["Menú digital bàsic", "Basic digital menu"],
+    "1 usuario de personal": ["1 usuari de personal", "1 staff user"],
+    "Sin recomendaciones IA": ["Sense recomanacions IA", "No AI recommendations"],
+    "Sin control de inventario": ["Sense control d'inventari", "No inventory control"],
+    "Empezar con Starter": ["Comença amb Starter", "Start with Starter"],
+    "Más popular": ["Més popular", "Most popular"],
+    "Para restaurantes que quieren crecer sin fricción.": ["Per a restaurants que volen créixer sense fricció.", "For restaurants that want to grow without friction."],
+    "Hasta 25 mesas con QR": ["Fins a 25 taules amb QR", "Up to 25 tables with QR"],
+    "Menú digital + inventario": ["Menú digital + inventari", "Digital menu + inventory"],
+    "Hasta 10 usuarios de personal": ["Fins a 10 usuaris de personal", "Up to 10 staff users"],
+    "Recomendaciones IA básicas": ["Recomanacions IA bàsiques", "Basic AI recommendations"],
+    "Sin multi-restaurante": ["Sense multirestaurant", "No multi-restaurant"],
+    "Empezar con Growth": ["Comença amb Growth", "Start with Growth"],
+    "Todo sin límites, para grupos y varios locales.": ["Tot sense límits, per a grups i diversos locals.", "Everything unlimited, for groups and multiple venues."],
+    "Mesas y QR ilimitados": ["Taules i QR il·limitats", "Unlimited tables and QR"],
+    "Inventario avanzado multi-local": ["Inventari avançat multilocal", "Advanced multi-venue inventory"],
+    "Personal ilimitado": ["Personal il·limitat", "Unlimited staff"],
+    "IA avanzada + recomendaciones": ["IA avançada + recomanacions", "Advanced AI + recommendations"],
+    "Soporte prioritario 24/7": ["Suport prioritari 24/7", "Priority 24/7 support"],
+    "Hablar con ventas": ["Parla amb vendes", "Talk to sales"],
+    // Landing: testimonios
+    "Cientos de restaurantes": ["Centenars de restaurants", "Hundreds of restaurants"],
+    "ya confían en nosotros": ["ja confien en nosaltres", "already trust us"],
+    "Pero no te quedes solo con nuestra palabra.": ["Però no et quedis només amb la nostra paraula.", "But don't just take our word for it."],
+    "Gerente de sala, La Tasquita": ["Gerent de sala, La Tasquita", "Floor manager, La Tasquita"],
+    "Jefa de Operaciones, Fonda Real": ["Cap d'Operacions, Fonda Real", "Head of Operations, Fonda Real"],
+    "Producto, Fondina": ["Producte, Fondina", "Product, Fondina"],
+    "Directora de Producto, GrupoBrasa": ["Directora de Producte, GrupoBrasa", "Product Director, GrupoBrasa"],
+    "\"Sin involucrar a mi equipo técnico, puedo ver el rendimiento de nuestro TPV, reservas y apps de delivery. Somos un negocio pequeño y un sistema complejo que necesite a alguien dedicado no era una opción.\"": ["\"Sense involucrar el meu equip tècnic, puc veure el rendiment del nostre TPV, reserves i apps de delivery. Som un negoci petit i un sistema complex que necessiti algú dedicat no era una opció.\"", "\"Without involving my tech team, I can see how our POS, bookings and delivery apps are performing. We're a small business and a complex system needing someone dedicated wasn't an option.\""],
+    "\"Restora nos ayuda a entender a nuestros clientes en cada punto de contacto. La implementación fue sencilla y ahora nos ahorra horas cada mes en recopilar y analizar datos.\"": ["\"Restora ens ajuda a entendre els nostres clients en cada punt de contacte. La implementació va ser senzilla i ara ens estalvia hores cada mes a recopilar i analitzar dades.\"", "\"Restora helps us understand our customers at every touchpoint. Implementation was simple and it now saves us hours every month collecting and analyzing data.\""],
+    "\"Con Restora podemos orientar a nuestros equipos hacia las ventas desde el primer día y construir una cultura de decisiones realmente basadas en datos.\"": ["\"Amb Restora podem orientar els nostres equips cap a les vendes des del primer dia i construir una cultura de decisions realment basades en dades.\"", "\"With Restora we can point our teams at sales from day one and build a culture of truly data-driven decisions.\""],
+    "\"Somos un negocio pequeño y muy pocos en el equipo tienen tiempo o conocimientos técnicos, así que necesitábamos una herramienta lo más intuitiva posible.\"": ["\"Som un negoci petit i molt pocs a l'equip tenen temps o coneixements tècnics, així que necessitàvem una eina el més intuïtiva possible.\"", "\"We're a small business and very few on the team have the time or technical skills, so we needed the most intuitive tool possible.\""],
+    "\"Hay muchas herramientas de gestión en el mercado, pero donde Restora se diferencia es en la simplicidad y usabilidad. Si conoces Excel, ya sabes usar Restora.\"": ["\"Hi ha moltes eines de gestió al mercat, però on Restora es diferencia és en la simplicitat i usabilitat. Si coneixes l'Excel, ja saps fer servir Restora.\"", "\"There are plenty of management tools out there, but where Restora stands apart is simplicity and usability. If you know Excel, you already know Restora.\""],
+    "\"Usamos @restora en todo @FogónGroup. Si necesitas una herramienta que dé poder a todo tu equipo Y que escale contigo, no busques más.\"": ["\"Fem servir @restora a tot @FogónGroup. Si necessites una eina que doni poder a tot el teu equip I que escali amb tu, no busquis més.\"", "\"We use @restora across @FogónGroup. If you need a tool that empowers your whole team AND scales with you, look no further.\""],
+    "Mostrar más...": ["Mostra'n més...", "Show more..."],
+    // Landing: CTA y footer
+    "Estamos haciendo la gestión de": ["Estem fent la gestió de", "We're making restaurant"],
+    "restaurantes fácil para todos.": ["restaurants fàcil per a tothom.", "management easy for everyone."],
+    "Toma el control de tu restaurante como nunca antes. Únete al cambio.": ["Pren el control del teu restaurant com mai abans. Uneix-te al canvi.", "Take control of your restaurant like never before. Join the change."],
+    "Comienza gratis": ["Comença gratis", "Start for free"],
+    "Habla con ventas": ["Parla amb vendes", "Talk to sales"],
+    "Empresa": ["Empresa", "Company"],
+    "Documentación": ["Documentació", "Documentation"],
+    "Empleo": ["Feina", "Careers"],
+    "Recursos": ["Recursos", "Resources"],
+    "Finanzas": ["Finances", "Finance"],
+    "Fundadores": ["Fundadors", "Founders"],
+    "Producto": ["Producte", "Product"],
+    "Ventas": ["Vendes", "Sales"],
+    "Términos de servicio": ["Termes de servei", "Terms of service"],
+    "Política de privacidad": ["Política de privacitat", "Privacy policy"],
+    "Seguridad": ["Seguretat", "Security"],
+    "Aún no tenemos redes sociales activas": ["Encara no tenim xarxes socials actives", "We don't have active social networks yet"],
+    // Modales de acceso
+    "Entra con el correo y la contraseña de tu restaurante.": ["Entra amb el correu i la contrasenya del teu restaurant.", "Sign in with your restaurant's email and password."],
+    "Correo (Gmail)": ["Correu (Gmail)", "Email (Gmail)"],
+    "Contraseña": ["Contrasenya", "Password"],
+    "Entrar": ["Entra", "Sign in"],
+    "¿No tienes cuenta?": ["No tens compte?", "Don't have an account?"],
+    "Regístrate": ["Registra't", "Sign up"],
+    "Prueba Restora gratis": ["Prova Restora gratis", "Try Restora for free"],
+    "14 días gratis, sin tarjeta. Configura tu restaurante en minutos.": ["14 dies gratis, sense targeta. Configura el teu restaurant en minuts.", "14 days free, no card. Set up your restaurant in minutes."],
+    "Nombre del restaurante": ["Nom del restaurant", "Restaurant name"],
+    "Crear contraseña": ["Crea una contrasenya", "Create password"],
+    "Mínimo 6 caracteres": ["Mínim 6 caràcters", "At least 6 characters"],
+    "Crear cuenta gratis": ["Crea un compte gratis", "Create free account"],
+    "¿Ya tienes cuenta?": ["Ja tens compte?", "Already have an account?"],
+    "Inicia sesión": ["Inicia la sessió", "Log in"],
+    "Usa el correo y el código que te ha dado tu encargado.": ["Fes servir el correu i el codi que t'ha donat el teu encarregat.", "Use the email and code your manager gave you."],
+    "Código": ["Codi", "Code"],
+    "Cuéntanos sobre tu restaurante y te contactamos en menos de 24h.": ["Explica'ns sobre el teu restaurant i et contactem en menys de 24 h.", "Tell us about your restaurant and we'll get back to you within 24h."],
+    "Tu nombre": ["El teu nom", "Your name"],
+    "Número de mesas": ["Nombre de taules", "Number of tables"],
+    "Ej. 12": ["P. ex. 12", "e.g. 12"],
+    "Enviar": ["Envia", "Send"],
+    "Gracias. Nuestro equipo de ventas te escribirá muy pronto.": ["Gràcies. El nostre equip de vendes t'escriurà molt aviat.", "Thanks. Our sales team will write to you very soon."],
+    "Precios de Restora": ["Preus de Restora", "Restora pricing"],
+    "Un único plan con todo incluido: mesas con QR, cocina, personal, inventario e IA.": ["Un únic pla amb tot inclòs: taules amb QR, cuina, personal, inventari i IA.", "A single all-inclusive plan: QR tables, kitchen, staff, inventory and AI."],
+    "Email de trabajo": ["Correu de feina", "Work email"],
+    "Recibir precios por email": ["Rep els preus per correu", "Get pricing by email"],
+    "Te hemos enviado el detalle de precios a tu correo.": ["T'hem enviat el detall de preus al teu correu.", "We've sent the pricing details to your email."],
+    // SaaS: barra lateral y topbar
+    "Reservas": ["Reserves", "Bookings"],
+    "Pedidos": ["Comandes", "Orders"],
+    "TPV": ["TPV", "POS"],
+    "Mesas": ["Taules", "Tables"],
+    "Menú": ["Menú", "Menu"],
+    "Inventario": ["Inventari", "Inventory"],
+    "Ayudante IA": ["Ajudant IA", "AI Assistant"],
+    "Mi restaurante": ["El meu restaurant", "My restaurant"],
+    "Personal": ["Personal", "Staff"],
+    "Configuración": ["Configuració", "Settings"],
+    "Panel": ["Tauler", "Panel"],
+    "Salir": ["Surt", "Log out"],
+    "Notificaciones": ["Notificacions", "Notifications"],
+    // SaaS: cabeceras de seccion
+    "Visión general de tu restaurante.": ["Visió general del teu restaurant.", "Overview of your restaurant."],
+    "Estado en vivo de tu sala.": ["Estat en viu de la teva sala.", "Live status of your floor."],
+    "Gestiona las reservas de tu restaurante.": ["Gestiona les reserves del teu restaurant.", "Manage your restaurant's bookings."],
+    "Comandas activas en sala y cocina.": ["Comandes actives a sala i cuina.", "Active orders in floor and kitchen."],
+    "Cobra cuentas y gestiona la caja.": ["Cobra comptes i gestiona la caixa.", "Charge bills and manage the till."],
+    "Gestiona tus platos y precios.": ["Gestiona els teus plats i preus.", "Manage your dishes and prices."],
+    "Recibe tus pedidos de delivery.": ["Rep les teves comandes de delivery.", "Receive your delivery orders."],
+    "Controla tu stock antes de que se agote.": ["Controla el teu estoc abans que s'esgoti.", "Track your stock before it runs out."],
+    "Recomendaciones basadas en tus datos.": ["Recomanacions basades en les teves dades.", "Recommendations based on your data."],
+    "Información general de tu local.": ["Informació general del teu local.", "General info about your venue."],
+    "Tu equipo y sus turnos.": ["El teu equip i els seus torns.", "Your team and their shifts."],
+    "Conecta las herramientas que ya usas.": ["Connecta les eines que ja fas servir.", "Connect the tools you already use."],
+    "Datos personales, facturación y preferencias de la cuenta.": ["Dades personals, facturació i preferències del compte.", "Personal data, billing and account preferences."],
+    // SaaS: dashboard y mesas
+    "Ingresos totales": ["Ingressos totals", "Total revenue"],
+    "Pedidos totales": ["Comandes totals", "Total orders"],
+    "Comensales atendidos": ["Comensals atesos", "Guests served"],
+    "Ingresos por pedido": ["Ingressos per comanda", "Revenue per order"],
+    "Aún no hay pedidos registrados.": ["Encara no hi ha comandes registrades.", "No orders recorded yet."],
+    "Configura tus mesas": ["Configura les teves taules", "Set up your tables"],
+    "¿Cuántas mesas tiene tu restaurante?": ["Quantes taules té el teu restaurant?", "How many tables does your restaurant have?"],
+    "Crear mesas": ["Crea les taules", "Create tables"],
+    "← Volver al panel": ["← Torna al tauler", "← Back to panel"],
+    "Cambiar número de mesas": ["Canvia el nombre de taules", "Change number of tables"],
+    // SaaS: botones y tablas
+    "🔗 Enlace para reservar": ["🔗 Enllaç per reservar", "🔗 Booking link"],
+    "Conectar": ["Connecta", "Connect"],
+    "+ Nueva reserva": ["+ Nova reserva", "+ New booking"],
+    "+ Nuevo pedido": ["+ Nova comanda", "+ New order"],
+    "+ Añadir plato": ["+ Afegeix plat", "+ Add dish"],
+    "+ Añadir producto": ["+ Afegeix producte", "+ Add product"],
+    "+ Añadir empleado": ["+ Afegeix empleat", "+ Add employee"],
+    "+ Nueva conversación": ["+ Nova conversa", "+ New conversation"],
+    "+ Venta rápida": ["+ Venda ràpida", "+ Quick sale"],
+    "Subir foto del menú": ["Puja una foto del menú", "Upload menu photo"],
+    "Pegar menú": ["Enganxa el menú", "Paste menu"],
+    "Menú del restaurante": ["Menú del restaurant", "Restaurant menu"],
+    "Personas": ["Persones", "Guests"],
+    "Estado": ["Estat", "Status"],
+    "Plato": ["Plat", "Dish"],
+    "Precio": ["Preu", "Price"],
+    "Stock": ["Estoc", "Stock"],
+    "Mínimo": ["Mínim", "Minimum"],
+    "Cliente": ["Client", "Customer"],
+    "Teléfono": ["Telèfon", "Phone"],
+    "Rol": ["Rol", "Role"],
+    "Turno": ["Torn", "Shift"],
+    "Hora": ["Hora", "Time"],
+    "Mesa": ["Taula", "Table"],
+    "Pedidos a domicilio": ["Comandes a domicili", "Delivery orders"],
+    "Conecta Glovo, Uber Eats o JustEat desde Apps para ver aquí tus pedidos a domicilio.": ["Connecta Glovo, Uber Eats o JustEat des d'Apps per veure aquí les teves comandes a domicili.", "Connect Glovo, Uber Eats or JustEat from Apps to see your delivery orders here."],
+    "Ir a Apps": ["Ves a Apps", "Go to Apps"],
+    // SaaS: IA
+    "¿Cuánto hemos facturado hoy?": ["Quant hem facturat avui?", "How much have we billed today?"],
+    "¿Qué plato se ha vendido más?": ["Quin plat s'ha venut més?", "Which dish sold the most?"],
+    "¿Cuántas mesas están ocupadas?": ["Quantes taules estan ocupades?", "How many tables are occupied?"],
+    "¿Quién trabaja hoy?": ["Qui treballa avui?", "Who's working today?"],
+    "¿Qué reservas hay hoy?": ["Quines reserves hi ha avui?", "What bookings are there today?"],
+    // SaaS: mi restaurante y configuracion
+    "DATOS GENERALES": ["DADES GENERALS", "GENERAL DETAILS"],
+    "HORARIO DE APERTURA": ["HORARI D'OBERTURA", "OPENING HOURS"],
+    "DATOS PERSONALES": ["DADES PERSONALS", "PERSONAL DETAILS"],
+    "DATOS BANCARIOS": ["DADES BANCÀRIES", "BANK DETAILS"],
+    "PREFERENCIAS": ["PREFERÈNCIES", "PREFERENCES"],
+    "CARTA DIGITAL": ["CARTA DIGITAL", "DIGITAL MENU"],
+    "INCLUYE": ["INCLOU", "INCLUDES"],
+    "Dirección": ["Adreça", "Address"],
+    "Nº de mesas": ["Nre. de taules", "No. of tables"],
+    "Teléfono personal": ["Telèfon personal", "Personal phone"],
+    "Titular de la cuenta": ["Titular del compte", "Account holder"],
+    "Nombre del titular de la cuenta": ["Nom del titular del compte", "Account holder name"],
+    "Se guarda solo en este navegador; no se envía a ningún banco ni procesador de pagos real.": ["Es desa només en aquest navegador; no s'envia a cap banc ni processador de pagaments real.", "Stored only in this browser; it isn't sent to any real bank or payment processor."],
+    "Se usa para limitar las reservas online (enlace público) a tus horas de apertura.": ["Es fa servir per limitar les reserves en línia (enllaç públic) a les teves hores d'obertura.", "Used to limit online bookings (public link) to your opening hours."],
+    "Idioma": ["Idioma", "Language"],
+    "Moneda": ["Moneda", "Currency"],
+    "Notificaciones por email": ["Notificacions per correu", "Email notifications"],
+    "Desactivadas": ["Desactivades", "Off"],
+    "Activadas": ["Activades", "On"],
+    "Guardar cambios": ["Desa els canvis", "Save changes"],
+    "Guardar horario": ["Desa l'horari", "Save schedule"],
+    "Guardar preferencias": ["Desa les preferències", "Save preferences"],
+    "Cerrar sesión": ["Tanca la sessió", "Log out"],
+    "Preferencias guardadas": ["Preferències desades", "Preferences saved"],
+    "Carta digital personalizada": ["Carta digital personalitzada", "Custom digital menu"],
+    "🎨 Generar carta digital": ["🎨 Genera la carta digital", "🎨 Generate digital menu"],
+    "✏️ Editar manualmente": ["✏️ Edita manualment", "✏️ Edit manually"],
+    "El QR de tus mesas llevará aquí en cuanto la generes.": ["El QR de les teves taules portarà aquí quan la generis.", "Your tables' QR will point here once you generate it."],
+    "Eslogan generado por IA": ["Eslògan generat per IA", "AI-generated tagline"],
+    "Colores y estilo a tu medida": ["Colors i estil a mida", "Colors and style your way"],
+    "Tu menú siempre actualizado": ["El teu menú sempre actualitzat", "Your menu always up to date"],
+    // SaaS: TPV e integraciones
+    "Modo prueba: ningún cobro es real.": ["Mode de prova: cap cobrament és real.", "Test mode: no charge is real."],
+    "Abrir caja": ["Obre la caixa", "Open till"],
+    "Cobrar": ["Cobra", "Charge"],
+    "Sincroniza ventas de tu terminal.": ["Sincronitza vendes del teu terminal.", "Sync sales from your terminal."],
+    "Sincronizado con tus apps de delivery.": ["Sincronitzat amb les teves apps de delivery.", "Synced with your delivery apps."],
+    "No conectado": ["No connectat", "Not connected"],
+    "Aún no has conectado ninguna plataforma": ["Encara no has connectat cap plataforma", "You haven't connected any platform yet"],
+    "📄 Informe Semanal": ["📄 Informe Setmanal", "📄 Weekly Report"],
+    // SaaS: estados comunes (solo visual, los selects no se tocan)
+    "Pendiente": ["Pendent", "Pending"],
+    "En cocina": ["A cuina", "In kitchen"],
+    "Listo": ["Llest", "Ready"],
+    "Servido": ["Servit", "Served"],
+    "Libre": ["Lliure", "Free"],
+    "Ocupada": ["Ocupada", "Occupied"],
+    "Reservada": ["Reservada", "Reserved"],
+    "Disponible": ["Disponible", "Available"],
+    "Agotado": ["Esgotat", "Sold out"],
+    "Confirmada": ["Confirmada", "Confirmed"],
+    "Cancelada": ["Cancel·lada", "Cancelled"],
+    "Camarero": ["Cambrer", "Waiter"],
+    "Cocinero": ["Cuiner", "Cook"],
+    "Encargado": ["Encarregat", "Manager"],
+    "Mañana": ["Matí", "Morning"],
+    "Tarde": ["Tarda", "Afternoon"],
+  };
+
+  let currentLang = (function () {
+    try { return localStorage.getItem('restoraLang') || 'es'; } catch (e) { return 'es'; }
+  })();
+  if (!['es', 'ca', 'en'].includes(currentLang)) currentLang = 'es';
+
+  function i18nPick(entry) { return currentLang === 'ca' ? entry[0] : entry[1]; }
+
+  function translateTextNode(node) {
+    const p = node.parentNode;
+    if (!p || p.nodeName === 'SCRIPT' || p.nodeName === 'STYLE' || p.nodeName === 'OPTION' || p.nodeName === 'TEXTAREA') return;
+    const orig = node.__es != null ? node.__es : node.nodeValue;
+    if (!orig || !orig.trim()) return;
+    if (currentLang === 'es') {
+      if (node.__es != null) { node.nodeValue = node.__es; node.__es = undefined; }
+      return;
+    }
+    const key = orig.trim();
+    const entry = I18N[key];
+    if (!entry) {
+      if (node.__es != null) { node.nodeValue = node.__es; node.__es = undefined; }
+      return;
+    }
+    if (node.__es == null) node.__es = orig;
+    node.nodeValue = orig.replace(key, i18nPick(entry));
+  }
+
+  function translateAttrs(el) {
+    ['placeholder', 'title', 'aria-label'].forEach((a) => {
+      if (!el.hasAttribute || !el.hasAttribute(a)) return;
+      el.__esA = el.__esA || {};
+      const orig = el.__esA[a] != null ? el.__esA[a] : el.getAttribute(a);
+      if (currentLang === 'es') {
+        if (el.__esA[a] != null) { el.setAttribute(a, el.__esA[a]); delete el.__esA[a]; }
+        return;
+      }
+      const entry = I18N[orig.trim()];
+      if (!entry) return;
+      if (el.__esA[a] == null) el.__esA[a] = orig;
+      el.setAttribute(a, i18nPick(entry));
+    });
+  }
+
+  function translateTree(root) {
+    if (!root) return;
+    if (root.nodeType === 3) { translateTextNode(root); return; }
+    if (root.nodeType !== 1 && root.nodeType !== 9) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    let n;
+    while ((n = walker.nextNode())) translateTextNode(n);
+    if (root.nodeType === 1) translateAttrs(root);
+    if (root.querySelectorAll) root.querySelectorAll('[placeholder],[title],[aria-label]').forEach(translateAttrs);
+  }
+
+  function setLang(lang) {
+    currentLang = ['es', 'ca', 'en'].includes(lang) ? lang : 'es';
+    try { localStorage.setItem('restoraLang', currentLang); } catch (e) {}
+    document.documentElement.setAttribute('lang', currentLang);
+    translateTree(document.body);
+    const d = document.getElementById('langSwitcherDesktop'); if (d) d.value = currentLang;
+    const m = document.getElementById('langSwitcherMobile'); if (m) m.value = currentLang;
+  }
+
+  new MutationObserver((mutations) => {
+    if (currentLang === 'es') return;
+    mutations.forEach((mu) => {
+      mu.addedNodes.forEach((node) => translateTree(node));
+    });
+  }).observe(document.body, { childList: true, subtree: true });
+
+  setLang(currentLang);
 
   document.querySelectorAll('a[href^="#"]').forEach(a => {
     a.addEventListener('click', function (e) {
