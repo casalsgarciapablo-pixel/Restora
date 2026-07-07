@@ -201,7 +201,7 @@
     .hero-sub { font-size: 1.05rem !important; }
     .hero-mock-aside { display: none !important; }
     #landingRoot > .relative.overflow-hidden > .hero-glow { top: 90px; }
-    #landingRoot > .relative.overflow-hidden > .hero-glow svg { transform: scaleY(1.35); transform-origin: top center; }
+    #landingRoot > .relative.overflow-hidden > .hero-glow svg { transform: scaleY(1.65); transform-origin: top center; }
 
     /* Section headings a bit more compact */
     #landingRoot h2 { font-size: 1.85rem !important; }
@@ -4357,7 +4357,7 @@
       const dlen = Math.hypot(dx, dy) || 1;
       dx /= dlen; dy /= dlen;
       const nx = -dy, ny = dx;
-      const w = t < 0.5 ? maxWidth : maxWidth * (1 - (t - 0.5) / 0.5);
+      const w = t < 0.65 ? maxWidth : maxWidth * (1 - (t - 0.65) / 0.35);
       top.push([p.x + nx * w / 2, p.y + ny * w / 2]);
       bottom.push([p.x - nx * w / 2, p.y - ny * w / 2]);
     }
