@@ -335,6 +335,15 @@
     }
     #reservasTableWrap td[data-label] select { max-width: 60%; }
 
+    /* Inventario: tablas de platos y detalle de receta -> tarjetas */
+    #invPlatosWrap table, #invPlatosWrap tbody, #invPlatosWrap tr, #invPlatosWrap td,
+    #invDetalleWrap table, #invDetalleWrap tbody, #invDetalleWrap tr, #invDetalleWrap td { display: block; width: 100%; }
+    #invPlatosWrap thead, #invDetalleWrap thead { display: none; }
+    #invPlatosWrap tbody tr, #invDetalleWrap tbody tr { border-bottom: 1px solid #e2e8f0; padding: 10px 14px; }
+    #invPlatosWrap td, #invDetalleWrap td { padding: 4px 0 !important; }
+    #invPlatosWrap td[data-label], #invDetalleWrap td[data-label] { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: right; }
+    #invPlatosWrap td[data-label]::before, #invDetalleWrap td[data-label]::before { content: attr(data-label); font-size: 11px; font-weight: 600; color: #94a3b8; text-align: left; flex-shrink: 0; }
+
     /* IA assistant: stack conversations above the chat */
     .ia-layout { flex-direction: column !important; gap: 12px !important; }
     .ia-sidebar { width: 100% !important; }
@@ -1313,14 +1322,17 @@
             <p class="text-xs text-slate-400 mt-1">Controla tu stock antes de que se agote.</p>
           </div>
         </div>
-        <button onclick="openModal('add-inventario')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir producto</button>
+        <div class="flex gap-2 flex-wrap">
+          <button onclick="openModal('excel-inventario')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">📊 Conectar Excel</button>
+          <button onclick="openModal('add-inventario')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir ingrediente</button>
+        </div>
       </div>
-      <div id="inventarioTableWrap" class="mt-5 rounded-xl border border-slate-200 overflow-hidden bg-white">
-        <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-slate-500 text-xs"><tr><th class="text-left font-medium px-4 py-2.5">Producto</th><th class="text-left font-medium px-4 py-2.5">Stock</th><th class="text-left font-medium px-4 py-2.5">Mínimo</th><th class="text-left font-medium px-4 py-2.5">Estado</th><th class="px-4 py-2.5 w-10"></th></tr></thead>
-          <tbody id="inventarioBody" class="divide-y divide-slate-100"></tbody>
-        </table>
+      <div id="invAvisos" class="mt-4"></div>
+      <div class="mt-4 flex gap-2">
+        <button id="invTabPlatos" onclick="setInvVista('platos')" class="rounded-full text-xs font-semibold px-4 py-2 transition bg-navydeep text-white">🍽️ Platos</button>
+        <button id="invTabIngredientes" onclick="setInvVista('ingredientes')" class="rounded-full text-xs font-semibold px-4 py-2 transition bg-slate-100 text-slate-500 hover:bg-slate-200">🥕 Ingredientes</button>
       </div>
+      <div id="inventarioContenido" class="mt-4"></div>
     </section>
 
     <!-- IA -->
@@ -1680,6 +1692,7 @@
       'upload-menu': uploadMenuFormHtml,
       'add-personal': addPersonalFormHtml,
       'add-inventario': addInventarioFormHtml,
+      'excel-inventario': excelInventarioFormHtml,
     };
     if (customRenderers[type]) {
       document.getElementById('modalBody').innerHTML = customRenderers[type]();
@@ -1896,6 +1909,19 @@
     data.menu = Array.isArray(data.menu) ? data.menu : [];
     data.personal = Array.isArray(data.personal) ? data.personal : [];
     data.inventario = Array.isArray(data.inventario) ? data.inventario : [];
+    data.inventario = data.inventario.map(p => {
+      const item = { producto: p.producto || '', stock: p.stock, minimo: p.minimo, unidad: p.unidad || '' };
+      if (typeof item.stock === 'string') {
+        const m = item.stock.trim().match(/^(-?[\d.,]+)\s*(.*)$/);
+        if (m) { item.stock = parseFloat(m[1].replace(',', '.')); if (!item.unidad && m[2]) item.unidad = m[2].trim(); }
+      }
+      if (typeof item.minimo === 'string') {
+        const m2 = item.minimo.trim().match(/^(-?[\d.,]+)/);
+        if (m2) item.minimo = parseFloat(m2[1].replace(',', '.'));
+      }
+      return item;
+    });
+    data.menu.forEach(m => { if (!Array.isArray(m.receta)) m.receta = []; });
     data.integraciones = data.integraciones || {};
     data.integraciones.square = !!data.integraciones.square;
     data.integraciones.glovo = !!data.integraciones.glovo;
@@ -3122,10 +3148,15 @@
   const pedidoCycle = ['Pendiente','En cocina','Listo'];
   function cicloEstadoPedido(i) {
     const acc = getCurrentAccount();
-    const cur = acc.data.pedidos[i].estado;
-    acc.data.pedidos[i].estado = pedidoCycle[(pedidoCycle.indexOf(cur) + 1) % pedidoCycle.length];
+    const p = acc.data.pedidos[i];
+    p.estado = pedidoCycle[(pedidoCycle.indexOf(p.estado) + 1) % pedidoCycle.length];
+    if (p.estado === 'Listo' && !p.stockDescontado) {
+      descontarStockPedido(acc, p);
+      p.stockDescontado = true;
+    }
     saveCurrentAccountData(acc.data);
     renderPedidos();
+    renderInventario();
   }
   function eliminarPedido(i) {
     const acc = getCurrentAccount();
@@ -3900,50 +3931,372 @@
     if (s < m * 1.3) return { label: 'Justo', cls: 'text-amber-600 bg-amber-50' };
     return { label: 'OK', cls: 'text-emerald-600 bg-emerald-50' };
   }
+  let invVista = 'platos';
+  let invPlatoAbierto = null;
+
+  function invNum(v) { const n = parseFloat(String(v).trim().replace(',', '.')); return isNaN(n) ? null : n; }
+  function invFmt(n) { return (Math.round(n * 100) / 100).toString().replace('.', ','); }
+  function findIngrediente(acc, nombre) {
+    const k = String(nombre).trim().toLowerCase();
+    return acc.data.inventario.find(p => String(p.producto).trim().toLowerCase() === k);
+  }
+  function racionesPosibles(acc, m) {
+    if (!Array.isArray(m.receta) || !m.receta.length) return null;
+    let min = Infinity;
+    for (const r of m.receta) {
+      const ing = findIngrediente(acc, r.producto);
+      const cant = invNum(r.cantidad);
+      if (!cant || cant <= 0) continue;
+      if (!ing) { min = 0; continue; }
+      const st = invNum(ing.stock);
+      if (st == null) continue;
+      min = Math.min(min, Math.floor(st / cant));
+    }
+    return min === Infinity ? null : min;
+  }
+
+  function setInvVista(v) { invVista = v; invPlatoAbierto = null; renderInventario(); }
+  function abrirPlatoInventario(i) { invVista = 'platos'; invPlatoAbierto = i; renderInventario(); }
+
   function renderInventario() {
+    const cont = document.getElementById('inventarioContenido');
+    if (!cont) return;
     const acc = getCurrentAccount();
-    const list = acc.data.inventario;
-    if (!list.length) {
-      document.getElementById('inventarioBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="5">Tu inventario está vacío</td></tr>`;
+    const on = 'rounded-full text-xs font-semibold px-4 py-2 transition bg-navydeep text-white';
+    const off = 'rounded-full text-xs font-semibold px-4 py-2 transition bg-slate-100 text-slate-500 hover:bg-slate-200';
+    const tabP = document.getElementById('invTabPlatos');
+    const tabI = document.getElementById('invTabIngredientes');
+    if (tabP) tabP.className = invVista === 'platos' ? on : off;
+    if (tabI) tabI.className = invVista === 'ingredientes' ? on : off;
+    const avisos = document.getElementById('invAvisos');
+    if (avisos) {
+      const bajos = acc.data.inventario.filter(p => inventarioEstado(p.stock, p.minimo).label === 'Bajo');
+      avisos.innerHTML = bajos.length
+        ? `<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600 font-medium">⚠️ ${bajos.length === 1 ? '1 ingrediente está por debajo del mínimo' : bajos.length + ' ingredientes están por debajo del mínimo'}: ${bajos.map(p => p.producto).join(', ')}. Pide más antes del próximo servicio.</div>`
+        : '';
+    }
+    if (invVista === 'ingredientes') return renderInvIngredientes(acc, cont);
+    if (invPlatoAbierto != null && acc.data.menu[invPlatoAbierto]) return renderInvPlatoDetalle(acc, cont);
+    invPlatoAbierto = null;
+    renderInvPlatos(acc, cont);
+  }
+
+  function renderInvPlatos(acc, cont) {
+    const menu = acc.data.menu;
+    if (!menu.length) {
+      cont.innerHTML = `<div class="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
+        <p class="text-sm font-semibold text-navy">Aún no tienes platos</p>
+        <p class="text-xs text-slate-400 mt-1">Añade platos en el apartado Menú y aquí podrás asignarles ingredientes y cantidades.</p>
+      </div>`;
       return;
     }
-    document.getElementById('inventarioBody').innerHTML = list.map((p,i) => {
-      const e = inventarioEstado(p.stock, p.minimo);
-      return `<tr><td class="px-4 py-2.5" data-label="Producto">${p.producto}</td><td class="px-4 py-2.5" data-label="Stock">${p.stock}</td><td class="px-4 py-2.5" data-label="Mínimo">${p.minimo}</td><td class="px-4 py-2.5" data-label="Estado"><span class="${e.cls} rounded-full px-2 py-0.5 text-xs font-medium">${e.label}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarProducto(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
+    const filas = menu.map((m, i) => {
+      const receta = Array.isArray(m.receta) ? m.receta : [];
+      const rac = racionesPosibles(acc, m);
+      let chip;
+      if (!receta.length) chip = '<span class="bg-slate-100 text-slate-500 rounded-full px-2 py-0.5 text-xs font-medium">Sin receta</span>';
+      else if (rac === 0) chip = '<span class="bg-rose-50 text-rose-500 rounded-full px-2 py-0.5 text-xs font-medium">Sin stock</span>';
+      else if (rac != null && rac <= 5) chip = `<span class="bg-amber-50 text-amber-600 rounded-full px-2 py-0.5 text-xs font-medium">Quedan ${rac}</span>`;
+      else chip = '<span class="bg-emerald-50 text-emerald-600 rounded-full px-2 py-0.5 text-xs font-medium">OK</span>';
+      return `<tr class="cursor-pointer hover:bg-slate-50 transition" onclick="abrirPlatoInventario(${i})">
+        <td data-label="Plato" class="px-4 py-2.5 font-medium text-navy">${m.nombre}</td>
+        <td data-label="Ingredientes" class="px-4 py-2.5">${receta.length || '—'}</td>
+        <td data-label="Raciones posibles" class="px-4 py-2.5">${rac == null ? '—' : rac}</td>
+        <td data-label="Estado" class="px-4 py-2.5">${chip}</td>
+        <td class="px-4 py-2.5 text-right text-slate-300">›</td>
+      </tr>`;
     }).join('');
+    cont.innerHTML = `<div id="invPlatosWrap" class="rounded-xl border border-slate-200 overflow-hidden bg-white">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-slate-500 text-xs"><tr><th class="text-left font-medium px-4 py-2.5">Plato</th><th class="text-left font-medium px-4 py-2.5">Ingredientes</th><th class="text-left font-medium px-4 py-2.5">Raciones posibles</th><th class="text-left font-medium px-4 py-2.5">Estado</th><th class="px-4 py-2.5 w-10"></th></tr></thead>
+        <tbody class="divide-y divide-slate-100">${filas}</tbody>
+      </table>
+    </div>
+    <p class="mt-2 text-xs text-slate-400">Toca un plato para ver sus ingredientes y editar su receta. Las raciones posibles se calculan con el stock actual.</p>`;
   }
-  function eliminarProducto(i) {
+
+  function renderInvPlatoDetalle(acc, cont) {
+    const i = invPlatoAbierto;
+    const m = acc.data.menu[i];
+    const receta = Array.isArray(m.receta) ? m.receta : [];
+    const rac = racionesPosibles(acc, m);
+    let cuerpo;
+    if (!receta.length) {
+      cuerpo = `<div class="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
+        <p class="text-sm font-semibold text-navy">Este plato aún no tiene receta</p>
+        <p class="text-xs text-slate-400 mt-1">Asigna ingredientes y cantidades por ración para descontar stock automáticamente con cada pedido listo.</p>
+        <button onclick="abrirEditarReceta(${i})" class="mt-4 rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">✏️ Crear receta</button>
+      </div>`;
+    } else {
+      const filas = receta.map(r => {
+        const ing = findIngrediente(acc, r.producto);
+        const st = ing ? invNum(ing.stock) : null;
+        const e = ing ? inventarioEstado(ing.stock, ing.minimo) : { label: 'No está en inventario', cls: 'text-rose-500 bg-rose-50' };
+        return `<tr>
+          <td data-label="Ingrediente" class="px-4 py-2.5 font-medium text-navy">${r.producto}</td>
+          <td data-label="Por ración" class="px-4 py-2.5">${invFmt(invNum(r.cantidad) || 0)}${ing && ing.unidad ? ' ' + ing.unidad : ''}</td>
+          <td data-label="En stock" class="px-4 py-2.5">${ing ? (st != null ? invFmt(st) : ing.stock) + (ing.unidad ? ' ' + ing.unidad : '') : '—'}</td>
+          <td data-label="Estado" class="px-4 py-2.5"><span class="${e.cls} rounded-full px-2 py-0.5 text-xs font-medium">${e.label}</span></td>
+        </tr>`;
+      }).join('');
+      cuerpo = `<div id="invDetalleWrap" class="rounded-xl border border-slate-200 overflow-hidden bg-white">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-500 text-xs"><tr><th class="text-left font-medium px-4 py-2.5">Ingrediente</th><th class="text-left font-medium px-4 py-2.5">Por ración</th><th class="text-left font-medium px-4 py-2.5">En stock</th><th class="text-left font-medium px-4 py-2.5">Estado</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">${filas}</tbody>
+        </table>
+      </div>`;
+    }
+    cont.innerHTML = `
+      <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+        <button onclick="setInvVista('platos')" class="text-sm font-semibold text-slate-500 hover:text-navy transition">← Volver a platos</button>
+        <div class="flex items-center gap-3">
+          ${rac != null ? `<span class="text-xs text-slate-400">Raciones posibles: <b class="text-navy">${rac}</b></span>` : ''}
+          ${receta.length ? `<button onclick="abrirEditarReceta(${i})" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">✏️ Editar receta</button>` : ''}
+        </div>
+      </div>
+      <p class="text-base font-bold text-navy mb-3">${m.nombre}</p>
+      ${cuerpo}`;
+  }
+
+  function renderInvIngredientes(acc, cont) {
+    const list = acc.data.inventario;
+    let filas;
+    if (!list.length) {
+      filas = `<tr><td class="px-4 py-3 text-slate-400" colspan="6">Tu inventario está vacío. Añade tu primer ingrediente o impórtalos desde Excel.</td></tr>`;
+    } else {
+      filas = list.map((p, i) => {
+        const e = inventarioEstado(p.stock, p.minimo);
+        const st = invNum(p.stock);
+        return `<tr>
+          <td data-label="Ingrediente" class="px-4 py-2.5 font-medium text-navy">${p.producto}</td>
+          <td data-label="Stock" class="px-4 py-2.5">
+            <span class="inline-flex items-center gap-1.5">
+              <button onclick="ajustarStock(${i}, -1)" class="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs font-bold transition">−</button>
+              <b class="text-navy min-w-[3rem] text-center inline-block">${st != null ? invFmt(st) : p.stock}</b>
+              <button onclick="ajustarStock(${i}, 1)" class="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs font-bold transition">＋</button>
+            </span>
+          </td>
+          <td data-label="Unidad" class="px-4 py-2.5">${p.unidad || '—'}</td>
+          <td data-label="Mínimo" class="px-4 py-2.5">${invNum(p.minimo) != null ? invFmt(invNum(p.minimo)) : p.minimo}</td>
+          <td data-label="Estado" class="px-4 py-2.5"><span class="${e.cls} rounded-full px-2 py-0.5 text-xs font-medium">${e.label}</span></td>
+          <td class="px-4 py-2.5 text-right whitespace-nowrap">
+            <button onclick="abrirEditarIngrediente(${i})" class="text-slate-300 hover:text-navy transition mr-2" title="Editar">✎</button>
+            <button onclick="eliminarProducto(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+    cont.innerHTML = `<div id="inventarioTableWrap" class="rounded-xl border border-slate-200 overflow-hidden bg-white">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-slate-500 text-xs"><tr><th class="text-left font-medium px-4 py-2.5">Ingrediente</th><th class="text-left font-medium px-4 py-2.5">Stock</th><th class="text-left font-medium px-4 py-2.5">Unidad</th><th class="text-left font-medium px-4 py-2.5">Mínimo</th><th class="text-left font-medium px-4 py-2.5">Estado</th><th class="px-4 py-2.5 w-16"></th></tr></thead>
+        <tbody class="divide-y divide-slate-100">${filas}</tbody>
+      </table>
+    </div>`;
+  }
+
+  function ajustarStock(i, delta) {
     const acc = getCurrentAccount();
-    acc.data.inventario.splice(i, 1);
+    const p = acc.data.inventario[i];
+    const st = invNum(p.stock);
+    if (st == null) return showToast('El stock de este ingrediente no es numérico. Edítalo primero.');
+    p.stock = Math.max(0, Math.round((st + delta) * 100) / 100);
     saveCurrentAccountData(acc.data);
     renderInventario();
-    showToast('Producto eliminado');
   }
-  function addInventarioFormHtml() {
+
+  function eliminarProducto(i) {
+    const acc = getCurrentAccount();
+    const nombre = acc.data.inventario[i].producto;
+    acc.data.inventario.splice(i, 1);
+    acc.data.menu.forEach(m => { if (Array.isArray(m.receta)) m.receta = m.receta.filter(r => r.producto !== nombre); });
+    saveCurrentAccountData(acc.data);
+    renderInventario();
+    showToast('Ingrediente eliminado');
+  }
+
+  function ingredienteFormHtml(i) {
+    const acc = getCurrentAccount();
+    const p = i != null ? acc.data.inventario[i] : { producto: '', stock: '', unidad: '', minimo: '' };
+    const stockVal = invNum(p.stock); const minVal = invNum(p.minimo);
     return `
-      <h3 class="text-xl font-bold text-navy">Añadir producto</h3>
-      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Producto</label>
-      <input id="invProducto" type="text" placeholder="Salmón" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
-      <div class="grid grid-cols-2 gap-3 mt-4">
-        <div><label class="block text-sm font-medium text-navy mb-1.5">Stock actual</label><input id="invStock" type="text" placeholder="4 kg" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
-        <div><label class="block text-sm font-medium text-navy mb-1.5">Mínimo</label><input id="invMinimo" type="text" placeholder="6 kg" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+      <h3 class="text-xl font-bold text-navy">${i != null ? 'Editar ingrediente' : 'Añadir ingrediente'}</h3>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Ingrediente</label>
+      <input id="invProducto" type="text" value="${String(p.producto).replace(/"/g, '&quot;')}" placeholder="Salmón" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <div class="grid grid-cols-3 gap-3 mt-4">
+        <div><label class="block text-sm font-medium text-navy mb-1.5">Stock actual</label><input id="invStock" type="number" step="any" min="0" value="${stockVal != null ? stockVal : ''}" placeholder="4" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+        <div><label class="block text-sm font-medium text-navy mb-1.5">Unidad</label><input id="invUnidad" type="text" value="${String(p.unidad || '').replace(/"/g, '&quot;')}" placeholder="kg" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+        <div><label class="block text-sm font-medium text-navy mb-1.5">Mínimo</label><input id="invMinimo" type="number" step="any" min="0" value="${minVal != null ? minVal : ''}" placeholder="6" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
       </div>
-      <p class="mt-2 text-xs text-slate-400">El estado (OK / Justo / Bajo) se calcula solo comparando stock y mínimo cuando son números.</p>
+      <p class="mt-2 text-xs text-slate-400">Cuando el stock baje del mínimo, avisaremos a cocina para pedir más.</p>
       <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
-      <button type="button" onclick="submitAddInventario()" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar producto</button>
+      <button type="button" onclick="submitIngrediente(${i == null ? 'null' : i})" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">${i != null ? 'Guardar cambios' : 'Guardar ingrediente'}</button>
     `;
   }
-  function submitAddInventario() {
+  function addInventarioFormHtml() { return ingredienteFormHtml(null); }
+  function abrirEditarIngrediente(i) {
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = ingredienteFormHtml(i);
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function submitIngrediente(i) {
     const producto = document.getElementById('invProducto').value.trim();
-    const stock = document.getElementById('invStock').value.trim();
-    const minimo = document.getElementById('invMinimo').value.trim();
-    if (!producto || !stock || !minimo) return modalFormError('Rellena todos los campos.');
+    const stock = invNum(document.getElementById('invStock').value);
+    const unidad = document.getElementById('invUnidad').value.trim();
+    const minimo = invNum(document.getElementById('invMinimo').value);
+    if (!producto || stock == null || minimo == null) return modalFormError('Rellena nombre, stock y mínimo (números).');
     const acc = getCurrentAccount();
-    acc.data.inventario.push({ producto, stock, minimo });
+    const dup = acc.data.inventario.some((p, j) => j !== i && String(p.producto).trim().toLowerCase() === producto.toLowerCase());
+    if (dup) return modalFormError('Ya existe un ingrediente con ese nombre.');
+    if (i == null) {
+      acc.data.inventario.push({ producto, stock, unidad, minimo });
+    } else {
+      const old = acc.data.inventario[i].producto;
+      acc.data.inventario[i] = { producto, stock, unidad, minimo };
+      if (old !== producto) acc.data.menu.forEach(m => (m.receta || []).forEach(r => { if (r.producto === old) r.producto = producto; }));
+    }
     saveCurrentAccountData(acc.data);
     renderInventario();
     closeModal();
-    showToast('Producto añadido');
+    showToast(i == null ? 'Ingrediente añadido' : 'Ingrediente actualizado');
+  }
+
+  function abrirEditarReceta(i) {
+    const acc = getCurrentAccount();
+    const m = acc.data.menu[i];
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    if (!acc.data.inventario.length) {
+      document.getElementById('modalBody').innerHTML = `
+        <h3 class="text-xl font-bold text-navy">Receta: ${m.nombre}</h3>
+        <p class="mt-1.5 text-sm text-slate-500">Primero necesitas ingredientes en el inventario para poder asignarlos a este plato.</p>
+        <button type="button" onclick="openModal('add-inventario')" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">+ Añadir ingrediente</button>
+      `;
+      document.getElementById('modalOverlay').classList.add('open');
+      return;
+    }
+    const receta = Array.isArray(m.receta) ? m.receta : [];
+    const filas = acc.data.inventario.map((p, j) => {
+      const r = receta.find(x => String(x.producto).trim().toLowerCase() === String(p.producto).trim().toLowerCase());
+      const v = r ? invNum(r.cantidad) : null;
+      return `<div class="flex items-center justify-between gap-3 py-2 border-b border-slate-100">
+        <span class="text-sm text-navy">${p.producto}</span>
+        <span class="flex items-center gap-2 shrink-0">
+          <input id="rec_${j}" type="number" step="any" min="0" value="${v != null ? v : ''}" placeholder="0" class="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+          <span class="text-xs text-slate-400" style="min-width:2.5rem">${p.unidad || ''}</span>
+        </span>
+      </div>`;
+    }).join('');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Receta: ${m.nombre}</h3>
+      <p class="mt-1.5 text-sm text-slate-500">Cantidad de cada ingrediente por ración. Deja vacío lo que no lleve.</p>
+      <div class="mt-4 max-h-72 overflow-y-auto pr-1">${filas}</div>
+      <button type="button" onclick="submitReceta(${i})" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar receta</button>
+    `;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function submitReceta(i) {
+    const acc = getCurrentAccount();
+    const receta = [];
+    acc.data.inventario.forEach((p, j) => {
+      const el = document.getElementById('rec_' + j);
+      const v = el ? invNum(el.value) : null;
+      if (v && v > 0) receta.push({ producto: p.producto, cantidad: v });
+    });
+    acc.data.menu[i].receta = receta;
+    saveCurrentAccountData(acc.data);
+    closeModal();
+    renderInventario();
+    showToast('Receta guardada');
+  }
+
+  function descontarStockPedido(acc, pedido) {
+    if (!Array.isArray(pedido.platos) || !pedido.platos.length) return;
+    const avisados = {};
+    pedido.platos.forEach(pl => {
+      const m = acc.data.menu.find(x => x.nombre === pl.nombre);
+      if (!m || !Array.isArray(m.receta)) return;
+      const veces = pl.cantidad || 1;
+      m.receta.forEach(r => {
+        const ing = findIngrediente(acc, r.producto);
+        if (!ing) return;
+        const st = invNum(ing.stock);
+        const cant = invNum(r.cantidad);
+        if (st == null || cant == null) return;
+        const min = invNum(ing.minimo);
+        const despues = Math.max(0, Math.round((st - cant * veces) * 100) / 100);
+        ing.stock = despues;
+        if (min != null && st >= min && despues < min) avisados[ing.producto] = ing;
+      });
+    });
+    Object.keys(avisados).forEach(k => {
+      const ing = avisados[k];
+      const restante = invFmt(invNum(ing.stock) || 0) + (ing.unidad ? ' ' + ing.unidad : '');
+      pushNotification('⚠️ Cocina: queda poco ' + ing.producto + ' (' + restante + '). Pide más.');
+    });
+  }
+
+  function excelInventarioFormHtml() {
+    return `
+      <h3 class="text-xl font-bold text-navy">Conectar con Excel</h3>
+      <p class="mt-1.5 text-sm text-slate-500">Exporta tu inventario como CSV (se abre directamente en Excel y Google Sheets) o importa ingredientes desde un archivo.</p>
+      <button type="button" onclick="exportarInventarioCSV()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">⬇️ Descargar inventario (.csv)</button>
+      <div class="mt-5 rounded-lg border border-slate-200 p-4">
+        <p class="text-sm font-medium text-navy mb-1">Importar desde archivo</p>
+        <p class="text-xs text-slate-400 mb-3">Columnas: Ingrediente; Unidad; Stock; Mínimo. Los ingredientes existentes se actualizan por nombre; los nuevos se crean.</p>
+        <input id="invCsvFile" type="file" accept=".csv,text/csv" class="w-full text-sm text-slate-500">
+        <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+        <button type="button" onclick="importarInventarioCSV()" class="mt-3 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">⬆️ Importar CSV</button>
+      </div>
+      <p class="mt-3 text-xs text-slate-400">Consejo: descarga primero el CSV y úsalo como plantilla para rellenar en Excel.</p>
+    `;
+  }
+  function exportarInventarioCSV() {
+    const acc = getCurrentAccount();
+    const rows = [['Ingrediente', 'Unidad', 'Stock', 'Mínimo']].concat(acc.data.inventario.map(p => [
+      p.producto, p.unidad || '', String(p.stock).replace('.', ','), String(p.minimo).replace('.', ','),
+    ]));
+    const csv = '﻿' + rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(';')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'inventario-restora.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showToast('Inventario descargado');
+  }
+  function importarInventarioCSV() {
+    const input = document.getElementById('invCsvFile');
+    const file = input && input.files && input.files[0];
+    if (!file) return modalFormError('Elige un archivo CSV primero.');
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result).replace(/^﻿/, '');
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      const acc = getCurrentAccount();
+      let count = 0;
+      lines.forEach((line, idx) => {
+        const sep = line.includes(';') ? ';' : ',';
+        const cols = line.split(sep).map(c => c.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        if (!cols[0]) return;
+        if (idx === 0 && /ingrediente|producto/i.test(cols[0])) return;
+        const stock = invNum(cols[2]);
+        const minimo = invNum(cols[3]);
+        const existente = findIngrediente(acc, cols[0]);
+        if (existente) {
+          if (cols[1]) existente.unidad = cols[1];
+          if (stock != null) existente.stock = stock;
+          if (minimo != null) existente.minimo = minimo;
+        } else {
+          acc.data.inventario.push({ producto: cols[0], unidad: cols[1] || '', stock: stock != null ? stock : 0, minimo: minimo != null ? minimo : 0 });
+        }
+        count++;
+      });
+      if (!count) return modalFormError('No se ha encontrado ninguna fila válida en el archivo.');
+      saveCurrentAccountData(acc.data);
+      renderInventario();
+      closeModal();
+      showToast(count + (count === 1 ? ' ingrediente importado' : ' ingredientes importados'));
+    };
+    reader.readAsText(file, 'utf-8');
   }
 
   // ---- Dashboard KPIs (derivados de pedidos reales) ----
@@ -4881,6 +5234,25 @@
     "Encargado": ["Encarregat", "Manager"],
     "Mañana": ["Matí", "Morning"],
     "Tarde": ["Tarda", "Afternoon"],
+    // SaaS: inventario con recetas
+    "📊 Conectar Excel": ["📊 Connecta amb Excel", "📊 Connect Excel"],
+    "+ Añadir ingrediente": ["+ Afegeix ingredient", "+ Add ingredient"],
+    "🍽️ Platos": ["🍽️ Plats", "🍽️ Dishes"],
+    "🥕 Ingredientes": ["🥕 Ingredients", "🥕 Ingredients"],
+    "Ingrediente": ["Ingredient", "Ingredient"],
+    "Ingredientes": ["Ingredients", "Ingredients"],
+    "Unidad": ["Unitat", "Unit"],
+    "Raciones posibles": ["Racions possibles", "Possible servings"],
+    "Sin receta": ["Sense recepta", "No recipe"],
+    "Sin stock": ["Sense estoc", "Out of stock"],
+    "✏️ Editar receta": ["✏️ Edita la recepta", "✏️ Edit recipe"],
+    "✏️ Crear receta": ["✏️ Crea la recepta", "✏️ Create recipe"],
+    "← Volver a platos": ["← Torna a plats", "← Back to dishes"],
+    "Por ración": ["Per ració", "Per serving"],
+    "En stock": ["En estoc", "In stock"],
+    "Bajo": ["Baix", "Low"],
+    "Justo": ["Just", "Tight"],
+    "OK": ["OK", "OK"],
   };
 
   let currentLang = 'es';
