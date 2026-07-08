@@ -5323,7 +5323,26 @@
         body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar el menú. Prueba a escanear el QR de nuevo.</p>`;
         return;
       }
-      publicMenuData = data;
+      let datosCompletos = data;
+      if (datosCompletos.cartaDigital == null) {
+        // La función get_public_menu instalada en Supabase es una versión antigua sin
+        // cartaDigital: si quien mira es el dueño (sesión propia), leemos su fila directamente.
+        try {
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (session && session.user && session.user.id === cuentaId) {
+            const { data: propia } = await supabaseClient.from('restaurant_data').select('data').eq('user_id', cuentaId).single();
+            if (propia && propia.data) {
+              const perfil = propia.data.perfil || {};
+              datosCompletos = Object.assign({}, datosCompletos, {
+                cartaDigital: propia.data.cartaDigital || null,
+                horario: datosCompletos.horario || perfil.horario || null,
+                horarioConfigurado: datosCompletos.horarioConfigurado != null ? datosCompletos.horarioConfigurado : !!perfil.horarioConfigurado,
+              });
+            }
+          }
+        } catch (e) {}
+      }
+      publicMenuData = datosCompletos;
       publicMenuCuentaId = cuentaId;
       publicMenuMesaNumero = mesaNumero;
       publicPedidoCarrito = {};
