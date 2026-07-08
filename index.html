@@ -509,11 +509,13 @@
     #invPlatosWrap td[data-label], #invDetalleWrap td[data-label] { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: right; }
     #invPlatosWrap td[data-label]::before, #invDetalleWrap td[data-label]::before { content: attr(data-label); font-size: 11px; font-weight: 600; color: #94a3b8; text-align: left; flex-shrink: 0; }
 
-    /* IA assistant: stack conversations above the chat */
+    /* IA assistant: stack conversations above the chat, let the page scroll normally so input/send are always reachable */
     .ia-layout { flex-direction: column !important; gap: 12px !important; }
     .ia-sidebar { width: 100% !important; }
     #iaConversacionesList { max-height: 90px !important; }
-    .ia-chat-col { max-width: 100% !important; height: 60vh !important; }
+    .ia-chat-col { max-width: 100% !important; height: auto !important; }
+    #iaChat { max-height: 42vh !important; }
+    #iaInput { font-size: 16px !important; }
 
     /* Modals */
     #modalCard { padding: 20px !important; max-height: 88vh; overflow-y: auto; }
