@@ -2108,6 +2108,7 @@
   document.addEventListener('click', desbloquearAudio, { once: true });
   document.addEventListener('keydown', desbloquearAudio, { once: true });
   function reproducirSonido(tipo) {
+    desbloquearAudio();
     if (!audioCtx) return;
     try {
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -3838,6 +3839,7 @@
     // Si al marcar este plato el pedido entero queda listo, avisa al camarero (en este mismo dispositivo, sin sonido)
     if (nuevoEstado === 'listo' && nuevoGlobal === 'Listo' && !eraListoGlobal) {
       showToast('🔔 ' + p.mesa + ': pedido listo para servir');
+      reproducirSonido('listo');
     }
     saveCurrentAccountData(acc.data);
     renderPedidos();
@@ -4280,7 +4282,8 @@
     renderMesas();
     pedidoEnCurso = null;
     closeModal();
-    showToast('Pedido guardado');
+    showToast('Pedido enviado a cocina');
+    reproducirSonido('cocina');
   }
 
   // ---- Menú ----
