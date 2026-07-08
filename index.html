@@ -321,6 +321,56 @@
     .dash-line-anim, .dash-area-anim, .dash-dot-anim, .dash-bar-anim, .dash-pie-anim, .dash-pie-anim svg, .dash-slice-anim, .dash-hbar-anim, .dash-hbar-val { animation: none !important; stroke-dashoffset: 0 !important; opacity: 1 !important; transform: none !important; }
   }
 
+  /* ============ Asistente "Crear tu web" ============ */
+  .wiz-progress { display: flex; gap: 5px; margin-top: 12px; }
+  .wiz-progress span { height: 4px; flex: 1; border-radius: 999px; background: #ECEBF3; transition: background-color .2s ease; }
+  .wiz-progress span.on { background: #4F3FFF; }
+  .wiz-chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .wiz-chip { display: flex; align-items: center; gap: 8px; border: 1.5px solid #E5E4EE; border-radius: 12px; padding: 11px 13px; font-size: 13.5px; font-weight: 600; color: #14121F; cursor: pointer; background: #fff; text-align: left; transition: border-color .15s ease, background-color .15s ease; }
+  .wiz-chip:hover { border-color: #C9C5E8; }
+  .wiz-chip.sel { border-color: #4F3FFF; background: rgb(79 63 255 / 0.06); color: #4F3FFF; }
+  .wiz-pal { display: flex; align-items: center; gap: 10px; border: 1.5px solid #E5E4EE; border-radius: 12px; padding: 11px 13px; cursor: pointer; background: #fff; width: 100%; text-align: left; transition: border-color .15s ease, background-color .15s ease; position: relative; }
+  .wiz-pal:hover { border-color: #C9C5E8; }
+  .wiz-pal.sel { border-color: #4F3FFF; background: rgb(79 63 255 / 0.05); }
+  .wiz-reco { position: absolute; top: -9px; right: 10px; background: #4F3FFF; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+  .wiz-thumbs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+  .wiz-thumb { position: relative; width: 74px; height: 74px; }
+  .wiz-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+  .wiz-thumb button { position: absolute; top: -7px; right: -7px; width: 21px; height: 21px; border-radius: 999px; background: #14121F; color: #fff; font-size: 11px; line-height: 1; border: none; cursor: pointer; }
+  .wiz-foot { display: flex; gap: 10px; margin-top: 22px; }
+
+  /* ============ Web pública del restaurante (QR) ============ */
+  .pweb-hero { position: relative; min-height: 62vh; display: flex; flex-direction: column; color: #fff; overflow: hidden; }
+  .pweb-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; }
+  .pweb-brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 16.5px; letter-spacing: -0.01em; min-width: 0; }
+  .pweb-brand img { width: 34px; height: 34px; border-radius: 9px; object-fit: cover; background: #fff; flex-shrink: 0; }
+  .pweb-nav-cta { background: rgba(255,255,255,0.16); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.35); color: #fff; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 999px; flex-shrink: 0; }
+  .pweb-hero-inner { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 44px 24px 56px; }
+  .pweb-hero-inner h1 { font-size: clamp(34px, 7vw, 56px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; margin-top: 14px; text-shadow: 0 2px 18px rgba(0,0,0,0.35); }
+  .pweb-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.16); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.28); font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 999px; }
+  .pweb-tagline { font-size: clamp(15px, 3vw, 19px); font-style: italic; color: rgba(255,255,255,0.92); margin-top: 12px; max-width: 560px; }
+  .pweb-hero-ctas { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 26px; }
+  .pweb-btn-primary { color: #fff; font-size: 14px; font-weight: 700; padding: 13px 26px; border-radius: 999px; box-shadow: 0 10px 24px -8px rgba(0,0,0,0.45); }
+  .pweb-btn-ghost { border: 1.5px solid rgba(255,255,255,0.55); color: #fff; font-size: 14px; font-weight: 600; padding: 12px 24px; border-radius: 999px; }
+  .pweb-mesa { margin-top: 24px; font-size: 12.5px; font-weight: 600; color: rgba(255,255,255,0.9); background: rgba(0,0,0,0.28); padding: 6px 14px; border-radius: 999px; }
+  .pweb-sec { max-width: 760px; margin: 0 auto; padding: 52px 22px 8px; text-align: center; }
+  .pweb-sec h2 { font-size: clamp(24px, 5vw, 34px); font-weight: 800; letter-spacing: -0.02em; color: #14121F; margin-top: 8px; }
+  .pweb-kicker { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; }
+  .pweb-texto { font-size: 15.5px; line-height: 1.75; color: #4B4A55; margin-top: 14px; white-space: pre-line; }
+  .pweb-carta-list { max-width: 640px; margin: 24px auto 0; text-align: left; display: flex; flex-direction: column; gap: 12px; }
+  .pweb-galeria { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 26px; }
+  @media (min-width: 720px) { .pweb-galeria { grid-template-columns: repeat(3, 1fr); } }
+  .pweb-galeria img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 16px; }
+  .pweb-galeria img:first-child { grid-column: 1 / -1; aspect-ratio: 16 / 8; }
+  .pweb-horario { max-width: 430px; margin: 24px auto 0; text-align: left; background: #fff; border: 1px solid #ECEBF2; border-radius: 18px; padding: 8px 18px; box-shadow: 0 1px 3px rgba(20,18,31,0.05); }
+  .pweb-horario-row { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid #F3F2F8; font-size: 14px; color: #4B4A55; }
+  .pweb-horario-row:last-child { border-bottom: 0; }
+  .pweb-horario-row.hoy { font-weight: 700; color: #14121F; }
+  .pweb-contacto { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; max-width: 430px; margin-left: auto; margin-right: auto; }
+  .pweb-contacto a { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #ECEBF2; border-radius: 16px; padding: 14px 16px; font-size: 14px; font-weight: 600; color: #14121F; text-align: left; box-shadow: 0 1px 3px rgba(20,18,31,0.05); transition: border-color .15s ease, box-shadow .15s ease; }
+  .pweb-contacto a:hover { border-color: #D9D6EA; box-shadow: 0 3px 10px rgba(20,18,31,0.08); }
+  .pweb-footer { text-align: center; padding: 48px 20px 36px; font-size: 12px; color: #A6A4B3; }
+
   /* ============ Mobile / tablet responsive layer (desktop >880px untouched) ============ */
   .platos-grid { column-gap: 3rem; }
   .lang-switcher { background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 6px 10px; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; outline: none; }
@@ -1567,9 +1617,9 @@
         </div>
         <div class="rounded-xl border border-slate-200 bg-white p-6 flex flex-col items-center text-center">
           <div class="w-full text-left">
-            <p class="text-xs font-semibold text-slate-400">CARTA DIGITAL</p>
-            <p class="text-sm font-semibold text-navy mt-0.5">Carta digital personalizada</p>
-            <p class="text-xs text-slate-400 mt-1">El QR de tus mesas llevará aquí en cuanto la generes.</p>
+            <p class="text-xs font-semibold text-slate-400">TU WEB</p>
+            <p class="text-sm font-semibold text-navy mt-0.5">La web de tu restaurante</p>
+            <p class="text-xs text-slate-400 mt-1">El QR de tus mesas abrirá tu web en cuanto la crees.</p>
           </div>
           <div class="flex-1 flex flex-col items-center justify-center w-full">
             <div class="phone-mockup mx-auto mt-6">
@@ -1579,8 +1629,8 @@
                 <div id="cartaDigitalPlaceholder" class="phone-mockup-placeholder"></div>
               </div>
             </div>
-            <button id="cartaDigitalBtn" onclick="abrirGenerarCartaDigital()" class="mt-6 w-full max-w-xs rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">🎨 Generar carta digital</button>
-            <button id="cartaDigitalEditarBtn" onclick="abrirEditarCartaDigital()" class="mt-2.5 w-full max-w-xs rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5 hidden">✏️ Editar manualmente</button>
+            <button id="cartaDigitalBtn" onclick="abrirGenerarCartaDigital()" class="mt-6 w-full max-w-xs rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">✨ Crear mi web</button>
+            <button id="cartaDigitalEditarBtn" onclick="abrirWebEnPestana()" class="mt-2.5 w-full max-w-xs rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5 hidden">🔗 Abrir mi web</button>
             <p id="cartaDigitalEstado" class="mt-3 text-xs text-slate-400"></p>
           </div>
         </div>
@@ -2036,7 +2086,7 @@
       iaConversaciones: [],
       iaInformes: [],
       caja: { abierta: false, fecha: null, efectivoInicial: 0, aperturaHora: null, historico: [] },
-      cartaDigital: { activada: false, tipoRestaurante: '', paleta: '', colorPrimario: '', colorSecundario: '', tagline: '', logo: '', creadaEn: null },
+      cartaDigital: { activada: false, tipoRestaurante: '', paleta: '', colorPrimario: '', colorSecundario: '', tagline: '', logo: '', creadaEn: null, web: false, historia: '', fotosModo: '', fotoHero: '', fotosPropias: [], instagram: '', direccion: '', telefono: '', secciones: { nosotros: true, galeria: true, horario: true, contacto: true, reservas: true } },
     };
   }
   function normalizeAccountData(data) {
@@ -2114,6 +2164,15 @@
     data.cartaDigital.tagline = data.cartaDigital.tagline || '';
     data.cartaDigital.logo = data.cartaDigital.logo || '';
     data.cartaDigital.creadaEn = data.cartaDigital.creadaEn || null;
+    data.cartaDigital.web = !!data.cartaDigital.web;
+    data.cartaDigital.historia = data.cartaDigital.historia || '';
+    data.cartaDigital.fotosModo = data.cartaDigital.fotosModo || '';
+    data.cartaDigital.fotoHero = data.cartaDigital.fotoHero || '';
+    data.cartaDigital.fotosPropias = Array.isArray(data.cartaDigital.fotosPropias) ? data.cartaDigital.fotosPropias : [];
+    data.cartaDigital.instagram = data.cartaDigital.instagram || '';
+    data.cartaDigital.direccion = data.cartaDigital.direccion || '';
+    data.cartaDigital.telefono = data.cartaDigital.telefono || '';
+    data.cartaDigital.secciones = Object.assign({ nosotros: true, galeria: true, horario: true, contacto: true, reservas: true }, data.cartaDigital.secciones || {});
     return data;
   }
   function getCurrentAccount() {
@@ -2267,6 +2326,10 @@
     acc.data.perfil.mesas = document.getElementById('perfilMesas').value.trim();
     acc.data.perfil.telefono = document.getElementById('perfilTelefono').value.trim();
     acc.restaurantName = acc.data.perfil.nombre || acc.restaurantName;
+    if (acc.data.cartaDigital && acc.data.cartaDigital.activada) {
+      acc.data.cartaDigital.direccion = acc.data.perfil.direccion;
+      acc.data.cartaDigital.telefono = acc.data.perfil.telefono;
+    }
     saveCurrentAccountData(acc.data);
     applyTopbar(acc);
     showToast('Cambios guardados');
@@ -2317,18 +2380,18 @@
     const cd = acc.data.cartaDigital;
     if (editarBtn) editarBtn.classList.toggle('hidden', !cd.activada);
     if (cd.activada) {
-      if (btn) btn.textContent = '🎨 Regenerar carta digital';
+      if (btn) btn.textContent = '✏️ Editar mi web';
       if (estadoEl) {
         const fecha = cd.creadaEn ? new Date(cd.creadaEn).toLocaleDateString('es-ES') : '';
-        estadoEl.innerHTML = `<span class="inline-flex items-center gap-1.5 text-emerald-600 font-medium">● Activa${fecha ? ' · generada el ' + fecha : ''}</span>`;
+        estadoEl.innerHTML = `<span class="inline-flex items-center gap-1.5 text-emerald-600 font-medium">● Web activa${fecha ? ' · creada el ' + fecha : ''}</span>`;
       }
       frame.src = location.origin + location.pathname + '?cuenta=' + encodeURIComponent(acc.userId) + '&mesa=1&preview=1';
       frame.style.display = 'block';
       placeholder.style.display = 'none';
       ajustarEscalaMockup();
     } else {
-      if (btn) btn.textContent = '🎨 Generar carta digital';
-      if (estadoEl) estadoEl.innerHTML = 'Todavía no la has generado';
+      if (btn) btn.textContent = '✨ Crear mi web';
+      if (estadoEl) estadoEl.innerHTML = 'Todavía no la has creado';
       frame.style.display = 'none';
       frame.removeAttribute('src');
       placeholder.style.display = 'block';
@@ -2339,7 +2402,7 @@
           <div class="relative">
             <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-white/15 rounded-full px-2.5 py-1">🍽️ Ejemplo</span>
             <h1 class="text-base font-extrabold text-white mt-2">Tu Restaurante</h1>
-            <p class="text-[11px] text-white/90 mt-1 italic">"Así de personalizada quedaría tu carta"</p>
+            <p class="text-[11px] text-white/90 mt-1 italic">"Así de profesional quedaría tu web"</p>
           </div>
         </div>
         <div class="px-4 pt-4 pb-3">
@@ -2377,145 +2440,277 @@
     frame.style.height = Math.ceil(rect.height / scale) + 'px';
     frame.style.transform = 'scale(' + scale + ')';
   }
-  function abrirGenerarCartaDigital() {
-    document.getElementById('modalCard').classList.remove('modal-wide');
-    document.getElementById('modalBody').innerHTML = generarCartaDigitalFormHtml();
-    document.getElementById('modalOverlay').classList.add('open');
-  }
-  function generarCartaDigitalFormHtml() {
-    const acc = getCurrentAccount();
-    const cd = acc.data.cartaDigital;
-    const tipos = ['Italiano', 'Japonés / Asiático', 'Casual / Bar', 'Alta cocina', 'Cafetería / Brunch', 'Mediterráneo', 'Otro'];
-    const opcionesTipo = tipos.map(t => `<option value="${t}" ${cd.tipoRestaurante === t ? 'selected' : ''}>${t}</option>`).join('');
-    const paletasHtml = Object.keys(PALETAS_CARTA).map(key => {
-      const p = PALETAS_CARTA[key];
-      return `
-        <label class="flex items-center gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer hover:border-accent transition">
-          <input type="radio" name="cdPaleta" value="${key}" ${cd.paleta === key ? 'checked' : ''} class="shrink-0">
-          <span class="flex -space-x-1 shrink-0"><span class="w-5 h-5 rounded-full border-2 border-white" style="background:${p.color1}"></span><span class="w-5 h-5 rounded-full border-2 border-white" style="background:${p.color2}"></span></span>
-          <span class="text-sm text-navy">${p.label}</span>
-        </label>
-      `;
-    }).join('');
-    return `
-      <h3 class="text-xl font-bold text-navy">Generar carta digital</h3>
-      <p class="mt-1.5 text-sm text-slate-500">Responde dos preguntas rápidas y la IA elegirá el estilo de tu carta digital. El QR de tus mesas llevará aquí en cuanto la generes.</p>
-      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">¿Qué tipo de restaurante eres?</label>
-      <select id="cdTipo" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${opcionesTipo}</select>
-      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">¿Qué colores representan tu restaurante?</label>
-      <div class="space-y-2">${paletasHtml}</div>
-      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
-      <button type="button" onclick="submitGenerarCartaDigital()" id="cdGenerarBtn" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">✨ Generar con IA</button>
-    `;
-  }
-  async function submitGenerarCartaDigital() {
-    const tipo = document.getElementById('cdTipo').value;
-    const paletaSel = document.querySelector('input[name="cdPaleta"]:checked');
-    if (!paletaSel) return modalFormError('Elige una paleta de colores.');
-    const btn = document.getElementById('cdGenerarBtn');
-    btn.disabled = true;
-    btn.textContent = 'Generando…';
-    const acc = getCurrentAccount();
-    try {
-      const { data, error } = await supabaseClient.functions.invoke('carta-digital', {
-        body: { restaurantName: acc.restaurantName, tipoRestaurante: tipo, paleta: PALETAS_CARTA[paletaSel.value].label },
-      });
-      if (error || !data || data.error) throw new Error((data && data.error) || 'error');
-      acc.data.cartaDigital = {
-        activada: true,
-        tipoRestaurante: tipo,
-        paleta: paletaSel.value,
-        colorPrimario: '',
-        colorSecundario: '',
-        tagline: data.tagline || '',
-        logo: acc.data.cartaDigital.logo || '',
-        creadaEn: new Date().toISOString(),
-      };
-      saveCurrentAccountData(acc.data);
-      closeModal();
-      renderCartaDigitalPreview();
-      showToast('Carta digital generada');
-    } catch (e) {
-      modalFormError('No se ha podido generar la carta digital. Inténtalo de nuevo.');
-      btn.disabled = false;
-      btn.textContent = '✨ Generar con IA';
-    }
-  }
   function coloresCartaDigital(cd) {
     if (cd.colorPrimario && cd.colorSecundario) return { color1: cd.colorPrimario, color2: cd.colorSecundario };
     return PALETAS_CARTA[cd.paleta] || PALETAS_CARTA.moderno;
   }
-  function abrirEditarCartaDigital() {
-    document.getElementById('modalCard').classList.remove('modal-wide');
-    document.getElementById('modalBody').innerHTML = editarCartaDigitalFormHtml();
+  function abrirWebEnPestana() {
+    const acc = getCurrentAccount();
+    window.open(location.origin + location.pathname + '?cuenta=' + encodeURIComponent(acc.userId) + '&mesa=1&preview=1', '_blank');
+  }
+  function redimensionarImagen(file, maxDim, cb) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        cb(file.type === 'image/png' ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = () => cb('');
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  function escAttr(s) { return svgEsc(String(s == null ? '' : s)).replace(/"/g, '&quot;'); }
+
+  // ---- Asistente de creación de la web del restaurante ----
+  let webWiz = null;
+  function abrirGenerarCartaDigital() {
+    const acc = getCurrentAccount();
+    const cd = acc.data.cartaDigital;
+    webWiz = {
+      paso: 1,
+      tipo: cd.tipoRestaurante || '',
+      modoColor: (cd.colorPrimario && cd.colorSecundario) ? 'custom' : 'paleta',
+      paleta: cd.paleta || '',
+      color1: cd.colorPrimario || '#b91c1c',
+      color2: cd.colorSecundario || '#78350f',
+      logo: cd.logo || '',
+      esloganModo: cd.tagline ? 'propio' : 'ia',
+      eslogan: cd.tagline || '',
+      fotosModo: cd.fotosModo || 'banco',
+      fotoHero: cd.fotoHero || '',
+      fotosPropias: (cd.fotosPropias || []).slice(),
+      historia: cd.historia || '',
+      instagram: cd.instagram || '',
+      secciones: Object.assign({ nosotros: true, galeria: true, horario: true, contacto: true, reservas: true }, cd.secciones || {}),
+    };
+    document.getElementById('modalCard').classList.add('modal-wide');
+    renderWebWiz();
     document.getElementById('modalOverlay').classList.add('open');
   }
-  function editarCartaDigitalFormHtml() {
-    const acc = getCurrentAccount();
-    const cd = acc.data.cartaDigital;
-    const colores = coloresCartaDigital(cd);
-    const tipos = ['Italiano', 'Japonés / Asiático', 'Casual / Bar', 'Alta cocina', 'Cafetería / Brunch', 'Mediterráneo', 'Otro'];
-    const opcionesTipo = tipos.map(t => `<option value="${t}" ${cd.tipoRestaurante === t ? 'selected' : ''}>${t}</option>`).join('');
-    return `
-      <h3 class="text-xl font-bold text-navy">Editar carta digital</h3>
-      <p class="mt-1.5 text-sm text-slate-500">Personaliza a mano el logo, el eslogan, los colores y el tipo de restaurante.</p>
-      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Logo (opcional)</label>
-      ${cd.logo ? `
-        <div class="flex items-center gap-3 mb-2 rounded-lg border border-slate-200 p-2">
-          <img src="${cd.logo}" class="w-10 h-10 rounded-md object-cover shrink-0">
-          <label class="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer"><input type="checkbox" id="cdQuitarLogo">Quitar logo actual</label>
-        </div>
-      ` : ''}
-      <input id="cdLogo" type="file" accept="image/*" class="w-full text-sm text-slate-500">
-      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Eslogan</label>
-      <input id="cdTaglineEdit" type="text" placeholder="Ej. Sabor auténtico desde 1990" value="${(cd.tagline || '').replace(/"/g, '&quot;')}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
-      <p class="mt-1.5 text-xs text-slate-400">Déjalo en blanco para no mostrar ningún eslogan.</p>
-      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">¿Qué tipo de restaurante eres?</label>
-      <select id="cdTipoEdit" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${opcionesTipo}</select>
-      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Colores</label>
-      <div class="grid grid-cols-2 gap-3">
-        <div><label class="block text-xs text-slate-400 mb-1">Color principal</label><input id="cdColor1" type="color" value="${colores.color1}" class="w-full h-10 rounded-lg border border-slate-200 cursor-pointer"></div>
-        <div><label class="block text-xs text-slate-400 mb-1">Color secundario</label><input id="cdColor2" type="color" value="${colores.color2}" class="w-full h-10 rounded-lg border border-slate-200 cursor-pointer"></div>
-      </div>
-      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
-      <button type="button" onclick="submitEditarCartaDigital()" id="cdEditarGuardarBtn" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar cambios</button>
-    `;
+  function renderWebWiz() {
+    document.getElementById('modalBody').innerHTML = webWizHtml();
   }
-  function submitEditarCartaDigital() {
+  function webWizHtml() {
+    const w = webWiz;
     const acc = getCurrentAccount();
-    const cd = acc.data.cartaDigital;
-    const tagline = document.getElementById('cdTaglineEdit').value.trim();
-    const tipo = document.getElementById('cdTipoEdit').value;
-    const color1 = document.getElementById('cdColor1').value;
-    const color2 = document.getElementById('cdColor2').value;
-    const quitarLogo = document.getElementById('cdQuitarLogo');
-    const fileInput = document.getElementById('cdLogo');
-    const btn = document.getElementById('cdEditarGuardarBtn');
-    const finish = (logo) => {
-      acc.data.cartaDigital = Object.assign({}, cd, {
-        tagline,
-        tipoRestaurante: tipo,
-        colorPrimario: color1,
-        colorSecundario: color2,
-        logo,
-      });
-      saveCurrentAccountData(acc.data);
-      closeModal();
-      renderCartaDigitalPreview();
-      showToast('Carta digital actualizada');
-    };
-    const file = fileInput.files[0];
-    if (file) {
-      btn.disabled = true;
-      btn.textContent = 'Guardando…';
-      const reader = new FileReader();
-      reader.onload = () => finish(reader.result);
-      reader.readAsDataURL(file);
-    } else if (quitarLogo && quitarLogo.checked) {
-      finish('');
+    const progress = [1, 2, 3, 4, 5, 6].map(i => `<span class="${i <= w.paso ? 'on' : ''}"></span>`).join('');
+    let cuerpo = '';
+    if (w.paso === 1) {
+      cuerpo = `
+        <p class="text-sm text-slate-500 mt-1">Empecemos por lo básico: ¿qué tipo de cocina y ambiente tiene <b>${svgEsc(acc.restaurantName)}</b>?</p>
+        <div class="wiz-chips mt-4">
+          ${TIPOS_RESTAURANTE.map(t => `<button type="button" class="wiz-chip ${w.tipo === t ? 'sel' : ''}" onclick="wizSetTipo('${escAttr(t)}')">${TIPO_EMOJI[t] || '🍽️'} ${t}</button>`).join('')}
+        </div>`;
+    } else if (w.paso === 2) {
+      const sugerida = PALETA_SUGERIDA[w.tipo] || 'moderno';
+      const paletas = Object.keys(PALETAS_CARTA).map(key => {
+        const p = PALETAS_CARTA[key];
+        const sel = w.modoColor === 'paleta' && w.paleta === key;
+        return `<button type="button" class="wiz-pal ${sel ? 'sel' : ''}" onclick="wizSetPaleta('${key}')">
+          ${key === sugerida ? '<span class="wiz-reco">Recomendada para ti</span>' : ''}
+          <span class="flex -space-x-1 shrink-0"><span class="w-6 h-6 rounded-full border-2 border-white" style="background:${p.color1}"></span><span class="w-6 h-6 rounded-full border-2 border-white" style="background:${p.color2}"></span></span>
+          <span class="text-sm font-medium text-navy">${p.label}</span>
+        </button>`;
+      }).join('');
+      cuerpo = `
+        <p class="text-sm text-slate-500 mt-1">Elige la paleta que mejor representa tu restaurante, o define tus propios colores.</p>
+        <div class="space-y-2.5 mt-4">${paletas}
+          <button type="button" class="wiz-pal ${w.modoColor === 'custom' ? 'sel' : ''}" onclick="wizSetCustomColor()">
+            <span class="flex -space-x-1 shrink-0"><span class="w-6 h-6 rounded-full border-2 border-white" style="background:${w.color1}"></span><span class="w-6 h-6 rounded-full border-2 border-white" style="background:${w.color2}"></span></span>
+            <span class="text-sm font-medium text-navy">Mis propios colores</span>
+          </button>
+        </div>
+        ${w.modoColor === 'custom' ? `
+          <div class="grid grid-cols-2 gap-3 mt-3">
+            <div><label class="block text-xs text-slate-400 mb-1">Color principal</label><input id="wizColor1" type="color" value="${w.color1}" onchange="webWiz.color1=this.value; renderWebWiz();" class="w-full h-10 rounded-lg border border-slate-200 cursor-pointer"></div>
+            <div><label class="block text-xs text-slate-400 mb-1">Color secundario</label><input id="wizColor2" type="color" value="${w.color2}" onchange="webWiz.color2=this.value; renderWebWiz();" class="w-full h-10 rounded-lg border border-slate-200 cursor-pointer"></div>
+          </div>` : ''}`;
+    } else if (w.paso === 3) {
+      cuerpo = `
+        <p class="text-sm text-slate-500 mt-1">Dale identidad a tu web con tu logo y un eslogan.</p>
+        <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Logo (opcional)</label>
+        ${w.logo ? `
+          <div class="flex items-center gap-3 mb-2 rounded-lg border border-slate-200 p-2">
+            <img src="${w.logo}" class="w-11 h-11 rounded-md object-cover shrink-0 bg-slate-50">
+            <button type="button" onclick="webWiz.logo=''; renderWebWiz();" class="text-xs font-semibold text-rose-500 hover:text-rose-600">Quitar logo</button>
+          </div>` : ''}
+        <input type="file" accept="image/*" onchange="wizLogoFile(this)" class="w-full text-sm text-slate-500">
+        <label class="block text-sm font-medium text-navy mb-1.5 mt-5">Eslogan</label>
+        <div class="space-y-2">
+          <label class="flex items-center gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer ${w.esloganModo === 'ia' ? 'border-accent bg-accent/5' : ''}"><input type="radio" name="wizEslogan" ${w.esloganModo === 'ia' ? 'checked' : ''} onchange="wizLeer(); webWiz.esloganModo='ia'; renderWebWiz();"><span class="text-sm text-navy">✨ Que lo escriba la IA por mí (según tu cocina y estilo)</span></label>
+          <label class="flex items-center gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer ${w.esloganModo === 'propio' ? 'border-accent bg-accent/5' : ''}"><input type="radio" name="wizEslogan" ${w.esloganModo === 'propio' ? 'checked' : ''} onchange="wizLeer(); webWiz.esloganModo='propio'; renderWebWiz();"><span class="text-sm text-navy">✏️ Escribirlo yo</span></label>
+          <label class="flex items-center gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer ${w.esloganModo === 'ninguno' ? 'border-accent bg-accent/5' : ''}"><input type="radio" name="wizEslogan" ${w.esloganModo === 'ninguno' ? 'checked' : ''} onchange="wizLeer(); webWiz.esloganModo='ninguno'; renderWebWiz();"><span class="text-sm text-navy">Sin eslogan</span></label>
+        </div>
+        ${w.esloganModo === 'propio' ? `<input id="wizEsloganTxt" type="text" placeholder="Ej. Cocina de mercado desde 1987" value="${escAttr(w.eslogan)}" class="mt-2.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">` : ''}`;
+    } else if (w.paso === 4) {
+      const conPropias = w.fotosModo === 'propias' || w.fotosModo === 'mix';
+      cuerpo = `
+        <p class="text-sm text-slate-500 mt-1">Una web profesional necesita buenas fotos. ¿Cómo lo hacemos?</p>
+        <div class="space-y-2 mt-4">
+          <label class="flex items-start gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer ${w.fotosModo === 'banco' ? 'border-accent bg-accent/5' : ''}"><input type="radio" name="wizFotos" class="mt-0.5" ${w.fotosModo === 'banco' ? 'checked' : ''} onchange="wizLeer(); webWiz.fotosModo='banco'; renderWebWiz();"><span class="text-sm text-navy">📸 Banco de fotos profesional<br><span class="text-xs text-slate-400">Seleccionamos fotografías profesionales acordes a tu tipo de cocina.</span></span></label>
+          <label class="flex items-start gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer ${w.fotosModo === 'propias' ? 'border-accent bg-accent/5' : ''}"><input type="radio" name="wizFotos" class="mt-0.5" ${w.fotosModo === 'propias' ? 'checked' : ''} onchange="wizLeer(); webWiz.fotosModo='propias'; renderWebWiz();"><span class="text-sm text-navy">🤳 Subir mis propias fotos<br><span class="text-xs text-slate-400">Tu local y tus platos reales, lo más auténtico.</span></span></label>
+          <label class="flex items-start gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer ${w.fotosModo === 'mix' ? 'border-accent bg-accent/5' : ''}"><input type="radio" name="wizFotos" class="mt-0.5" ${w.fotosModo === 'mix' ? 'checked' : ''} onchange="wizLeer(); webWiz.fotosModo='mix'; renderWebWiz();"><span class="text-sm text-navy">🎨 Mix: mis fotos + banco profesional<br><span class="text-xs text-slate-400">Tus fotos primero, completadas con las del banco.</span></span></label>
+        </div>
+        ${conPropias ? `
+          <label class="block text-sm font-medium text-navy mb-1.5 mt-5">Foto principal (portada)</label>
+          ${w.fotoHero ? `<div class="wiz-thumbs"><div class="wiz-thumb" style="width:120px;height:74px;"><img src="${w.fotoHero}"><button type="button" onclick="webWiz.fotoHero=''; renderWebWiz();">✕</button></div></div>` : `<input type="file" accept="image/*" onchange="wizHeroFile(this)" class="w-full text-sm text-slate-500">`}
+          <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Galería (hasta 4 fotos)</label>
+          ${w.fotosPropias.length ? `<div class="wiz-thumbs">${w.fotosPropias.map((u, i) => `<div class="wiz-thumb"><img src="${u}"><button type="button" onclick="wizQuitarFoto(${i})">✕</button></div>`).join('')}</div>` : ''}
+          ${w.fotosPropias.length < 4 ? `<input type="file" accept="image/*" multiple onchange="wizGaleriaFiles(this)" class="w-full text-sm text-slate-500 mt-2">` : ''}
+        ` : ''}`;
+    } else if (w.paso === 5) {
+      const p = acc.data.perfil;
+      const s = w.secciones;
+      cuerpo = `
+        <p class="text-sm text-slate-500 mt-1">Los detalles que convierten una carta en una web completa.</p>
+        <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Vuestra historia (opcional)</label>
+        <textarea id="wizHistoria" rows="3" placeholder="Ej. Tres generaciones cocinando el recetario de la abuela Carmen…" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(w.historia)}</textarea>
+        <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Instagram (opcional)</label>
+        <input id="wizInstagram" type="text" placeholder="@turestaurante" value="${escAttr(w.instagram)}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+        <label class="block text-sm font-medium text-navy mb-1.5 mt-5">Secciones de tu web</label>
+        <div class="space-y-2">
+          <label class="flex items-center gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer"><input type="checkbox" id="wizSecGaleria" ${s.galeria ? 'checked' : ''}><span class="text-sm text-navy">🖼️ Galería de fotos</span></label>
+          <label class="flex items-center gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer"><input type="checkbox" id="wizSecHorario" ${s.horario ? 'checked' : ''}><span class="text-sm text-navy">🕐 Horario de apertura</span></label>
+          <label class="flex items-center gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer"><input type="checkbox" id="wizSecContacto" ${s.contacto ? 'checked' : ''}><span class="text-sm text-navy">📍 Ubicación y contacto</span></label>
+          <label class="flex items-center gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer"><input type="checkbox" id="wizSecReservas" ${s.reservas ? 'checked' : ''}><span class="text-sm text-navy">📅 Botón de reservas online</span></label>
+        </div>
+        <p class="mt-3 text-xs text-slate-400">La dirección (${p.direccion ? svgEsc(p.direccion) : 'sin rellenar'}) y el teléfono (${p.telefono ? svgEsc(p.telefono) : 'sin rellenar'}) se cogen de Datos generales.</p>`;
     } else {
-      finish(cd.logo || '');
+      const colores = w.modoColor === 'custom' ? { color1: w.color1, color2: w.color2 } : (PALETAS_CARTA[w.paleta] || PALETAS_CARTA.moderno);
+      const fotosTxt = w.fotosModo === 'banco' ? 'Banco profesional' : w.fotosModo === 'propias' ? `Mis fotos (${w.fotosPropias.length + (w.fotoHero ? 1 : 0)})` : `Mix (${w.fotosPropias.length + (w.fotoHero ? 1 : 0)} mías + banco)`;
+      const esloganTxt = w.esloganModo === 'ia' ? 'Lo escribe la IA' : w.esloganModo === 'propio' ? `"${svgEsc(w.eslogan) || '—'}"` : 'Sin eslogan';
+      const secs = [w.secciones.galeria && 'Galería', w.secciones.horario && 'Horario', w.secciones.contacto && 'Contacto', w.secciones.reservas && 'Reservas'].filter(Boolean).join(' · ') || 'Solo la carta';
+      cuerpo = `
+        <p class="text-sm text-slate-500 mt-1">Revisa que todo esté a tu gusto. Podrás editarlo cuando quieras.</p>
+        <div class="mt-4 rounded-xl border border-slate-200 divide-y divide-slate-100 text-sm">
+          <div class="flex items-center justify-between px-4 py-3"><span class="text-slate-400">Cocina</span><span class="font-semibold text-navy">${TIPO_EMOJI[w.tipo] || '🍽️'} ${svgEsc(w.tipo)}</span></div>
+          <div class="flex items-center justify-between px-4 py-3"><span class="text-slate-400">Colores</span><span class="flex -space-x-1"><span class="w-5 h-5 rounded-full border-2 border-white" style="background:${colores.color1}"></span><span class="w-5 h-5 rounded-full border-2 border-white" style="background:${colores.color2}"></span></span></div>
+          <div class="flex items-center justify-between px-4 py-3"><span class="text-slate-400">Logo</span><span class="font-semibold text-navy">${w.logo ? 'Sí' : 'No'}</span></div>
+          <div class="flex items-center justify-between px-4 py-3 gap-4"><span class="text-slate-400 shrink-0">Eslogan</span><span class="font-semibold text-navy text-right">${esloganTxt}</span></div>
+          <div class="flex items-center justify-between px-4 py-3"><span class="text-slate-400">Fotos</span><span class="font-semibold text-navy">${fotosTxt}</span></div>
+          <div class="flex items-center justify-between px-4 py-3 gap-4"><span class="text-slate-400 shrink-0">Secciones</span><span class="font-semibold text-navy text-right">${secs}</span></div>
+        </div>`;
     }
+    const titulos = ['Tu cocina', 'Tus colores', 'Logo y eslogan', 'Las fotos', 'Historia y extras', 'Todo listo'];
+    return `
+      <p class="text-xs font-semibold text-slate-400">CREAR TU WEB · PASO ${w.paso} DE 6</p>
+      <h3 class="text-xl font-bold text-navy mt-1">${titulos[w.paso - 1]}</h3>
+      <div class="wiz-progress">${progress}</div>
+      ${cuerpo}
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <div class="wiz-foot">
+        ${w.paso > 1 ? `<button type="button" onclick="wizAtras()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">← Atrás</button>` : ''}
+        ${w.paso < 6
+          ? `<button type="button" onclick="wizSiguiente()" class="flex-1 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Siguiente →</button>`
+          : `<button type="button" id="wizCrearBtn" onclick="webWizFinalizar()" class="flex-1 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">✨ Crear mi web</button>`}
+      </div>`;
+  }
+  function wizSetTipo(t) { webWiz.tipo = t; renderWebWiz(); }
+  function wizSetPaleta(key) { webWiz.modoColor = 'paleta'; webWiz.paleta = key; renderWebWiz(); }
+  function wizSetCustomColor() { webWiz.modoColor = 'custom'; renderWebWiz(); }
+  function wizLeer() {
+    const w = webWiz;
+    const esl = document.getElementById('wizEsloganTxt');
+    if (esl) w.eslogan = esl.value;
+    const his = document.getElementById('wizHistoria');
+    if (his) w.historia = his.value;
+    const ig = document.getElementById('wizInstagram');
+    if (ig) w.instagram = ig.value;
+    const sg = document.getElementById('wizSecGaleria');
+    if (sg) {
+      w.secciones.galeria = sg.checked;
+      w.secciones.horario = document.getElementById('wizSecHorario').checked;
+      w.secciones.contacto = document.getElementById('wizSecContacto').checked;
+      w.secciones.reservas = document.getElementById('wizSecReservas').checked;
+    }
+  }
+  function wizSiguiente() {
+    wizLeer();
+    const w = webWiz;
+    if (w.paso === 1 && !w.tipo) return modalFormError('Elige el tipo de restaurante.');
+    if (w.paso === 2 && w.modoColor === 'paleta' && !w.paleta) return modalFormError('Elige una paleta o define tus colores.');
+    w.paso += 1;
+    renderWebWiz();
+  }
+  function wizAtras() {
+    wizLeer();
+    webWiz.paso -= 1;
+    renderWebWiz();
+  }
+  function wizLogoFile(input) {
+    const f = input.files && input.files[0];
+    if (!f) return;
+    wizLeer();
+    redimensionarImagen(f, 400, url => { if (url) webWiz.logo = url; renderWebWiz(); });
+  }
+  function wizHeroFile(input) {
+    const f = input.files && input.files[0];
+    if (!f) return;
+    wizLeer();
+    redimensionarImagen(f, 1400, url => { if (url) webWiz.fotoHero = url; renderWebWiz(); });
+  }
+  function wizGaleriaFiles(input) {
+    const files = Array.from(input.files || []).slice(0, 4 - webWiz.fotosPropias.length);
+    if (!files.length) return;
+    wizLeer();
+    let pendientes = files.length;
+    files.forEach(f => redimensionarImagen(f, 1000, url => {
+      if (url) webWiz.fotosPropias.push(url);
+      pendientes -= 1;
+      if (pendientes === 0) renderWebWiz();
+    }));
+  }
+  function wizQuitarFoto(i) { webWiz.fotosPropias.splice(i, 1); renderWebWiz(); }
+  async function webWizFinalizar() {
+    wizLeer();
+    const w = webWiz;
+    const acc = getCurrentAccount();
+    const btn = document.getElementById('wizCrearBtn');
+    btn.disabled = true;
+    btn.textContent = w.esloganModo === 'ia' ? 'La IA está escribiendo tu eslogan…' : 'Creando tu web…';
+    let tagline = w.esloganModo === 'propio' ? w.eslogan.trim() : '';
+    let avisoIa = false;
+    if (w.esloganModo === 'ia') {
+      try {
+        const paletaLabel = w.modoColor === 'paleta' ? (PALETAS_CARTA[w.paleta] || PALETAS_CARTA.moderno).label : 'personalizada (' + w.color1 + ' y ' + w.color2 + ')';
+        const { data, error } = await supabaseClient.functions.invoke('carta-digital', {
+          body: { restaurantName: acc.restaurantName, tipoRestaurante: w.tipo, paleta: paletaLabel },
+        });
+        if (error || !data || data.error) throw new Error('ia');
+        tagline = data.tagline || '';
+      } catch (e) {
+        avisoIa = true;
+      }
+    }
+    acc.data.cartaDigital = Object.assign({}, acc.data.cartaDigital, {
+      activada: true,
+      web: true,
+      tipoRestaurante: w.tipo,
+      paleta: w.modoColor === 'paleta' ? w.paleta : '',
+      colorPrimario: w.modoColor === 'custom' ? w.color1 : '',
+      colorSecundario: w.modoColor === 'custom' ? w.color2 : '',
+      tagline,
+      logo: w.logo,
+      historia: w.historia.trim(),
+      fotosModo: w.fotosModo,
+      fotoHero: w.fotoHero,
+      fotosPropias: w.fotosPropias,
+      instagram: w.instagram.trim().replace(/^@/, ''),
+      direccion: acc.data.perfil.direccion || '',
+      telefono: acc.data.perfil.telefono || '',
+      secciones: w.secciones,
+      creadaEn: acc.data.cartaDigital.creadaEn || new Date().toISOString(),
+    });
+    saveCurrentAccountData(acc.data);
+    closeModal();
+    renderCartaDigitalPreview();
+    showToast(avisoIa ? 'Web creada, pero el eslogan IA falló: añádelo editando tu web' : '🎉 ¡Tu web está lista!');
   }
 
   function applyTopbar(acc) {
@@ -5038,6 +5233,64 @@
     'Mediterráneo': '🫒',
     'Otro': '🍽️',
   };
+  const TIPOS_RESTAURANTE = ['Italiano', 'Japonés / Asiático', 'Casual / Bar', 'Alta cocina', 'Cafetería / Brunch', 'Mediterráneo', 'Otro'];
+  const PALETA_SUGERIDA = {
+    'Italiano': 'calido',
+    'Japonés / Asiático': 'elegante',
+    'Casual / Bar': 'moderno',
+    'Alta cocina': 'elegante',
+    'Cafetería / Brunch': 'pastel',
+    'Mediterráneo': 'fresco',
+    'Otro': 'moderno',
+  };
+  const FOTO_UNSPLASH = (id, w) => 'https://images.unsplash.com/' + id + '?auto=format&fit=crop&w=' + w + '&q=70';
+  const FOTOS_BANCO = {
+    'Italiano': {
+      hero: FOTO_UNSPLASH('photo-1565299624946-b28f40a0ae38', 1400),
+      galeria: [FOTO_UNSPLASH('photo-1513104890138-7c749659a591', 800), FOTO_UNSPLASH('photo-1473093295043-cdd812d0e601', 800), FOTO_UNSPLASH('photo-1414235077428-338989a2e8c0', 800)],
+    },
+    'Japonés / Asiático': {
+      hero: FOTO_UNSPLASH('photo-1579871494447-9811cf80d66c', 1400),
+      galeria: [FOTO_UNSPLASH('photo-1553621042-f6e147245754', 800), FOTO_UNSPLASH('photo-1512058564366-18510be2db19', 800), FOTO_UNSPLASH('photo-1466978913421-dad2ebd01d17', 800)],
+    },
+    'Casual / Bar': {
+      hero: FOTO_UNSPLASH('photo-1514933651103-005eec06c04b', 1400),
+      galeria: [FOTO_UNSPLASH('photo-1568901346375-23c9450c58cd', 800), FOTO_UNSPLASH('photo-1470337458703-46ad1756a187', 800), FOTO_UNSPLASH('photo-1550547660-d9450f859349', 800)],
+    },
+    'Alta cocina': {
+      hero: FOTO_UNSPLASH('photo-1414235077428-338989a2e8c0', 1400),
+      galeria: [FOTO_UNSPLASH('photo-1544025162-d76694265947', 800), FOTO_UNSPLASH('photo-1504674900247-0877df9cc836', 800), FOTO_UNSPLASH('photo-1559339352-11d035aa65de', 800)],
+    },
+    'Cafetería / Brunch': {
+      hero: FOTO_UNSPLASH('photo-1554118811-1e0d58224f24', 1400),
+      galeria: [FOTO_UNSPLASH('photo-1495474472287-4d71bcdd2085', 800), FOTO_UNSPLASH('photo-1521017432531-fbd92d768814', 800), FOTO_UNSPLASH('photo-1509042239860-f550ce710b93', 800)],
+    },
+    'Mediterráneo': {
+      hero: FOTO_UNSPLASH('photo-1552566626-52f8b828add9', 1400),
+      galeria: [FOTO_UNSPLASH('photo-1546069901-ba9599a7e63c', 800), FOTO_UNSPLASH('photo-1540189549336-e6e99c3679fe', 800), FOTO_UNSPLASH('photo-1512621776951-a57141f2eefd', 800)],
+    },
+    'Otro': {
+      hero: FOTO_UNSPLASH('photo-1517248135467-4c7edcad34c4', 1400),
+      galeria: [FOTO_UNSPLASH('photo-1504674900247-0877df9cc836', 800), FOTO_UNSPLASH('photo-1540189549336-e6e99c3679fe', 800), FOTO_UNSPLASH('photo-1414235077428-338989a2e8c0', 800)],
+    },
+  };
+  function fotosWebResueltas(cd) {
+    const banco = FOTOS_BANCO[cd.tipoRestaurante] || FOTOS_BANCO['Otro'];
+    const modo = cd.fotosModo || 'banco';
+    let hero = '';
+    let galeria = [];
+    if (modo === 'propias') {
+      hero = cd.fotoHero || '';
+      galeria = (cd.fotosPropias || []).slice();
+    } else if (modo === 'mix') {
+      hero = cd.fotoHero || banco.hero;
+      galeria = (cd.fotosPropias || []).concat(banco.galeria);
+    } else {
+      hero = banco.hero;
+      galeria = banco.galeria.slice();
+    }
+    return { hero, galeria: galeria.slice(0, 6) };
+  }
   let publicMenuData = null;
   let publicMenuCuentaId = null;
   let publicMenuMesaNumero = null;
@@ -5073,6 +5326,7 @@
     const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
     const cd = publicMenuData.cartaDigital;
     const temaActivo = !!(cd && cd.activada);
+    const webMode = !!(cd && cd.activada && cd.web);
     const paleta = temaActivo ? coloresCartaDigital(cd) : null;
     const itemsHtml = menu.length
       ? menu.map((m, idx) => {
@@ -5101,6 +5355,13 @@
       : `<p class="text-sm text-slate-400 mt-6">Este restaurante todavía no ha publicado su menú.</p>`;
     const totalItems = Object.values(publicPedidoCarrito).reduce((a, b) => a + b, 0);
     const total = menu.reduce((sum, m, idx) => sum + precioToNumero(m.precio) * (publicPedidoCarrito[idx] || 0), 0);
+    const wrap = body.parentElement;
+    if (webMode) {
+      wrap.className = '';
+      body.innerHTML = publicWebHtml(nombre, cd, paleta, itemsHtml, totalItems, total);
+      return;
+    }
+    wrap.className = 'max-w-lg mx-auto px-5 py-10';
     const headerHtml = temaActivo
       ? `
         <div class="-mx-5 -mt-10 px-6 pt-10 pb-9 mb-6 text-left relative overflow-hidden" style="background:linear-gradient(135deg, ${paleta.color1}, ${paleta.color2}); border-radius:0 0 28px 28px;">
@@ -5139,6 +5400,96 @@
       ` : ''}
     `;
   }
+  function publicWebHtml(nombre, cd, paleta, itemsHtml, totalItems, total) {
+    const n = svgEsc(nombre);
+    const sec = cd.secciones || {};
+    const fotos = fotosWebResueltas(cd);
+    const reservarUrl = location.origin + location.pathname + '?reservar=' + encodeURIComponent(publicMenuCuentaId);
+    const heroBg = fotos.hero
+      ? `background-image:linear-gradient(rgba(16,12,32,0.45), rgba(16,12,32,0.72)), url('${fotos.hero}');background-size:cover;background-position:center;`
+      : `background:linear-gradient(140deg, ${paleta.color1}, ${paleta.color2});`;
+    const heroHtml = `
+      <header class="pweb-hero" style="${heroBg}">
+        <nav class="pweb-nav">
+          <span class="pweb-brand">${cd.logo ? `<img src="${cd.logo}" alt="">` : ''}${n}</span>
+          ${sec.reservas ? `<a href="${reservarUrl}" class="pweb-nav-cta">Reservar</a>` : ''}
+        </nav>
+        <div class="pweb-hero-inner">
+          ${cd.tipoRestaurante ? `<span class="pweb-badge">${TIPO_EMOJI[cd.tipoRestaurante] || '🍽️'} ${svgEsc(cd.tipoRestaurante)}</span>` : ''}
+          <h1>${n}</h1>
+          ${cd.tagline ? `<p class="pweb-tagline">"${svgEsc(cd.tagline)}"</p>` : ''}
+          <div class="pweb-hero-ctas">
+            <a href="#pweb-carta" class="pweb-btn-primary" style="background:${paleta.color1};">Ver la carta y pedir</a>
+            ${sec.reservas ? `<a href="${reservarUrl}" class="pweb-btn-ghost">Reservar mesa</a>` : ''}
+          </div>
+          ${publicMenuMesaNumero && !publicMenuIsPreview ? `<p class="pweb-mesa">📍 Estás en la mesa ${svgEsc(publicMenuMesaNumero)}</p>` : ''}
+        </div>
+      </header>`;
+    const nosotrosHtml = (sec.nosotros !== false && cd.historia) ? `
+      <section class="pweb-sec">
+        <p class="pweb-kicker" style="color:${paleta.color1};">Nuestra historia</p>
+        <h2>Bienvenidos a ${n}</h2>
+        <p class="pweb-texto">${svgEsc(cd.historia)}</p>
+      </section>` : '';
+    const cartaHtml = `
+      <section class="pweb-sec" id="pweb-carta">
+        <p class="pweb-kicker" style="color:${paleta.color1};">La carta</p>
+        <h2>Pide desde tu mesa</h2>
+        <p class="pweb-texto" style="margin-top:8px;">Elige tus platos y envía el pedido directamente a cocina.</p>
+        <div class="pweb-carta-list">${itemsHtml}</div>
+        <p id="pubPedError" class="text-xs text-rose-600 hidden mt-3"></p>
+      </section>`;
+    const galeriaHtml = (sec.galeria && fotos.galeria.length) ? `
+      <section class="pweb-sec">
+        <p class="pweb-kicker" style="color:${paleta.color1};">Galería</p>
+        <h2>Así se vive ${n}</h2>
+        <div class="pweb-galeria">${fotos.galeria.map(u => `<img src="${u}" alt="" loading="lazy" onerror="this.style.display='none'">`).join('')}</div>
+      </section>` : '';
+    let horarioHtml = '';
+    if (sec.horario && publicMenuData.horarioConfigurado && publicMenuData.horario) {
+      const hoyKey = DIA_JS_A_KEY[new Date().getDay()];
+      const filas = DIAS_SEMANA.map(d => {
+        const dia = publicMenuData.horario[d.key];
+        const abierto = dia && dia.abierto;
+        return `<div class="pweb-horario-row ${d.key === hoyKey ? 'hoy' : ''}">
+          <span>${d.label}${d.key === hoyKey ? ' · hoy' : ''}</span>
+          <span>${abierto ? dia.apertura + ' – ' + dia.cierre : 'Cerrado'}</span>
+        </div>`;
+      }).join('');
+      horarioHtml = `
+        <section class="pweb-sec">
+          <p class="pweb-kicker" style="color:${paleta.color1};">Horario</p>
+          <h2>Cuándo encontrarnos</h2>
+          <div class="pweb-horario">${filas}</div>
+        </section>`;
+    }
+    const tieneContacto = sec.contacto && (cd.direccion || cd.telefono || cd.instagram);
+    const contactoHtml = tieneContacto ? `
+      <section class="pweb-sec">
+        <p class="pweb-kicker" style="color:${paleta.color1};">Contacto</p>
+        <h2>Ven a vernos</h2>
+        <div class="pweb-contacto">
+          ${cd.direccion ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cd.direccion)}" target="_blank" rel="noopener"><span>📍</span><span>${svgEsc(cd.direccion)}</span></a>` : ''}
+          ${cd.telefono ? `<a href="tel:${escAttr(cd.telefono.replace(/\s/g, ''))}"><span>📞</span><span>${svgEsc(cd.telefono)}</span></a>` : ''}
+          ${cd.instagram ? `<a href="https://instagram.com/${escAttr(cd.instagram)}" target="_blank" rel="noopener"><span>📸</span><span>@${svgEsc(cd.instagram)}</span></a>` : ''}
+          ${sec.reservas ? `<a href="${reservarUrl}"><span>📅</span><span>Reservar mesa online</span></a>` : ''}
+        </div>
+      </section>` : '';
+    const footerHtml = `<footer class="pweb-footer">© ${new Date().getFullYear()} ${n} · Web creada con Restora</footer>`;
+    const cartBar = totalItems > 0 ? `
+      <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg px-4 py-3 sm:px-6" style="z-index:40;">
+        <div class="max-w-lg mx-auto flex items-center gap-3">
+          <div class="min-w-0 shrink-0">
+            <p class="text-xs text-slate-400">${totalItems} ${totalItems === 1 ? 'plato' : 'platos'}</p>
+            <p class="text-base font-bold text-navy">${total.toFixed(2).replace('.', ',')}€</p>
+          </div>
+          <button type="button" onclick="enviarPedidoPublico()" id="pubPedBtn" class="flex-1 rounded-full transition text-white text-sm font-semibold px-5 py-3" style="background:${paleta.color1};">Enviar pedido</button>
+        </div>
+      </div>` : '';
+    return `<div class="text-left" style="${totalItems > 0 ? 'padding-bottom:88px;' : ''}">
+      ${heroHtml}${nosotrosHtml}${cartaHtml}${galeriaHtml}${horarioHtml}${contactoHtml}${footerHtml}
+    </div>${cartBar}`;
+  }
   function cambiarCantidadPublico(idx, delta) {
     const actual = publicPedidoCarrito[idx] || 0;
     const nuevo = Math.max(0, actual + delta);
@@ -5169,7 +5520,7 @@
         return;
       }
       document.getElementById('publicMenuBody').innerHTML = `
-        <div class="text-center py-10">
+        <div class="text-center py-16 px-6 max-w-lg mx-auto">
           <div class="w-11 h-11 rounded-full bg-accent/10 text-accent flex items-center justify-center mb-4 mx-auto">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           </div>
