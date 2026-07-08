@@ -186,6 +186,10 @@
   #landingRoot .hero-title { animation: heroIn .7s cubic-bezier(.2,.8,.3,1) both; }
   #landingRoot .hero-sub { animation: heroIn .7s .12s cubic-bezier(.2,.8,.3,1) both; }
   #landingRoot .hero-mock-wrap { animation: heroIn .8s .22s cubic-bezier(.2,.8,.3,1) both; }
+  .hero-mock-nav-icon { background: transparent !important; color: #8B8B96 !important; width: 22px; height: 22px; }
+  .hero-mock-nav-icon svg { width: 16px; height: 16px; }
+  .hero-mock-nav-active { background: rgb(79 63 255 / 0.08); color: #4F3FFF; font-weight: 600; border-radius: 8px; }
+  .hero-mock-nav-active .hero-mock-nav-icon { color: #4F3FFF !important; }
   @keyframes chipFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
   #landingRoot .float-chip { animation: chipFloat 4.5s ease-in-out infinite; }
   @media (prefers-reduced-motion: reduce) {
@@ -582,11 +586,11 @@
   <!-- Product mock window -->
   <div class="hero-mock-wrap max-w-5xl mx-auto px-6 pb-28 -mt-2 relative">
     <div class="rounded-2xl bg-white card-shadow border-2 border-slate-300 overflow-hidden relative">
-      <!-- toolbar: réplica del topbar real de la app -->
+      <!-- toolbar: réplica exacta del topbar real -->
       <div class="flex items-center justify-between px-5 py-3 border-b border-slate-100">
         <div class="flex items-center gap-2.5">
-          <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white font-extrabold text-xs shrink-0" style="background:linear-gradient(135deg, #6E60FF, #4F3FFF);">R</span>
-          <span class="text-sm font-semibold text-navy">Casa Fuego</span>
+          <span class="app-brand-mark">R</span>
+          <span class="text-sm font-semibold text-navy">Restora</span>
         </div>
         <div class="hidden md:flex items-center flex-1 max-w-xs mx-6">
           <div class="w-full flex items-center gap-2 rounded-full bg-slate-100 px-3.5 py-2">
@@ -594,83 +598,87 @@
             <span class="text-xs text-slate-400">Buscar...</span>
           </div>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="hidden lg:flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+          <span>Panel</span><span>/</span><span class="text-navy">Dashboard</span>
+        </div>
+        <div class="flex items-center gap-4 ml-4">
           <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-          <span class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0" style="background:linear-gradient(135deg, #DFDAFF, #BCB0FF); color:#3A28D8;">CF</span>
+          <span class="w-8 h-8 rounded-full bg-violet-200 flex items-center justify-center text-xs font-semibold text-navy shrink-0">R</span>
+          <span class="hidden sm:inline text-xs font-semibold text-slate-500">Salir</span>
         </div>
       </div>
       <div class="flex">
-        <!-- sidebar -->
-        <aside class="hero-mock-aside flex flex-col w-56 shrink-0 border-r border-slate-100 px-3 py-4 text-sm">
-          <ul class="space-y-0.5 text-slate-600">
-            <li class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg" style="background:rgb(79 63 255 / 0.08); color:#4F3FFF; font-weight:600;"><span class="w-5 h-5 flex items-center justify-center shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.3"/><rect x="14" y="3" width="7" height="5" rx="1.3"/><rect x="14" y="12" width="7" height="9" rx="1.3"/><rect x="3" y="16" width="7" height="5" rx="1.3"/></svg></span>Dashboard</li>
-            <li class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg"><span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M8 3v4M16 3v4M3 10h18"/></svg></span>Reservas</li>
-            <li class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg"><span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path stroke-linecap="round" d="M9 8h6M9 12h6"/></svg></span>Pedidos</li>
-            <li class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg"><span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path stroke-linecap="round" d="M8 7V5a4 4 0 018 0v2"/><path stroke-linecap="round" d="M7 12h2M15 12h2"/></svg></span>TPV</li>
-            <li class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg"><span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M3 8h18M5 8v10M19 8v10M9 8v3M15 8v3"/></svg></span>Mesas</li>
-            <li class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg"><span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 016.5 3H12v18H6.5A2.5 2.5 0 014 18.5v-13zM20 5.5A2.5 2.5 0 0017.5 3H12v18h5.5a2.5 2.5 0 002.5-2.5v-13z"/></svg></span>Menú</li>
-            <li class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg"><span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8L12 3 3 8l9 5 9-5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 8v8l9 5 9-5V8M12 13v8"/></svg></span>Inventario</li>
-            <li class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg"><span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L20 9.5l-6.1 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.9L12 2z"/></svg></span>Ayudante IA</li>
-            <li class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg"><span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 11l9-8 9 8"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 10v10h14V10"/></svg></span>Mi restaurante</li>
-            <li class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg"><span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path stroke-linecap="round" d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.3"/><path stroke-linecap="round" d="M15.5 14.2c2.6.5 4.5 2.6 4.5 5.8"/></svg></span>Personal</li>
+        <!-- sidebar: mismos items, mismo orden e iconos que la app real -->
+        <aside class="hero-mock-aside flex flex-col w-56 shrink-0 border-r border-slate-100 px-3 py-5 text-sm">
+          <ul class="space-y-1 text-slate-600">
+            <li class="hero-mock-nav-active flex items-center gap-2.5 px-3 py-2"><span class="hero-mock-nav-icon flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.3"/><rect x="14" y="3" width="7" height="5" rx="1.3"/><rect x="14" y="12" width="7" height="9" rx="1.3"/><rect x="3" y="16" width="7" height="5" rx="1.3"/></svg></span>Dashboard</li>
+            <li class="flex items-center gap-2.5 px-3 py-2"><span class="hero-mock-nav-icon flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M8 3v4M16 3v4M3 10h18"/></svg></span>Reservas</li>
+            <li class="flex items-center gap-2.5 px-3 py-2"><span class="hero-mock-nav-icon flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path stroke-linecap="round" d="M9 8h6M9 12h6"/></svg></span>Pedidos</li>
+            <li class="flex items-center gap-2.5 px-3 py-2"><span class="hero-mock-nav-icon flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path stroke-linecap="round" d="M8 7V5a4 4 0 018 0v2"/><path stroke-linecap="round" d="M7 12h2M15 12h2"/></svg></span>TPV</li>
+            <li class="flex items-center gap-2.5 px-3 py-2"><span class="hero-mock-nav-icon flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M3 8h18M5 8v10M19 8v10M9 8v3M15 8v3"/></svg></span>Mesas</li>
+            <li class="flex items-center gap-2.5 px-3 py-2"><span class="hero-mock-nav-icon flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 016.5 3H12v18H6.5A2.5 2.5 0 014 18.5v-13zM20 5.5A2.5 2.5 0 0017.5 3H12v18h5.5a2.5 2.5 0 002.5-2.5v-13z"/></svg></span>Menú</li>
+            <li class="flex items-center gap-2.5 px-3 py-2"><span class="hero-mock-nav-icon flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M2 9h3M2 13h2M2 17h2"/><rect x="8" y="6" width="13" height="12" rx="2"/><path stroke-linecap="round" d="M8 10h13"/></svg></span>Delivery</li>
+            <li class="flex items-center gap-2.5 px-3 py-2"><span class="hero-mock-nav-icon flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8L12 3 3 8l9 5 9-5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 8v8l9 5 9-5V8M12 13v8"/></svg></span>Inventario</li>
+            <li class="flex items-center gap-2.5 px-3 py-2"><span class="hero-mock-nav-icon flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L20 9.5l-6.1 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.9L12 2z"/></svg></span>Ayudante IA</li>
+            <li class="flex items-center gap-2.5 px-3 py-2"><span class="hero-mock-nav-icon flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 11l9-8 9 8"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 10v10h14V10"/></svg></span>Mi restaurante</li>
+            <li class="flex items-center gap-2.5 px-3 py-2"><span class="hero-mock-nav-icon flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path stroke-linecap="round" d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.3"/><path stroke-linecap="round" d="M15.5 14.2c2.6.5 4.5 2.6 4.5 5.8"/></svg></span>Personal</li>
           </ul>
           <ul class="mt-auto pt-3 border-t border-slate-100 text-slate-600">
-            <li class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg"><span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" d="M12 2v3M12 19v3M4.2 4.2l2.2 2.2M17.6 17.6l2.2 2.2M2 12h3M19 12h3M4.2 19.8l2.2-2.2M17.6 6.4l2.2-2.2"/></svg></span>Configuración</li>
+            <li class="flex items-center gap-2.5 px-3 py-2"><span class="hero-mock-nav-icon flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.3"/><rect x="14" y="3" width="7" height="7" rx="1.3"/><rect x="3" y="14" width="7" height="7" rx="1.3"/><rect x="14" y="14" width="7" height="7" rx="1.3"/></svg></span>Apps</li>
+            <li class="flex items-center gap-2.5 px-3 py-2"><span class="hero-mock-nav-icon flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" d="M12 2v3M12 19v3M4.2 4.2l2.2 2.2M17.6 17.6l2.2 2.2M2 12h3M19 12h3M4.2 19.8l2.2-2.2M17.6 6.4l2.2-2.2"/></svg></span>Configuración</li>
           </ul>
         </aside>
-        <!-- main: réplica del Dashboard real -->
+        <!-- main: réplica exacta del Dashboard real -->
         <div class="flex-1 px-6 py-6 min-w-0 relative">
           <div class="flex items-start justify-between flex-wrap gap-3">
             <div>
-              <p class="text-lg font-extrabold text-navy tracking-tight">¡Bienvenido, Casa Fuego!</p>
-              <p class="text-xs text-slate-400 mt-1">Información y actividad de tu restaurante en tiempo real.</p>
+              <h2 class="dash-welcome-title" style="font-size:19px">¡Bienvenido, Restora!</h2>
+              <p class="dash-welcome-sub">Información y actividad de tu restaurante en tiempo real.</p>
             </div>
-            <span class="hidden md:inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-navy shrink-0">
-              <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M8 3v4M16 3v4M3 10h18"/></svg>
+            <span class="dash-range-btn">
+              <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M8 3v4M16 3v4M3 10h18"/></svg>
               1 jul - 7 jul 2026
+              <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
             </span>
           </div>
 
           <!-- KPI tiles -->
           <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div class="rounded-xl border border-slate-200 bg-white p-3">
-              <div class="flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M12 2v20M17 6.5c0-1.9-2.2-3.5-5-3.5s-5 1.6-5 3.5 2.2 3.5 5 3.5 5 1.6 5 3.5-2.2 3.5-5 3.5-5-1.6-5-3.5"/></svg></span><span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Ingresos</span></div>
-              <p class="text-lg font-bold text-navy mt-2" data-countup="9840" data-suffix="€">9.840€</p>
-              <p class="text-[10.5px] text-emerald-600 font-semibold mt-1">+18% vs semana pasada</p>
+            <div class="kpi-tile rounded-2xl border border-slate-200 bg-white p-3.5">
+              <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M12 2v20M17 6.5c0-1.9-2.2-3.5-5-3.5s-5 1.6-5 3.5 2.2 3.5 5 3.5 5 1.6 5 3.5-2.2 3.5-5 3.5-5-1.6-5-3.5"/></svg></span><span class="kpi-label">Ingresos totales</span></div>
+              <p class="text-2xl font-bold text-navy mt-2.5 tabular-nums leading-none" data-countup="9840" data-suffix="€">9.840€</p>
             </div>
-            <div class="rounded-xl border border-slate-200 bg-white p-3">
-              <div class="flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path stroke-linecap="round" d="M9 8h6M9 12h6"/></svg></span><span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Pedidos</span></div>
-              <p class="text-lg font-bold text-navy mt-2" data-countup="312">312</p>
-              <p class="text-[10.5px] text-emerald-600 font-semibold mt-1">+9% vs semana pasada</p>
+            <div class="kpi-tile rounded-2xl border border-slate-200 bg-white p-3.5">
+              <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path stroke-linecap="round" d="M9 8h6M9 12h6"/></svg></span><span class="kpi-label">Pedidos totales</span></div>
+              <p class="text-2xl font-bold text-navy mt-2.5 tabular-nums leading-none" data-countup="312">312</p>
             </div>
-            <div class="rounded-xl border border-slate-200 bg-white p-3">
-              <div class="flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-violet-50 text-violet-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M5 20V10M12 20V4M19 20v-7"/></svg></span><span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Ticket medio</span></div>
-              <p class="text-lg font-bold text-navy mt-2" data-countup="31.5" data-decimals="2" data-suffix="€">31,50€</p>
-              <p class="text-[10.5px] text-rose-500 font-semibold mt-1">−3% vs semana pasada</p>
+            <div class="kpi-tile rounded-2xl border border-slate-200 bg-white p-3.5">
+              <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M5 20V10M12 20V4M19 20v-7"/></svg></span><span class="kpi-label">Ticket medio</span></div>
+              <p class="text-2xl font-bold text-navy mt-2.5 tabular-nums leading-none" data-countup="31.5" data-decimals="2" data-suffix="€">31,50€</p>
             </div>
-            <div class="rounded-xl border border-slate-200 bg-white p-3">
-              <div class="flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-teal-50 text-teal-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path stroke-linecap="round" d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.3"/><path stroke-linecap="round" d="M15.5 14.2c2.6.5 4.5 2.6 4.5 5.8"/></svg></span><span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Comensales</span></div>
-              <p class="text-lg font-bold text-navy mt-2" data-countup="587">587</p>
-              <p class="text-[10.5px] text-emerald-600 font-semibold mt-1">+14% vs semana pasada</p>
+            <div class="kpi-tile rounded-2xl border border-slate-200 bg-white p-3.5">
+              <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path stroke-linecap="round" d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.3"/><path stroke-linecap="round" d="M15.5 14.2c2.6.5 4.5 2.6 4.5 5.8"/></svg></span><span class="kpi-label">Comensales</span></div>
+              <p class="text-2xl font-bold text-navy mt-2.5 tabular-nums leading-none" data-countup="587">587</p>
             </div>
           </div>
 
-          <div class="float-chip hidden sm:block absolute z-20" style="right:6%; top:230px;">
+          <div class="float-chip hidden sm:block absolute z-20" style="right:6%; top:236px;">
             <svg class="w-4 h-4 text-navy -mb-0.5 ml-1" fill="currentColor" viewBox="0 0 16 16"><path d="M2 1l11 6.5-5 1-2.5 4.5L2 1z"/></svg>
             <span class="block bg-accent text-white text-xs font-semibold px-3 py-1.5 rounded-full rounded-tl-none shadow-lg">Elena</span>
           </div>
 
-          <div class="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
-            <div class="md:col-span-3 rounded-xl border border-slate-200 bg-white overflow-hidden">
+          <div class="mt-4 grid grid-cols-1 dash-rev-grid gap-3 items-stretch">
+            <div class="dash-rev-main rounded-2xl border border-slate-200 bg-white overflow-hidden">
               <div class="flex items-start justify-between flex-wrap gap-2 px-4 pt-4">
                 <div>
-                  <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Ingresos</p>
-                  <p class="text-xl font-bold text-navy mt-0.5">9.840€</p>
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Ingresos</p>
+                  <p class="text-xl font-bold text-navy mt-1 tracking-tight">1.840€</p>
                 </div>
-                <div class="inline-flex gap-0.5 bg-slate-100 rounded-lg p-0.5">
-                  <span class="bg-white shadow-sm text-navy text-[10.5px] font-semibold px-2.5 py-1 rounded-md">Día</span>
-                  <span class="text-slate-400 text-[10.5px] font-medium px-2.5 py-1">Semana</span>
-                  <span class="text-slate-400 text-[10.5px] font-medium px-2.5 py-1">Mes</span>
+                <div class="dash-seg">
+                  <button class="active">Día</button>
+                  <button>Semana</button>
+                  <button>Mes</button>
+                  <button>Año</button>
                 </div>
               </div>
               <svg viewBox="0 0 400 130" class="w-full mt-2" style="display:block">
@@ -678,23 +686,27 @@
                 <line x1="30" y1="20" x2="390" y2="20" stroke="#EEF0F4"/>
                 <line x1="30" y1="60" x2="390" y2="60" stroke="#EEF0F4"/>
                 <line x1="30" y1="100" x2="390" y2="100" stroke="#EEF0F4"/>
+                <text x="24" y="23" text-anchor="end" font-size="9" fill="#94A3B8">2.000€</text>
+                <text x="24" y="63" text-anchor="end" font-size="9" fill="#94A3B8">1.000€</text>
+                <text x="24" y="103" text-anchor="end" font-size="9" fill="#94A3B8">0€</text>
                 <path d="M30 90 C 70 95, 100 60, 140 65 C 180 70, 210 40, 250 35 C 290 30, 320 55, 360 20 L 360 110 L 30 110 Z" fill="url(#heroRevGrad)"/>
                 <path d="M30 90 C 70 95, 100 60, 140 65 C 180 70, 210 40, 250 35 C 290 30, 320 55, 360 20" fill="none" stroke="#4F3FFF" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="30" cy="90" r="3.5" fill="#fff" stroke="#4F3FFF" stroke-width="2"/>
                 <circle cx="360" cy="20" r="3.5" fill="#fff" stroke="#4F3FFF" stroke-width="2"/>
               </svg>
               <div class="flex justify-between text-[9.5px] text-slate-400 px-4 pb-3 -mt-1">
-                <span>1 jul</span><span>3 jul</span><span>5 jul</span><span>7 jul</span>
+                <span>5 jul</span><span>6 jul</span><span>7 jul</span>
               </div>
             </div>
-            <div class="md:col-span-2 rounded-xl border border-slate-200 bg-white p-4">
-              <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Pedidos por canal</p>
-              <div class="flex items-center gap-4 mt-2">
+            <div class="dash-rev-side rounded-2xl border border-slate-200 bg-white p-4">
+              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Pedidos por canal</p>
+              <div class="flex items-center gap-4 mt-3">
                 <svg viewBox="0 0 100 100" width="80" height="80" class="shrink-0">
                   <circle cx="50" cy="50" r="38" fill="none" stroke="#EEF0F4" stroke-width="14"/>
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#4F3FFF" stroke-width="14" stroke-dasharray="143 239" stroke-dashoffset="0" transform="rotate(-90 50 50)"/>
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#0EA5E9" stroke-width="14" stroke-dasharray="72 239" stroke-dashoffset="-143" transform="rotate(-90 50 50)"/>
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#10B981" stroke-width="14" stroke-dasharray="24 239" stroke-dashoffset="-215" transform="rotate(-90 50 50)"/>
-                  <text x="50" y="46" text-anchor="middle" font-size="17" font-weight="700" fill="#16161D">60%</text>
+                  <circle cx="50" cy="50" r="38" fill="none" stroke="#4F3FFF" stroke-width="14" stroke-dasharray="179 239" stroke-dashoffset="0" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="38" fill="none" stroke="#0EA5E9" stroke-width="14" stroke-dasharray="31 239" stroke-dashoffset="-179" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="38" fill="none" stroke="#10B981" stroke-width="14" stroke-dasharray="29 239" stroke-dashoffset="-210" transform="rotate(-90 50 50)"/>
+                  <text x="50" y="46" text-anchor="middle" font-size="17" font-weight="700" fill="#16161D">75%</text>
                   <text x="50" y="60" text-anchor="middle" font-size="8" fill="#94A3B8">Sala</text>
                 </svg>
                 <div class="text-xs text-slate-500 space-y-1.5 min-w-0">
@@ -702,6 +714,10 @@
                   <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full shrink-0" style="background:#0EA5E9"></span>TPV</div>
                   <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full shrink-0" style="background:#10B981"></span>QR de mesa</div>
                 </div>
+              </div>
+              <div class="flex items-center justify-between pt-2.5 mt-3 border-t border-slate-100">
+                <span class="text-xs font-semibold text-slate-500">Total pedidos</span>
+                <span class="text-sm font-bold text-navy tabular-nums">300</span>
               </div>
             </div>
           </div>
