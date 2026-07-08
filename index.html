@@ -1534,7 +1534,10 @@
             <p class="text-xs text-slate-400 mt-1">Comandas activas en sala y cocina.</p>
           </div>
         </div>
-        <button onclick="openModal('add-pedido')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Nuevo pedido</button>
+        <div class="flex gap-2">
+          <button onclick="probarSonidoAvisos()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">🔊 Probar sonido</button>
+          <button onclick="openModal('add-pedido')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Nuevo pedido</button>
+        </div>
       </div>
       <div id="pedidosGrid" class="mt-5 kds-board"></div>
     </section>
@@ -2109,26 +2112,38 @@
   document.addEventListener('keydown', desbloquearAudio, { once: true });
   function reproducirSonido(tipo) {
     desbloquearAudio();
-    if (!audioCtx) return;
+    if (!audioCtx) return false;
     try {
       if (audioCtx.state === 'suspended') audioCtx.resume();
-      // Dos tonos distintos: cocina (grave-agudo) y camarero (doble agudo, más alegre)
-      const notas = tipo === 'listo' ? [784, 1046, 1318] : [523, 659];
-      const t0 = audioCtx.currentTime;
+      // Dos avisos distintos: cocina (grave-agudo) y camarero (triple agudo, más alegre)
+      const notas = tipo === 'listo' ? [784, 1046, 1318] : [523, 784];
+      const t0 = audioCtx.currentTime + 0.02;
       notas.forEach((freq, i) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.type = 'sine';
+        osc.type = 'triangle';
         osc.frequency.value = freq;
-        const start = t0 + i * 0.16;
-        gain.gain.setValueAtTime(0.0001, start);
-        gain.gain.exponentialRampToValueAtTime(0.32, start + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
+        const start = t0 + i * 0.18;
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(0.6, start + 0.03);
+        gain.gain.linearRampToValueAtTime(0, start + 0.36);
         osc.connect(gain).connect(audioCtx.destination);
         osc.start(start);
-        osc.stop(start + 0.34);
+        osc.stop(start + 0.38);
       });
-    } catch (e) {}
+      return true;
+    } catch (e) { return false; }
+  }
+  function probarSonidoAvisos() {
+    desbloquearAudio();
+    if (!audioCtx) {
+      showToast('Tu navegador no permite reproducir sonido (audio no soportado).');
+      return;
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const ok = reproducirSonido('cocina');
+    setTimeout(() => reproducirSonido('listo'), 900);
+    showToast(ok ? 'Sonido de prueba enviado · audio: ' + audioCtx.state : 'No se ha podido reproducir el sonido.');
   }
   // ¿Este dispositivo debe oír avisos de cocina / de sala? El dueño (sin sesión de staff) oye todo.
   function rolTexto() {
