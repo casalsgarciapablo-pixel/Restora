@@ -367,6 +367,33 @@
     .sidebar-backdrop.open { opacity: 1; pointer-events: auto; }
     .app-main { padding-left: 16px !important; padding-right: 16px !important; padding-top: 16px !important; }
 
+    /* Section headers: stack title and action buttons on mobile */
+    #appRoot .app-section > .flex.items-center.justify-between,
+    #mesasContent > .flex.items-center.justify-between {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    #appRoot .app-section > .flex.items-center.justify-between > .flex.items-center.gap-3 { align-items: flex-start; }
+    #appRoot .app-section > .flex.items-center.justify-between > button { align-self: flex-start; }
+    #appRoot .app-section > .flex.items-center.justify-between > .flex.gap-2 { flex-wrap: wrap; gap: 8px; width: 100%; }
+    #appRoot .app-section > .flex.items-center.justify-between > .flex.gap-2 > button { flex: 1 1 auto; white-space: nowrap; padding-top: 9px; padding-bottom: 9px; }
+    /* Mesas resumen row: keep text and 'change tables' link tidy */
+    #mesasContent > .flex.items-center.justify-between > p,
+    #mesasContent > .flex.items-center.justify-between > button { margin-top: 0 !important; }
+
+    /* Mesas floor plan: free-form drag canvas -> centered wrapping grid on mobile */
+    #mesasContent > div:last-child { min-height: 0 !important; }
+    #tableGrid {
+      position: static !important; min-height: 0 !important; height: auto !important;
+      display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-start;
+      gap: 22px 16px; padding: 6px 0 4px;
+    }
+    #tableGrid .mesa-item {
+      position: static !important; left: auto !important; top: auto !important; transform: none !important;
+    }
+    #tableGrid .mesa-item .mesa-label { max-width: 96px; }
+
     /* Data tables -> stacked cards */
     #menuTableWrap table, #inventarioTableWrap table, #personalTableWrap table, #reservasTableWrap table,
     #menuTableWrap tbody, #inventarioTableWrap tbody, #personalTableWrap tbody, #reservasTableWrap tbody,
