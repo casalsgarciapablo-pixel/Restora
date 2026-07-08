@@ -187,6 +187,13 @@
   #landingRoot .hero-sub { animation: heroIn .7s .12s cubic-bezier(.2,.8,.3,1) both; }
   #landingRoot .hero-mock-wrap { animation: heroIn .8s .22s cubic-bezier(.2,.8,.3,1) both; }
   #heroChartRev svg { max-height: none !important; height: 100%; min-height: 200px; }
+  .landing-cta-btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 16px 36px; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; border: 1.75px solid #0b0b14; transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; }
+  .landing-cta-btn:hover { transform: translateY(-2px); }
+  .landing-cta-btn:active { transform: translateY(0); }
+  .landing-cta-btn.primary { background: #4F3FFF; color: #fff; box-shadow: 0 12px 30px -8px rgba(79,63,255,0.55), 0 3px 8px rgba(11,11,20,0.18); }
+  .landing-cta-btn.primary:hover { box-shadow: 0 18px 38px -8px rgba(79,63,255,0.65), 0 4px 10px rgba(11,11,20,0.2); filter: brightness(1.06); }
+  .landing-cta-btn.ghost { background: #fff; color: #0b0b14; box-shadow: 0 12px 30px -10px rgba(11,11,20,0.22), 0 3px 8px rgba(11,11,20,0.08); }
+  .landing-cta-btn.ghost:hover { box-shadow: 0 18px 38px -10px rgba(11,11,20,0.28), 0 4px 10px rgba(11,11,20,0.1); }
   .hero-mock-nav-icon { background: transparent !important; color: #8B8B96 !important; width: 22px; height: 22px; }
   .hero-mock-nav-icon svg { width: 16px; height: 16px; }
   .hero-mock-nav-active { background: rgb(79 63 255 / 0.08); color: #4F3FFF; font-weight: 600; border-radius: 8px; }
@@ -695,9 +702,9 @@
       </div>
     </div>
     <div style="width:82%; margin:14px auto 0; height:50px; background:linear-gradient(to bottom, rgba(15,23,42,0.12), rgba(15,23,42,0)); border-radius:0 0 1rem 1rem; filter:blur(8px); pointer-events:none;"></div>
-    <div class="flex items-center justify-center gap-3 flex-wrap mt-8">
-      <a href="javascript:void(0)" onclick="openModal('signup')" class="rounded-full bg-accent text-black text-sm font-semibold px-6 py-3 hover:opacity-90 transition">Prueba gratis</a>
-      <a href="javascript:void(0)" onclick="openModal('signup')" class="rounded-full bg-white border border-slate-200 text-black text-sm font-semibold px-6 py-3 hover:bg-slate-50 transition">Agendar una demo</a>
+    <div class="flex items-center justify-center gap-4 flex-wrap mt-9">
+      <a href="javascript:void(0)" onclick="openModal('signup')" class="landing-cta-btn primary">Prueba gratis</a>
+      <a href="javascript:void(0)" onclick="openModal('signup')" class="landing-cta-btn ghost">Agendar una demo</a>
     </div>
   </div>
   </section>
