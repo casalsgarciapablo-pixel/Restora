@@ -2744,6 +2744,8 @@
     document.getElementById('perfilTelefono').value = p.telefono || '';
     renderHorarioForm();
     renderCartaDigitalPreview();
+    actualizarMesasPorReservas();
+    if (!window._reservaMesaTimer) window._reservaMesaTimer = setInterval(actualizarMesasPorReservas, 60000);
     const c = acc.data.cuenta;
     document.getElementById('cuentaTitular').value = c.titular || '';
     document.getElementById('cuentaTelefono').value = c.telefono || '';
@@ -3038,6 +3040,39 @@
     acc.data.mesaEstados[i] = next;
     saveCurrentAccountData(acc.data);
     renderMesas();
+  }
+
+  // ---- Auto-reservar mesas antes de la hora de la reserva (y liberarlas si no se presentan) ----
+  const RESERVA_ANTELACION_MIN = 30; // marcar "Reservada" 30 min antes de la hora reservada
+  const RESERVA_GRACIA_MIN = 20; // si pasan 20 min de la hora reservada sin ocuparla, se libera (no-show)
+  function actualizarMesasPorReservas() {
+    const acc = getCurrentAccount();
+    if (!acc || !acc.data.mesaEstados.length || !acc.data.reservas.length) return;
+    const ahora = new Date();
+    const hoyStr = ahora.getFullYear() + '-' + String(ahora.getMonth() + 1).padStart(2, '0') + '-' + String(ahora.getDate()).padStart(2, '0');
+    let cambiado = false;
+    acc.data.reservas.forEach(r => {
+      if (r.fecha !== hoyStr || !r.hora) return;
+      const mMatch = /^Mesa (\d+)$/i.exec(r.mesa || '');
+      if (!mMatch) return;
+      const idx = parseInt(mMatch[1], 10) - 1;
+      if (acc.data.mesaEstados[idx] === undefined) return;
+      const [hh, mm] = r.hora.split(':').map(n => parseInt(n, 10));
+      const horaReserva = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), hh, mm);
+      const minParaReserva = (horaReserva - ahora) / 60000;
+      const estadoActual = acc.data.mesaEstados[idx];
+      if (minParaReserva <= RESERVA_ANTELACION_MIN && minParaReserva > -RESERVA_GRACIA_MIN && (estadoActual === 'Libre' || estadoActual === 'Sin definir')) {
+        acc.data.mesaEstados[idx] = 'Reservada';
+        cambiado = true;
+      } else if (minParaReserva <= -RESERVA_GRACIA_MIN && estadoActual === 'Reservada') {
+        acc.data.mesaEstados[idx] = 'Libre';
+        cambiado = true;
+      }
+    });
+    if (cambiado) {
+      saveCurrentAccountData(acc.data);
+      renderMesas();
+    }
   }
 
   // ---- Nav, toasts ----
@@ -3353,6 +3388,7 @@
     acc.data.reservas[i].mesa = nuevaMesa;
     saveCurrentAccountData(acc.data);
     renderReservas();
+    actualizarMesasPorReservas();
     showToast('Mesa actualizada');
   }
   function eliminarReserva(i) {
@@ -3397,6 +3433,7 @@
     acc.data.reservas.push(reserva);
     saveCurrentAccountData(acc.data);
     renderReservas();
+    actualizarMesasPorReservas();
     closeModal();
     showToast('Reserva añadida');
     if (googleAccessToken) crearEventoGoogleCalendar(reserva);
