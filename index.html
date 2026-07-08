@@ -187,6 +187,33 @@
   #landingRoot .hero-sub { animation: heroIn .7s .12s cubic-bezier(.2,.8,.3,1) both; }
   #landingRoot .hero-mock-wrap { animation: heroIn .8s .22s cubic-bezier(.2,.8,.3,1) both; }
   #heroChartRev svg { max-height: none !important; height: 100%; min-height: 200px; }
+  /* Tablero de cocina (KDS) */
+  .kds-board { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 900px) { .kds-board { grid-template-columns: repeat(3, 1fr); align-items: start; } }
+  .kds-col { background: #F7F7FA; border: 1px solid #ECECF2; border-radius: 16px; padding: 14px; }
+  .kds-col-head { display: flex; align-items: center; gap: 8px; }
+  .kds-col-dot { width: 9px; height: 9px; border-radius: 999px; flex-shrink: 0; }
+  .kds-col-title { font-size: 14px; font-weight: 700; color: #16161D; letter-spacing: -0.01em; }
+  .kds-col-count { margin-left: auto; font-size: 12px; font-weight: 700; color: #55555F; background: #fff; border: 1px solid #E7E7EE; border-radius: 999px; min-width: 22px; text-align: center; padding: 1px 7px; }
+  .kds-col-sub { font-size: 11.5px; color: #9A9AA5; margin-top: 3px; }
+  .kds-col-body { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 40px; }
+  .kds-col-empty { font-size: 12.5px; color: #A9A9B4; text-align: center; padding: 18px 8px; }
+  .kds-plato { background: #fff; border: 1px solid #E9E9EF; border-radius: 12px; padding: 11px 12px; box-shadow: 0 1px 2px rgba(22,22,29,0.04); }
+  .kds-plato-urgente { border-color: #FCA5A5; box-shadow: 0 0 0 1px #FCA5A5, 0 2px 8px -2px rgba(225,29,72,0.25); }
+  .kds-plato-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .kds-mesa { font-size: 12px; font-weight: 700; color: #4F3FFF; }
+  .kds-hora { font-size: 11px; color: #9A9AA5; white-space: nowrap; }
+  .kds-plato-mid { display: flex; align-items: baseline; gap: 7px; margin-top: 6px; }
+  .kds-cant { font-size: 15px; font-weight: 800; color: #16161D; }
+  .kds-nombre { font-size: 13.5px; font-weight: 600; color: #26262E; line-height: 1.25; }
+  .kds-plato-actions { margin-top: 10px; }
+  .kds-btn { width: 100%; border: none; border-radius: 9px; font-size: 12.5px; font-weight: 700; padding: 9px; cursor: pointer; transition: filter .15s ease, background-color .15s ease; }
+  .kds-btn-cocina { background: #F59E0B; color: #fff; }
+  .kds-btn-cocina:hover { filter: brightness(1.05); }
+  .kds-btn-listo { background: #4F3FFF; color: #fff; }
+  .kds-btn-listo:hover { filter: brightness(1.06); }
+  .kds-btn-revertir { background: #F1F1F5; color: #55555F; }
+  .kds-btn-revertir:hover { background: #E7E7EE; }
   .mesas-tab { display: inline-flex; align-items: center; gap: 2px; background: #F1F3F7; border-radius: 999px; padding: 3px 3px 3px 4px; }
   .mesas-tab button { border: none; background: transparent; cursor: pointer; }
   .mesas-tab > button:first-child { font-size: 13px; font-weight: 600; color: #64748B; padding: 7px 6px 7px 10px; border-radius: 999px; transition: color .15s ease; }
@@ -1509,7 +1536,7 @@
         </div>
         <button onclick="openModal('add-pedido')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Nuevo pedido</button>
       </div>
-      <div id="pedidosGrid" class="mt-5 grid md:grid-cols-3 gap-4"></div>
+      <div id="pedidosGrid" class="mt-5 kds-board"></div>
     </section>
 
     <!-- TPV -->
@@ -2040,13 +2067,23 @@
       .channel('restaurant_data_' + currentAccount.userId)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'restaurant_data', filter: 'user_id=eq.' + currentAccount.userId }, (payload) => {
         if (!currentAccount || !payload.new) return;
-        const pedidosAntes = (currentAccount.data.pedidos || []).length;
+        // Estado anterior por id de pedido, para detectar transiciones (pedido nuevo / pedido recién listo)
+        const antes = {};
+        (currentAccount.data.pedidos || []).forEach(p => { antes[p.id] = estadoPedidoDesdePlatos(p); });
         currentAccount.data = normalizeAccountData(payload.new.data);
         currentAccount.restaurantName = payload.new.restaurant_name || currentAccount.restaurantName;
-        if (currentAccount.data.pedidos.length > pedidosAntes) {
-          const nuevo = currentAccount.data.pedidos[currentAccount.data.pedidos.length - 1];
-          pushNotification('Nuevo pedido: ' + nuevo.mesa + (nuevo.personas ? ' (' + nuevo.personas + ' pers.)' : ''));
-        }
+        currentAccount.data.pedidos.forEach(p => {
+          if (p.estado === 'Pagado') return;
+          const estadoAntes = antes[p.id];
+          const estadoAhora = estadoPedidoDesdePlatos(p);
+          if (estadoAntes === undefined && estadoAhora === 'En cocina') {
+            // Pedido nuevo entrando en cocina → avisar a cocina
+            if (esDispositivoCocina()) pushNotification('🍳 Nuevo pedido en cocina · ' + p.mesa + (p.origen === 'qr' ? ' (QR)' : ''), 'cocina');
+          } else if (estadoAntes && estadoAntes !== 'Listo' && estadoAntes !== 'Servido' && estadoAhora === 'Listo') {
+            // Pedido que acaba de quedar totalmente cocinado → avisar a sala
+            if (esDispositivoSala()) pushNotification('🔔 Listo para servir · ' + p.mesa, 'listo');
+          }
+        });
         renderAllSections();
       })
       .on('presence', { event: 'sync' }, () => {
@@ -2059,14 +2096,72 @@
       });
   }
 
+  // ---- Sonido de avisos (WebAudio, se desbloquea con el primer gesto del usuario) ----
+  let audioCtx = null;
+  function desbloquearAudio() {
+    if (audioCtx) return;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (e) { audioCtx = null; }
+  }
+  document.addEventListener('click', desbloquearAudio, { once: true });
+  document.addEventListener('keydown', desbloquearAudio, { once: true });
+  function reproducirSonido(tipo) {
+    if (!audioCtx) return;
+    try {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      // Dos tonos distintos: cocina (grave-agudo) y camarero (doble agudo, más alegre)
+      const notas = tipo === 'listo' ? [784, 1046, 1318] : [523, 659];
+      const t0 = audioCtx.currentTime;
+      notas.forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        const start = t0 + i * 0.16;
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.32, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(start);
+        osc.stop(start + 0.34);
+      });
+    } catch (e) {}
+  }
+  // ¿Este dispositivo debe oír avisos de cocina / de sala? El dueño (sin sesión de staff) oye todo.
+  function rolTexto() {
+    if (!staffSession) return '';
+    if (staffSession.rol) return String(staffSession.rol).toLowerCase();
+    // Deducir el rol del empleado a partir de la lista de personal (por código o email)
+    const lista = (currentAccount && currentAccount.data && currentAccount.data.personal) || [];
+    const emp = lista.find(p => (p.codigo && staffSession.codigo && p.codigo.toUpperCase() === staffSession.codigo.toUpperCase()) || (p.email && p.email.toLowerCase() === staffSession.email));
+    return emp && emp.rol ? String(emp.rol).toLowerCase() : '';
+  }
+  function esDispositivoCocina() {
+    if (!staffSession) return true;
+    const r = rolTexto();
+    if (/cocin|chef|parrill|plancha/.test(r)) return true;
+    if (/camarer|sala|barra|host/.test(r)) return false;
+    return true; // rol no clasificable: mejor oír de más que perder un pedido
+  }
+  function esDispositivoSala() {
+    if (!staffSession) return true;
+    const r = rolTexto();
+    if (/camarer|sala|barra|host/.test(r)) return true;
+    if (/cocin|chef|parrill|plancha/.test(r)) return false;
+    return true;
+  }
+
   let notifications = [];
   let notifUnread = 0;
-  function pushNotification(text) {
+  function pushNotification(text, sonido) {
     notifications.unshift({ text, time: new Date() });
     notifications = notifications.slice(0, 20);
     notifUnread += 1;
     renderNotifications();
     showToast(text);
+    if (sonido) reproducirSonido(sonido);
   }
   function toggleNotifications() {
     const panel = document.getElementById('notifPanel');
@@ -2169,6 +2264,16 @@
     })();
     data.reservas = Array.isArray(data.reservas) ? data.reservas : [];
     data.pedidos = Array.isArray(data.pedidos) ? data.pedidos : [];
+    data.pedidos.forEach((p, pi) => {
+      if (!p.id) p.id = 'ped-' + (p.fecha ? Date.parse(p.fecha) || Date.now() : Date.now()) + '-' + pi;
+      // Estado por defecto de cada plato según el estado global del pedido (migración de pedidos antiguos)
+      const estadoPlatoPorDefecto = p.estado === 'Pagado' || p.estado === 'Servido' ? 'servido' : (p.estado === 'Listo' ? 'listo' : 'cocina');
+      if (Array.isArray(p.platos)) {
+        p.platos.forEach(pl => { if (!pl.estado) pl.estado = estadoPlatoPorDefecto; });
+      }
+      // Normalizar el estado global a los nuevos valores del flujo de cocina (salvo Pagado, que manda)
+      if (p.estado !== 'Pagado') p.estado = estadoPedidoDesdePlatos(p);
+    });
     data.menu = Array.isArray(data.menu) ? data.menu : [];
     data.personal = Array.isArray(data.personal) ? data.personal : [];
     data.inventario = Array.isArray(data.inventario) ? data.inventario : [];
@@ -3630,42 +3735,114 @@
   }
 
   // ---- Pedidos ----
+  function estadoPlatosLista(p) {
+    return (Array.isArray(p.platos) && p.platos.length) ? p.platos.map(pl => pl.estado || 'cocina') : ['cocina'];
+  }
+  function estadoPedidoDesdePlatos(p) {
+    const est = estadoPlatosLista(p);
+    if (est.every(e => e === 'servido')) return 'Servido';
+    if (est.every(e => e === 'listo' || e === 'servido')) return 'Listo';
+    return 'En cocina';
+  }
+  function horaCorta(fecha) {
+    const d = new Date(fecha);
+    return isNaN(d) ? '' : d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  }
+  function minutosDesde(fecha) {
+    const d = new Date(fecha);
+    if (isNaN(d)) return 0;
+    return Math.max(0, Math.round((Date.now() - d.getTime()) / 60000));
+  }
+  // Devuelve las "líneas de plato" del tablero: una fila por cada plato de cada pedido activo (no pagado)
+  function lineasPlatos(acc, filtroEstado) {
+    const filas = [];
+    acc.data.pedidos.forEach((p, pi) => {
+      if (p.estado === 'Pagado') return;
+      (p.platos || []).forEach((pl, li) => {
+        const est = pl.estado || 'cocina';
+        if (est === filtroEstado) filas.push({ pedidoIdx: pi, platoIdx: li, pedido: p, plato: pl });
+      });
+    });
+    return filas;
+  }
+  function platoRowHtml(f, columna) {
+    const p = f.pedido, pl = f.plato;
+    const mins = minutosDesde(p.fecha);
+    const urgente = columna === 'cocina' && mins >= 15;
+    const cant = pl.cantidad || 1;
+    let accion = '';
+    if (columna === 'cocina') {
+      accion = `<button onclick="marcarPlato(${f.pedidoIdx}, ${f.platoIdx}, 'listo')" class="kds-btn kds-btn-cocina">✓ Listo</button>`;
+    } else if (columna === 'listo') {
+      accion = `<button onclick="marcarPlato(${f.pedidoIdx}, ${f.platoIdx}, 'servido')" class="kds-btn kds-btn-listo">Servido →</button>`;
+    } else {
+      accion = `<button onclick="marcarPlato(${f.pedidoIdx}, ${f.platoIdx}, 'listo')" class="kds-btn kds-btn-revertir" title="Devolver a Listo">↶</button>`;
+    }
+    return `<div class="kds-plato ${urgente ? 'kds-plato-urgente' : ''}">
+      <div class="kds-plato-top">
+        <span class="kds-mesa">${svgEsc(p.mesa)}</span>
+        <span class="kds-hora">${p.origen === 'qr' ? '📱 ' : ''}${horaCorta(p.fecha)}${columna === 'cocina' && mins > 0 ? ' · ' + mins + ' min' : ''}</span>
+      </div>
+      <div class="kds-plato-mid">
+        <span class="kds-cant">${cant}×</span>
+        <span class="kds-nombre">${svgEsc(pl.nombre)}</span>
+      </div>
+      <div class="kds-plato-actions">${accion}</div>
+    </div>`;
+  }
   function renderPedidos() {
     const acc = getCurrentAccount();
-    const list = acc.data.pedidos;
-    if (!list.length) {
-      document.getElementById('pedidosGrid').innerHTML = `<div class="rounded-xl border border-dashed border-slate-200 bg-white p-4 text-center">
-        <p class="font-semibold text-navy text-sm">Sin pedidos todavía</p>
-        <p class="text-sm font-semibold text-slate-400 mt-3">0,00€</p>
+    const grid = document.getElementById('pedidosGrid');
+    if (!grid) return;
+    const cocina = lineasPlatos(acc, 'cocina');
+    const listos = lineasPlatos(acc, 'listo');
+    const servidos = lineasPlatos(acc, 'servido');
+    const activos = acc.data.pedidos.filter(p => p.estado !== 'Pagado').length;
+    if (!activos) {
+      grid.innerHTML = `<div class="kds-empty-all rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
+        <p class="font-semibold text-navy text-sm">No hay pedidos activos</p>
+        <p class="text-xs text-slate-400 mt-1">Los pedidos nuevos (por QR o creados a mano) aparecerán aquí en cocina.</p>
       </div>`;
       return;
     }
-    document.getElementById('pedidosGrid').innerHTML = list.map((p,i) => {
-      const estadoCls = p.estado === 'Listo' ? 'bg-emerald-50 text-emerald-600' : p.estado === 'En cocina' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500';
-      return `<div class="lift-card rounded-xl border border-slate-200 bg-white p-4">
-        <div class="flex justify-between items-start gap-2">
-          <p class="font-semibold text-navy text-sm">${p.mesa}</p>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <span onclick="cicloEstadoPedido(${i})" class="text-xs ${estadoCls} rounded-full px-2 py-0.5 font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${p.estado}</span>
-            <button onclick="eliminarPedido(${i})" class="text-slate-300 hover:text-rose-500 transition text-xs" title="Eliminar">✕</button>
-          </div>
+    const columna = (titulo, sub, color, filas, colKey, vacio) => `
+      <div class="kds-col">
+        <div class="kds-col-head">
+          <span class="kds-col-dot" style="background:${color}"></span>
+          <span class="kds-col-title">${titulo}</span>
+          <span class="kds-col-count">${filas.length}</span>
         </div>
-        <p class="text-xs text-slate-500 mt-2">${p.items}</p>
-        <p class="text-sm font-semibold text-navy mt-3">${p.total.toFixed(2).replace('.', ',')}€</p>
+        <p class="kds-col-sub">${sub}</p>
+        <div class="kds-col-body">
+          ${filas.length ? filas.map(f => platoRowHtml(f, colKey)).join('') : `<p class="kds-col-empty">${vacio}</p>`}
+        </div>
       </div>`;
-    }).join('');
+    grid.innerHTML =
+      columna('En cocina', 'Platos preparándose', '#F59E0B', cocina, 'cocina', 'Nada en cocina ahora mismo.') +
+      columna('Listo para servir', 'Recoger y llevar a la mesa', '#4F3FFF', listos, 'listo', 'Ningún plato esperando.') +
+      columna('Servido', 'Entregado · pendiente de cobro', '#10B981', servidos, 'servido', 'Todavía nada servido.');
   }
-  const pedidoCycle = ['Pendiente','En cocina','Listo'];
-  function cicloEstadoPedido(i) {
+  function marcarPlato(pedidoIdx, platoIdx, nuevoEstado) {
     const acc = getCurrentAccount();
-    const p = acc.data.pedidos[i];
-    p.estado = pedidoCycle[(pedidoCycle.indexOf(p.estado) + 1) % pedidoCycle.length];
-    if (p.estado === 'Listo' && !p.stockDescontado) {
+    const p = acc.data.pedidos[pedidoIdx];
+    if (!p || !p.platos || !p.platos[platoIdx]) return;
+    const eraListoGlobal = estadoPedidoDesdePlatos(p) === 'Listo' || estadoPedidoDesdePlatos(p) === 'Servido';
+    p.platos[platoIdx].estado = nuevoEstado;
+    const nuevoGlobal = estadoPedidoDesdePlatos(p);
+    p.estado = nuevoGlobal;
+    // Descontar stock una sola vez, cuando el pedido pasa a estar totalmente cocinado
+    if ((nuevoGlobal === 'Listo' || nuevoGlobal === 'Servido') && !eraListoGlobal && !p.stockDescontado) {
       descontarStockPedido(acc, p);
       p.stockDescontado = true;
     }
+    // Si al marcar este plato el pedido entero queda listo, avisa al camarero (en este mismo dispositivo, sin sonido)
+    if (nuevoEstado === 'listo' && nuevoGlobal === 'Listo' && !eraListoGlobal) {
+      showToast('🔔 ' + p.mesa + ': pedido listo para servir');
+    }
     saveCurrentAccountData(acc.data);
     renderPedidos();
+    renderMesas();
+    renderTPV();
     renderInventario();
   }
   function eliminarPedido(i) {
@@ -3983,11 +4160,11 @@
     const elegidos = disponibles.filter(m => (ventaRapidaEnCurso.cantidades[m.idx] || 0) > 0);
     if (!elegidos.length) return modalFormError('Elige al menos un plato.');
     const items = elegidos.map(m => ventaRapidaEnCurso.cantidades[m.idx] + 'x ' + m.nombre).join(', ');
-    const platos = elegidos.map(m => ({ nombre: m.nombre, cantidad: ventaRapidaEnCurso.cantidades[m.idx], precio: m.precio }));
+    const platos = elegidos.map(m => ({ nombre: m.nombre, cantidad: ventaRapidaEnCurso.cantidades[m.idx], precio: m.precio, estado: 'servido' }));
     const total = elegidos.reduce((sum, m) => sum + precioToNumero(m.precio) * ventaRapidaEnCurso.cantidades[m.idx], 0);
     const mesa = ventaRapidaEnCurso.mesaNumero ? 'Mesa ' + ventaRapidaEnCurso.mesaNumero : 'Venta directa';
     const acc = getCurrentAccount();
-    acc.data.pedidos.push({ mesa, items, platos, personas: null, total, estado: 'Pendiente', fecha: new Date().toISOString(), origen: 'tpv' });
+    acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: null, total, estado: 'Servido', fecha: new Date().toISOString(), origen: 'tpv' });
     if (ventaRapidaEnCurso.mesaNumero) acc.data.mesaEstados[ventaRapidaEnCurso.mesaNumero - 1] = 'Ocupada';
     saveCurrentAccountData(acc.data);
     const nuevoIdx = acc.data.pedidos.length - 1;
@@ -4091,11 +4268,11 @@
     const elegidos = disponibles.filter(m => (pedidoEnCurso.cantidades[m.idx] || 0) > 0);
     if (!elegidos.length) return modalFormError('Elige al menos un plato.');
     const items = elegidos.map(m => pedidoEnCurso.cantidades[m.idx] + 'x ' + m.nombre).join(', ');
-    const platos = elegidos.map(m => ({ nombre: m.nombre, cantidad: pedidoEnCurso.cantidades[m.idx], precio: m.precio }));
+    const platos = elegidos.map(m => ({ nombre: m.nombre, cantidad: pedidoEnCurso.cantidades[m.idx], precio: m.precio, estado: 'cocina' }));
     const total = elegidos.reduce((sum, m) => sum + precioToNumero(m.precio) * pedidoEnCurso.cantidades[m.idx], 0);
     const mesa = 'Mesa ' + pedidoEnCurso.numero;
     const acc = getCurrentAccount();
-    acc.data.pedidos.push({ mesa, items, platos, personas: pedidoEnCurso.personas, total, estado: 'Pendiente', fecha: new Date().toISOString() });
+    acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: pedidoEnCurso.personas, total, estado: 'En cocina', fecha: new Date().toISOString() });
     acc.data.mesaEstados[pedidoEnCurso.numero - 1] = 'Ocupada';
     saveCurrentAccountData(acc.data);
     renderPedidos();
