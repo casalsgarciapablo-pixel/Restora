@@ -187,6 +187,15 @@
   #landingRoot .hero-sub { animation: heroIn .7s .12s cubic-bezier(.2,.8,.3,1) both; }
   #landingRoot .hero-mock-wrap { animation: heroIn .8s .22s cubic-bezier(.2,.8,.3,1) both; }
   #heroChartRev svg { max-height: none !important; height: 100%; min-height: 200px; }
+  .mesas-tab { display: inline-flex; align-items: center; gap: 2px; background: #F1F3F7; border-radius: 999px; padding: 3px 3px 3px 4px; }
+  .mesas-tab button { border: none; background: transparent; cursor: pointer; }
+  .mesas-tab > button:first-child { font-size: 13px; font-weight: 600; color: #64748B; padding: 7px 6px 7px 10px; border-radius: 999px; transition: color .15s ease; }
+  .mesas-tab.active { background: #fff; box-shadow: 0 1px 2px rgba(22,22,29,0.09), 0 1px 3px rgba(22,22,29,0.05); }
+  .mesas-tab.active > button:first-child { color: #16161D; }
+  .mesas-tab-edit { font-size: 11px; color: #A1A1AA; padding: 6px 8px; border-radius: 999px; }
+  .mesas-tab-edit:hover { color: #4F46E5; background: rgba(79,70,229,0.08); }
+  .mesas-tab-add { display: inline-flex; align-items: center; font-size: 13px; font-weight: 600; color: #4F46E5; background: rgba(79,70,229,0.08); border: none; border-radius: 999px; padding: 9px 14px; cursor: pointer; transition: background-color .15s ease; }
+  .mesas-tab-add:hover { background: rgba(79,70,229,0.15); }
   .landing-cta-btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 16px 36px; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; border: 1.75px solid #0b0b14; transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; }
   .landing-cta-btn:hover { transform: translateY(-2px); }
   .landing-cta-btn:active { transform: translateY(0); }
@@ -1437,7 +1446,9 @@
         </div>
       </div>
 
-      <div id="mesasSetup" class="mt-5 rounded-xl border border-dashed border-slate-300 p-8 text-center hidden">
+      <div id="mesasEspaciosTabs" class="mt-5 flex items-center gap-2 flex-wrap"></div>
+
+      <div id="mesasSetup" class="mt-4 rounded-xl border border-dashed border-slate-300 p-8 text-center hidden">
         <p class="text-sm font-semibold text-navy">Configura tus mesas</p>
         <p class="text-xs text-slate-400 mt-1">¿Cuántas mesas tiene tu restaurante?</p>
         <div class="mt-4 flex items-center justify-center gap-2">
@@ -2102,6 +2113,7 @@
       mesaCapacidades: [],
       mesaFormas: [],
       mesaPosiciones: [],
+      espacios: [{ nombre: 'Sala principal', mesaIndices: [] }],
       reservas: [],
       pedidos: [],
       menu: [],
@@ -2143,6 +2155,16 @@
     data.mesaCapacidades = Array.isArray(data.mesaCapacidades) ? data.mesaCapacidades : [];
     data.mesaFormas = Array.isArray(data.mesaFormas) ? data.mesaFormas : [];
     data.mesaPosiciones = Array.isArray(data.mesaPosiciones) ? data.mesaPosiciones : [];
+    data.espacios = (Array.isArray(data.espacios) && data.espacios.length) ? data.espacios : [{ nombre: 'Sala principal', mesaIndices: [] }];
+    data.espacios.forEach(e => {
+      e.nombre = e.nombre || 'Sala';
+      e.mesaIndices = Array.isArray(e.mesaIndices) ? e.mesaIndices : [];
+    });
+    (function migrarMesasSinEspacio() {
+      const asignados = new Set(data.espacios.reduce((acc, e) => acc.concat(e.mesaIndices), []));
+      const huerfanos = data.mesaEstados.map((_, i) => i).filter(i => !asignados.has(i));
+      if (huerfanos.length) data.espacios[0].mesaIndices = data.espacios[0].mesaIndices.concat(huerfanos);
+    })();
     data.reservas = Array.isArray(data.reservas) ? data.reservas : [];
     data.pedidos = Array.isArray(data.pedidos) ? data.pedidos : [];
     data.menu = Array.isArray(data.menu) ? data.menu : [];
@@ -2842,27 +2864,69 @@
     const fontSize = String(etiqueta).length > 3 ? '11px' : '14px';
     return `<div class="mesa-top" style="width:${w}px;height:${h}px;border-radius:${radius};border-color:${st.border};background:${st.bg};color:${st.text};font-size:${fontSize};">${etiqueta}</div>`;
   }
+  let mesasEspacioActivo = 0;
+  function espacioActivoMesas(acc) {
+    if (mesasEspacioActivo >= acc.data.espacios.length) mesasEspacioActivo = 0;
+    return acc.data.espacios[mesasEspacioActivo];
+  }
+  function renderMesasTabs() {
+    const acc = getCurrentAccount();
+    const wrap = document.getElementById('mesasEspaciosTabs');
+    if (!wrap) return;
+    espacioActivoMesas(acc);
+    wrap.innerHTML = acc.data.espacios.map((e, i) => `
+      <span class="mesas-tab ${i === mesasEspacioActivo ? 'active' : ''}">
+        <button type="button" onclick="cambiarEspacioMesas(${i})">${svgEsc(e.nombre)}</button>
+        <button type="button" onclick="event.stopPropagation(); renombrarEspacioMesas(${i})" class="mesas-tab-edit" title="Cambiar nombre">✎</button>
+      </span>
+    `).join('') + `<button type="button" onclick="anadirEspacioMesas()" class="mesas-tab-add">+ Añadir espacio</button>`;
+  }
+  function cambiarEspacioMesas(i) {
+    mesasEspacioActivo = i;
+    renderMesas();
+  }
+  function renombrarEspacioMesas(i) {
+    const acc = getCurrentAccount();
+    const nuevo = prompt('Nombre del espacio', acc.data.espacios[i].nombre);
+    if (nuevo === null || !nuevo.trim()) return;
+    acc.data.espacios[i].nombre = nuevo.trim();
+    saveCurrentAccountData(acc.data);
+    renderMesasTabs();
+  }
+  function anadirEspacioMesas() {
+    const nuevo = prompt('Nombre del nuevo espacio', 'Terraza');
+    if (nuevo === null || !nuevo.trim()) return;
+    const acc = getCurrentAccount();
+    acc.data.espacios.push({ nombre: nuevo.trim(), mesaIndices: [] });
+    mesasEspacioActivo = acc.data.espacios.length - 1;
+    saveCurrentAccountData(acc.data);
+    renderMesas();
+  }
   function renderMesas() {
     const acc = getCurrentAccount();
-    const estados = acc.data.mesaEstados;
+    renderMesasTabs();
+    const espacio = espacioActivoMesas(acc);
+    const indices = espacio.mesaIndices;
     const setupEl = document.getElementById('mesasSetup');
     const contentEl = document.getElementById('mesasContent');
-    if (!estados.length) {
+    if (!indices.length) {
       setupEl.classList.remove('hidden');
       contentEl.classList.add('hidden');
       return;
     }
     setupEl.classList.add('hidden');
     contentEl.classList.remove('hidden');
-    const sinDefinir = estados.filter(s => s === 'Sin definir').length;
-    const ocupadas = estados.filter(s => s === 'Ocupada').length;
+    const estadosEspacio = indices.map(i => acc.data.mesaEstados[i]);
+    const sinDefinir = estadosEspacio.filter(s => s === 'Sin definir').length;
+    const ocupadas = estadosEspacio.filter(s => s === 'Ocupada').length;
     document.getElementById('mesasResumen').textContent = sinDefinir
       ? 'Toca cada mesa para indicar su estado (' + sinDefinir + ' sin definir todavía).'
-      : ocupadas + '/' + estados.length + ' mesas ocupadas ahora mismo.';
-    const total = estados.length;
-    document.getElementById('tableGrid').innerHTML = estados.map((s,i) => {
+      : ocupadas + '/' + indices.length + ' mesas ocupadas ahora mismo.';
+    const total = indices.length;
+    document.getElementById('tableGrid').innerHTML = indices.map((i, posIdx) => {
+      const s = acc.data.mesaEstados[i];
       const st = mesaStateStyle[s];
-      const pos = acc.data.mesaPosiciones[i] || defaultMesaPos(i, total);
+      const pos = acc.data.mesaPosiciones[i] || defaultMesaPos(posIdx, total);
       return `
       <div class="mesa-item" data-idx="${i}" style="position:absolute; left:${pos.x}%; top:${pos.y}%; transform:translate(-50%,-50%); touch-action:none; cursor:grab;">
         ${mesaVisualHtml(getMesaCapacidad(i), getMesaEtiqueta(i), st, getMesaForma(i))}
@@ -3034,11 +3098,20 @@
     const n = parseInt(document.getElementById('mesasSetupCount').value, 10);
     if (!n || n < 1) return;
     const acc = getCurrentAccount();
-    acc.data.mesaEstados = Array.from({ length: n }, () => 'Sin definir');
-    acc.data.mesaNombres = Array.from({ length: n }, () => '');
-    acc.data.mesaCapacidades = Array.from({ length: n }, () => 4);
-    acc.data.mesaFormas = Array.from({ length: n }, () => 'rectangular');
-    acc.data.mesaPosiciones = Array.from({ length: n }, () => null);
+    const espacio = espacioActivoMesas(acc);
+    if (n <= espacio.mesaIndices.length) {
+      espacio.mesaIndices = espacio.mesaIndices.slice(0, n);
+    } else {
+      const faltan = n - espacio.mesaIndices.length;
+      for (let k = 0; k < faltan; k++) {
+        espacio.mesaIndices.push(acc.data.mesaEstados.length);
+        acc.data.mesaEstados.push('Sin definir');
+        acc.data.mesaNombres.push('');
+        acc.data.mesaCapacidades.push(4);
+        acc.data.mesaFormas.push('rectangular');
+        acc.data.mesaPosiciones.push(null);
+      }
+    }
     saveCurrentAccountData(acc.data);
     renderMesas();
   }
@@ -3046,11 +3119,11 @@
     const acc = getCurrentAccount();
     document.getElementById('mesasSetup').classList.remove('hidden');
     document.getElementById('mesasContent').classList.add('hidden');
-    document.getElementById('mesasSetupCount').value = acc.data.mesaEstados.length || '';
+    document.getElementById('mesasSetupCount').value = espacioActivoMesas(acc).mesaIndices.length || '';
   }
   function cancelarCambiarMesas() {
     const acc = getCurrentAccount();
-    if (!acc.data.mesaEstados.length) {
+    if (acc.data.espacios.length === 1 && mesasEspacioActivo === 0 && !espacioActivoMesas(acc).mesaIndices.length) {
       goSection('dashboard');
       return;
     }
