@@ -187,17 +187,16 @@
   #landingRoot .hero-sub { animation: heroIn .7s .12s cubic-bezier(.2,.8,.3,1) both; }
   #landingRoot .hero-mock-wrap { animation: heroIn .8s .22s cubic-bezier(.2,.8,.3,1) both; }
   #heroChartRev svg { max-height: none !important; height: 100%; min-height: 200px; }
-  /* Tablero de cocina (KDS) */
-  .kds-board { display: grid; grid-template-columns: 1fr; gap: 16px; }
-  @media (min-width: 900px) { .kds-board { grid-template-columns: repeat(3, 1fr); align-items: start; } }
-  .kds-col { background: #F7F7FA; border: 1px solid #ECECF2; border-radius: 16px; padding: 14px; }
-  .kds-col-head { display: flex; align-items: center; gap: 8px; }
-  .kds-col-dot { width: 9px; height: 9px; border-radius: 999px; flex-shrink: 0; }
-  .kds-col-title { font-size: 14px; font-weight: 700; color: #16161D; letter-spacing: -0.01em; }
-  .kds-col-count { margin-left: auto; font-size: 12px; font-weight: 700; color: #55555F; background: #fff; border: 1px solid #E7E7EE; border-radius: 999px; min-width: 22px; text-align: center; padding: 1px 7px; }
-  .kds-col-sub { font-size: 11.5px; color: #9A9AA5; margin-top: 3px; }
-  .kds-col-body { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 40px; }
-  .kds-col-empty { font-size: 12.5px; color: #A9A9B4; text-align: center; padding: 18px 8px; }
+  /* Tablero de cocina (KDS) por pestañas */
+  .pedidos-tab { display: inline-flex; align-items: center; gap: 7px; background: #F1F3F7; border: none; border-radius: 999px; padding: 8px 13px; font-size: 13px; font-weight: 600; color: #64748B; cursor: pointer; transition: color .15s ease, background-color .15s ease, box-shadow .15s ease; }
+  .pedidos-tab:hover { color: #16161D; }
+  .pedidos-tab.active { background: #fff; color: #16161D; box-shadow: 0 1px 2px rgba(22,22,29,0.09), 0 1px 3px rgba(22,22,29,0.05); }
+  .pedidos-tab-dot { width: 9px; height: 9px; border-radius: 999px; flex-shrink: 0; }
+  .pedidos-tab-count { font-size: 11.5px; font-weight: 700; color: #55555F; background: rgba(22,22,29,0.06); border-radius: 999px; min-width: 20px; text-align: center; padding: 1px 6px; }
+  .pedidos-tab.active .pedidos-tab-count { background: rgba(79,63,255,0.12); color: #4F3FFF; }
+  .kds-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (min-width: 700px) { .kds-cards { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1100px) { .kds-cards { grid-template-columns: repeat(4, 1fr); } }
   .kds-plato { background: #fff; border: 1px solid #E9E9EF; border-radius: 12px; padding: 11px 12px; box-shadow: 0 1px 2px rgba(22,22,29,0.04); }
   .kds-plato-urgente { border-color: #FCA5A5; box-shadow: 0 0 0 1px #FCA5A5, 0 2px 8px -2px rgba(225,29,72,0.25); }
   .kds-plato-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -1539,7 +1538,8 @@
           <button onclick="openModal('add-pedido')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Nuevo pedido</button>
         </div>
       </div>
-      <div id="pedidosGrid" class="mt-5 kds-board"></div>
+      <div id="pedidosTabs" class="mt-5 flex items-center gap-2 flex-wrap"></div>
+      <div id="pedidosGrid" class="mt-4"></div>
     </section>
 
     <!-- TPV -->
@@ -2108,8 +2108,11 @@
       if (audioCtx.state === 'suspended') audioCtx.resume();
     } catch (e) { audioCtx = null; }
   }
-  document.addEventListener('click', desbloquearAudio, { once: true });
-  document.addEventListener('keydown', desbloquearAudio, { once: true });
+  // Reintenta desbloquear/reanudar en cada interacción (no solo la primera): así el aviso de un
+  // pedido que entra por QR suena aunque la pantalla lleve un rato sin tocarse.
+  document.addEventListener('click', desbloquearAudio);
+  document.addEventListener('keydown', desbloquearAudio);
+  document.addEventListener('touchstart', desbloquearAudio, { passive: true });
   function reproducirSonido(tipo) {
     desbloquearAudio();
     if (!audioCtx) return false;
@@ -3806,37 +3809,47 @@
       <div class="kds-plato-actions">${accion}</div>
     </div>`;
   }
+  const PEDIDOS_ETAPAS = [
+    { key: 'cocina', label: 'En cocina', color: '#F59E0B', sub: 'Platos preparándose', vacio: 'Nada en cocina ahora mismo.' },
+    { key: 'listo', label: 'Listo para servir', color: '#4F3FFF', sub: 'Recoger y llevar a la mesa', vacio: 'Ningún plato esperando para servir.' },
+    { key: 'servido', label: 'Servido', color: '#10B981', sub: 'Entregado · pendiente de cobro', vacio: 'Todavía no hay platos servidos.' },
+  ];
+  let pedidosEtapaActiva = 'cocina';
+  function cambiarEtapaPedidos(key) {
+    pedidosEtapaActiva = key;
+    renderPedidos();
+  }
   function renderPedidos() {
     const acc = getCurrentAccount();
     const grid = document.getElementById('pedidosGrid');
-    if (!grid) return;
-    const cocina = lineasPlatos(acc, 'cocina');
-    const listos = lineasPlatos(acc, 'listo');
-    const servidos = lineasPlatos(acc, 'servido');
+    const tabs = document.getElementById('pedidosTabs');
+    if (!grid || !tabs) return;
+    const counts = {
+      cocina: lineasPlatos(acc, 'cocina').length,
+      listo: lineasPlatos(acc, 'listo').length,
+      servido: lineasPlatos(acc, 'servido').length,
+    };
+    tabs.innerHTML = PEDIDOS_ETAPAS.map(e => `
+      <button type="button" onclick="cambiarEtapaPedidos('${e.key}')" class="pedidos-tab ${e.key === pedidosEtapaActiva ? 'active' : ''}">
+        <span class="pedidos-tab-dot" style="background:${e.color}"></span>
+        <span>${e.label}</span>
+        <span class="pedidos-tab-count">${counts[e.key]}</span>
+      </button>`).join('');
+    const etapa = PEDIDOS_ETAPAS.find(e => e.key === pedidosEtapaActiva) || PEDIDOS_ETAPAS[0];
+    const filas = lineasPlatos(acc, pedidosEtapaActiva);
     const activos = acc.data.pedidos.filter(p => p.estado !== 'Pagado').length;
     if (!activos) {
-      grid.innerHTML = `<div class="kds-empty-all rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
+      grid.innerHTML = `<div class="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
         <p class="font-semibold text-navy text-sm">No hay pedidos activos</p>
         <p class="text-xs text-slate-400 mt-1">Los pedidos nuevos (por QR o creados a mano) aparecerán aquí en cocina.</p>
       </div>`;
       return;
     }
-    const columna = (titulo, sub, color, filas, colKey, vacio) => `
-      <div class="kds-col">
-        <div class="kds-col-head">
-          <span class="kds-col-dot" style="background:${color}"></span>
-          <span class="kds-col-title">${titulo}</span>
-          <span class="kds-col-count">${filas.length}</span>
-        </div>
-        <p class="kds-col-sub">${sub}</p>
-        <div class="kds-col-body">
-          ${filas.length ? filas.map(f => platoRowHtml(f, colKey)).join('') : `<p class="kds-col-empty">${vacio}</p>`}
-        </div>
-      </div>`;
-    grid.innerHTML =
-      columna('En cocina', 'Platos preparándose', '#F59E0B', cocina, 'cocina', 'Nada en cocina ahora mismo.') +
-      columna('Listo para servir', 'Recoger y llevar a la mesa', '#4F3FFF', listos, 'listo', 'Ningún plato esperando.') +
-      columna('Servido', 'Entregado · pendiente de cobro', '#10B981', servidos, 'servido', 'Todavía nada servido.');
+    grid.innerHTML = `
+      <p class="text-xs text-slate-400 mb-3">${etapa.sub}</p>
+      ${filas.length
+        ? `<div class="kds-cards">${filas.map(f => platoRowHtml(f, pedidosEtapaActiva)).join('')}</div>`
+        : `<div class="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center"><p class="text-sm text-slate-400">${etapa.vacio}</p></div>`}`;
   }
   function marcarPlato(pedidoIdx, platoIdx, nuevoEstado) {
     const acc = getCurrentAccount();
