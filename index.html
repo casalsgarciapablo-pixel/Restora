@@ -213,6 +213,34 @@
   .kds-btn-listo:hover { filter: brightness(1.06); }
   .kds-btn-revertir { background: #F1F1F5; color: #55555F; }
   .kds-btn-revertir:hover { background: #E7E7EE; }
+  /* Asistente IA rápido (botón flotante + panel lateral) */
+  .ia-quick-fab { position: fixed; bottom: 22px; right: 22px; width: 56px; height: 56px; border-radius: 999px; border: none; cursor: pointer; z-index: 90; color: #fff; background: linear-gradient(135deg, #6E60FF, #4F3FFF); box-shadow: 0 10px 26px -6px rgba(79,63,255,0.6), 0 3px 8px rgba(11,11,20,0.2); display: flex; align-items: center; justify-content: center; transition: transform .18s ease, box-shadow .18s ease; }
+  .ia-quick-fab:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 16px 34px -8px rgba(79,63,255,0.7), 0 4px 10px rgba(11,11,20,0.22); }
+  .ia-quick-fab:active { transform: translateY(0) scale(1); }
+  .ia-quick-backdrop { position: fixed; inset: 0; background: rgba(9,20,42,0.35); backdrop-filter: blur(1px); z-index: 95; opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+  .ia-quick-backdrop.open { opacity: 1; pointer-events: auto; }
+  .ia-quick-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 360px; max-width: 88vw; background: #fff; z-index: 96; display: flex; flex-direction: column; box-shadow: -12px 0 40px -12px rgba(11,33,66,0.28); transform: translateX(100%); transition: transform .28s cubic-bezier(.4,0,.2,1); }
+  .ia-quick-panel.open { transform: translateX(0); }
+  .ia-quick-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 16px 14px; border-bottom: 1px solid #EFEFF4; }
+  .ia-quick-close { color: #94a3b8; background: none; border: none; cursor: pointer; padding: 4px; border-radius: 8px; }
+  .ia-quick-close:hover { color: #16161D; background: #F4F5F9; }
+  .ia-quick-chat { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .ia-quick-suq { display: flex; flex-wrap: wrap; gap: 7px; }
+  .ia-quick-suq button { font-size: 12px; font-weight: 500; color: #26262E; background: #F4F5F9; border: 1px solid #EBEBF2; border-radius: 999px; padding: 7px 12px; cursor: pointer; transition: background-color .15s ease; }
+  .ia-quick-suq button:hover { background: #EAEAF2; }
+  .ia-quick-bar { display: flex; align-items: center; gap: 8px; padding: 12px; border-top: 1px solid #EFEFF4; }
+  .ia-quick-bar input { flex: 1; min-width: 0; border: 1px solid #E3E3EA; border-radius: 999px; padding: 11px 15px; font-size: 15px; color: #16161D; outline: none; transition: border-color .15s ease, box-shadow .15s ease; }
+  .ia-quick-bar input:focus { border-color: #4F3FFF; box-shadow: 0 0 0 3px rgb(79 63 255 / 0.13); }
+  .ia-quick-mic, .ia-quick-send { width: 42px; height: 42px; border-radius: 999px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; shrink: 0; flex-shrink: 0; transition: background-color .15s ease, color .15s ease, transform .15s ease; }
+  .ia-quick-mic { background: #F1F1F5; color: #55555F; }
+  .ia-quick-mic:hover { background: #E7E7EE; color: #16161D; }
+  .ia-quick-mic.escuchando { background: #FEE2E2; color: #DC2626; animation: iaMicPulse 1.1s ease-in-out infinite; }
+  @keyframes iaMicPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.35); } 50% { box-shadow: 0 0 0 7px rgba(220,38,38,0); } }
+  .ia-quick-send { background: linear-gradient(135deg, #6E60FF, #4F3FFF); color: #fff; }
+  .ia-quick-send:hover { filter: brightness(1.06); }
+  .ia-quick-msg-user { align-self: flex-end; max-width: 85%; background: #4F3FFF; color: #fff; border-radius: 16px 16px 4px 16px; padding: 9px 13px; font-size: 14px; white-space: pre-wrap; }
+  .ia-quick-msg-ia { align-self: flex-start; max-width: 90%; background: #F5F5F8; color: #26262E; border-radius: 16px 16px 16px 4px; padding: 9px 13px; font-size: 14px; white-space: pre-wrap; line-height: 1.5; }
+  .ia-quick-welcome { text-align: center; color: #8B8B96; font-size: 13px; padding: 18px 8px 6px; }
   .mesas-tab { display: inline-flex; align-items: center; gap: 2px; background: #F1F3F7; border-radius: 999px; padding: 3px 3px 3px 4px; }
   .mesas-tab button { border: none; background: transparent; cursor: pointer; }
   .mesas-tab > button:first-child { font-size: 13px; font-weight: 600; color: #64748B; padding: 7px 6px 7px 10px; border-radius: 999px; transition: color .15s ease; }
@@ -568,6 +596,9 @@
     #modalBody .grid-cols-2, #publicReservaBody .grid-cols-2 { grid-template-columns: 1fr !important; }
     /* Tablero de cocina: una sola columna de tarjetas en móvil para que se lean y se toquen bien */
     .kds-cards { grid-template-columns: 1fr !important; }
+    /* Asistente rápido: panel a pantalla casi completa */
+    .ia-quick-panel { width: 100%; max-width: 100%; }
+    .ia-quick-fab { bottom: 18px; right: 18px; }
   }
 </style>
 <div id="landingRoot" class="font-sans text-navy antialiased">
@@ -1842,6 +1873,36 @@
 
   </main>
 </div>
+
+<!-- Asistente IA rápido (flotante) -->
+<button id="iaQuickFab" type="button" onclick="toggleIAQuick()" class="ia-quick-fab" aria-label="Asistente IA rápido" title="Asistente rápido">
+  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L20 9.5l-6.1 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.9L12 2z"/></svg>
+</button>
+<div id="iaQuickBackdrop" class="ia-quick-backdrop" onclick="toggleIAQuick(false)"></div>
+<aside id="iaQuickPanel" class="ia-quick-panel" aria-hidden="true">
+  <div class="ia-quick-head">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <span class="w-8 h-8 rounded-lg bg-accent/10 text-accent flex items-center justify-center shrink-0"><svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L20 9.5l-6.1 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.9L12 2z"/></svg></span>
+      <div class="min-w-0">
+        <p class="text-sm font-bold text-navy leading-tight">Asistente rápido</p>
+        <p class="text-xs text-slate-400 leading-tight">Pregúntame por voz o escribiendo</p>
+      </div>
+    </div>
+    <button type="button" onclick="toggleIAQuick(false)" class="ia-quick-close" aria-label="Cerrar">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div id="iaQuickChat" class="ia-quick-chat"></div>
+  <div class="ia-quick-bar">
+    <button id="iaQuickMic" type="button" onclick="toggleIAQuickVoz()" class="ia-quick-mic" aria-label="Preguntar por voz" title="Preguntar por voz">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="3" width="6" height="11" rx="3"/><path stroke-linecap="round" d="M5 11a7 7 0 0014 0M12 18v3"/></svg>
+    </button>
+    <input id="iaQuickInput" type="text" placeholder="Escribe tu pregunta…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();askIAQuick();}">
+    <button type="button" onclick="askIAQuick()" class="ia-quick-send" aria-label="Enviar">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+  </div>
+</aside>
 
 </div><!-- /appRoot -->
 
@@ -3481,6 +3542,126 @@
     }
     saveCurrentAccountData(acc.data);
     renderIAChat();
+  }
+
+  // ================== Asistente IA rápido (panel flotante) ==================
+  let iaQuickAbierto = false;
+  let iaQuickMensajes = [];
+  let iaQuickCargando = false;
+  const IA_QUICK_SUGERENCIAS = ['¿Cuánto hemos facturado hoy?', '¿Qué plato se vende más?', '¿Qué reservas hay hoy?', '¿Qué mesas están ocupadas?'];
+  function toggleIAQuick(force) {
+    const abrir = typeof force === 'boolean' ? force : !iaQuickAbierto;
+    iaQuickAbierto = abrir;
+    const panel = document.getElementById('iaQuickPanel');
+    const backdrop = document.getElementById('iaQuickBackdrop');
+    const fab = document.getElementById('iaQuickFab');
+    if (!panel) return;
+    panel.classList.toggle('open', abrir);
+    backdrop.classList.toggle('open', abrir);
+    panel.setAttribute('aria-hidden', abrir ? 'false' : 'true');
+    if (fab) fab.style.display = abrir ? 'none' : 'flex';
+    if (abrir) {
+      renderIAQuickChat();
+      setTimeout(() => { const inp = document.getElementById('iaQuickInput'); if (inp && window.innerWidth > 880) inp.focus(); }, 300);
+    } else if (iaQuickEscuchando) {
+      pararVozIAQuick();
+    }
+  }
+  function iaQuickMsgHtml(m) {
+    if (m.role === 'user') return `<div class="ia-quick-msg-user">${svgEsc(m.content)}</div>`;
+    return `<div class="ia-quick-msg-ia">${svgEsc(m.content)}</div>`;
+  }
+  function renderIAQuickChat() {
+    const chat = document.getElementById('iaQuickChat');
+    if (!chat) return;
+    if (!iaQuickMensajes.length && !iaQuickCargando) {
+      chat.innerHTML = `
+        <p class="ia-quick-welcome">Hazme una pregunta rápida sobre tu restaurante 👇</p>
+        <div class="ia-quick-suq">
+          ${IA_QUICK_SUGERENCIAS.map(s => `<button type="button" onclick="askIAQuick('${s.replace(/'/g, "\\'")}')">${s}</button>`).join('')}
+        </div>`;
+      return;
+    }
+    chat.innerHTML = iaQuickMensajes.map(iaQuickMsgHtml).join('') +
+      (iaQuickCargando ? `<div class="ia-quick-msg-ia" style="color:#9A9AA5">Pensando…</div>` : '');
+    chat.scrollTop = chat.scrollHeight;
+  }
+  async function askIAQuick(textoOpcional) {
+    if (iaQuickEscuchando) pararVozIAQuick();
+    const input = document.getElementById('iaQuickInput');
+    const pregunta = (textoOpcional != null ? textoOpcional : (input ? input.value : '')).trim();
+    if (!pregunta || iaQuickCargando) return;
+    if (input) input.value = '';
+    iaQuickMensajes.push({ role: 'user', content: pregunta });
+    iaQuickCargando = true;
+    renderIAQuickChat();
+    try {
+      const historialPrevio = iaQuickMensajes.slice(0, -1).slice(-12);
+      const { data, error } = await supabaseClient.functions.invoke('ia-asistente', {
+        body: { pregunta, historial: historialPrevio, datos: construirDatosParaIA() },
+      });
+      const respuesta = (!error && data && data.respuesta) ? data.respuesta : 'No he podido responder ahora mismo. Inténtalo de nuevo en un momento.';
+      iaQuickMensajes.push({ role: 'assistant', content: respuesta });
+    } catch (e) {
+      iaQuickMensajes.push({ role: 'assistant', content: 'No he podido responder ahora mismo. Inténtalo de nuevo en un momento.' });
+    }
+    iaQuickCargando = false;
+    renderIAQuickChat();
+  }
+
+  // ---- Voz: dictado con la API de reconocimiento de voz del navegador ----
+  let iaQuickRecog = null;
+  let iaQuickEscuchando = false;
+  function getSpeechRecognitionCtor() { return window.SpeechRecognition || window.webkitSpeechRecognition || null; }
+  function pararVozIAQuick() {
+    iaQuickEscuchando = false;
+    const mic = document.getElementById('iaQuickMic');
+    if (mic) mic.classList.remove('escuchando');
+    const input = document.getElementById('iaQuickInput');
+    if (input) input.placeholder = 'Escribe tu pregunta…';
+    if (iaQuickRecog) { try { iaQuickRecog.stop(); } catch (e) {} }
+  }
+  function toggleIAQuickVoz() {
+    const Ctor = getSpeechRecognitionCtor();
+    if (!Ctor) {
+      showToast('Este navegador no permite dictar por voz. Prueba con Chrome, o escribe la pregunta.');
+      return;
+    }
+    if (iaQuickEscuchando) { pararVozIAQuick(); return; }
+    const input = document.getElementById('iaQuickInput');
+    const mic = document.getElementById('iaQuickMic');
+    iaQuickRecog = new Ctor();
+    iaQuickRecog.lang = 'es-ES';
+    iaQuickRecog.interimResults = true;
+    iaQuickRecog.continuous = false;
+    iaQuickRecog.maxAlternatives = 1;
+    let finalTranscript = '';
+    iaQuickRecog.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalTranscript += t; else interim += t;
+      }
+      if (input) input.value = (finalTranscript + interim).trim();
+    };
+    iaQuickRecog.onerror = (e) => {
+      pararVozIAQuick();
+      if (e && (e.error === 'not-allowed' || e.error === 'service-not-allowed')) {
+        showToast('Da permiso al micrófono para poder dictar por voz.');
+      }
+    };
+    iaQuickRecog.onend = () => {
+      const estabaEscuchando = iaQuickEscuchando;
+      pararVozIAQuick();
+      const texto = (finalTranscript || (input ? input.value : '')).trim();
+      if (estabaEscuchando && texto) askIAQuick(texto);
+    };
+    try {
+      iaQuickRecog.start();
+      iaQuickEscuchando = true;
+      if (mic) mic.classList.add('escuchando');
+      if (input) { input.value = ''; input.placeholder = 'Escuchando… habla ahora'; }
+    } catch (e) { pararVozIAQuick(); }
   }
 
   // ---- Informe semanal ----
