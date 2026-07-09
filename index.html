@@ -1363,6 +1363,10 @@
 
 <div id="appRoot" class="h-screen flex flex-col" style="display:none">
 <div id="offlineBanner" class="hidden shrink-0 px-4 py-2 text-center text-xs font-semibold" style="background:#FEF3C7;color:#92400E;"></div>
+<div id="soundBanner" class="hidden shrink-0 px-4 py-2 text-center text-xs font-semibold flex items-center justify-center gap-2" style="background:#EEF2FF;color:#3730A3;">
+  <span>🔊 Activa el sonido de avisos en este dispositivo para no perderte pedidos ni avisos de cocina.</span>
+  <button type="button" onclick="activarSonidoBanner()" class="rounded-full bg-navydeep text-white text-xs font-semibold px-3 py-1">Activar sonido</button>
+</div>
 <!-- Top bar -->
 <header class="app-topbar flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-white shrink-0">
   <div class="flex items-center gap-3">
@@ -2358,9 +2362,33 @@
   // Reintenta en cada interacción (no solo la primera) y al volver a la pestaña, para que el
   // contexto no se quede "dormido" y el aviso suene aunque la pantalla lleve rato sin tocarse.
   ['click', 'keydown', 'touchstart', 'touchend', 'pointerdown'].forEach(ev =>
-    document.addEventListener(ev, desbloquearAudio, { passive: true }));
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {}); });
+    document.addEventListener(ev, () => { desbloquearAudio(); ocultarBannerSonido(); }, { passive: true }));
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden || !audioCtx || audioCtx.state !== 'suspended') return;
+    audioCtx.resume().then(() => {
+      // Algunos navegadores (sobre todo móvil) exigen un toque real y rechazan el resume() silencioso
+      // tras un rato en segundo plano: si sigue sin quedar 'running', pide el toque explícito de nuevo.
+      if (audioCtx.state !== 'running') mostrarBannerSonido();
+    }).catch(() => mostrarBannerSonido());
+  });
   window.addEventListener('focus', () => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {}); });
+  // El navegador bloquea el audio hasta que hay una interacción real en la página (ningún truco de
+  // código puede saltarse esto). Si el dispositivo se queda quieto sin que nadie lo toque, el primer
+  // aviso puede sonar en silencio — este banner obliga a un toque explícito una vez por sesión/recarga.
+  function mostrarBannerSonido() {
+    if (audioCtx && audioCtx.state === 'running') return;
+    const b = document.getElementById('soundBanner');
+    if (b) b.classList.remove('hidden');
+  }
+  function ocultarBannerSonido() {
+    const b = document.getElementById('soundBanner');
+    if (b && !b.classList.contains('hidden')) b.classList.add('hidden');
+  }
+  function activarSonidoBanner() {
+    desbloquearAudio();
+    reproducirSonido('listo');
+    ocultarBannerSonido();
+  }
 
   function _emitirTonos(tipo) {
     if (!audioCtx || audioCtx.state !== 'running') return false;
@@ -3337,6 +3365,7 @@
   function hydrateApp() {
     const acc = getCurrentAccount();
     applyTopbar(acc);
+    mostrarBannerSonido();
     const p = acc.data.perfil;
     document.getElementById('perfilNombre').value = p.nombre || '';
     document.getElementById('perfilDireccion').value = p.direccion || '';
@@ -8582,6 +8611,8 @@
     "Observaciones del pedido (alergias, peticiones…)": ["Observacions de la comanda (al·lèrgies, peticions…)", "Order notes (allergies, requests…)"],
     "Ej. alergia a los frutos secos": ["Ex. al·lèrgia als fruits secs", "E.g. nut allergy"],
     "Enviar pedido": ["Envia la comanda", "Send order"],
+    "🔊 Activa el sonido de avisos en este dispositivo para no perderte pedidos ni avisos de cocina.": ["🔊 Activa el so dels avisos en aquest dispositiu per no perdre't comandes ni avisos de cuina.", "🔊 Turn on alert sounds on this device so you don't miss orders or kitchen alerts."],
+    "Activar sonido": ["Activa el so", "Turn on sound"],
     "Pedidos recientes": ["Comandes recents", "Recent orders"],
     "Todavía no ha llegado ningún pedido de delivery.": ["Encara no ha arribat cap comanda de delivery.", "No delivery orders have arrived yet."],
     "pedidos hoy": ["comandes avui", "orders today"],
