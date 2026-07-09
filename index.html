@@ -7585,6 +7585,8 @@
   let publicPedidoCarrito = {};
   let publicPedidoCarritoNotas = {};
   let publicPedidoNotaGeneral = '';
+  let publicEditandoPedidoId = null;
+  let publicUltimoPedido = null; // { id, items: [{nombre, cantidad, nota}], notaGeneral }
   async function renderPublicMenu(cuentaId, mesaNumero, isPreview) {
     document.getElementById('landingRoot').style.display = 'none';
     document.getElementById('publicMenuRoot').style.display = 'block';
@@ -7627,6 +7629,8 @@
       publicPedidoCarrito = {};
       publicPedidoCarritoNotas = {};
       publicPedidoNotaGeneral = '';
+      publicEditandoPedidoId = null;
+      publicUltimoPedido = null;
       renderPublicMenuBody();
     } catch (e) {
       body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar el menú (${(e && e.message) || 'error de red'}). Prueba a escanear el QR de nuevo.</p>`;
@@ -7725,12 +7729,13 @@
       </div>
       ${totalItems > 0 ? `
         <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg px-4 py-3 sm:px-6" style="z-index:40;">
+          ${publicEditandoPedidoId ? `<p class="max-w-lg mx-auto text-center text-[11px] text-slate-400 mb-1.5">Editando tu pedido · <button type="button" onclick="cancelarEdicionPedidoPublico()" class="underline hover:text-navy">Cancelar</button></p>` : ''}
           <div class="max-w-lg mx-auto flex items-center gap-3">
             <div class="min-w-0 shrink-0">
               <p class="text-xs text-slate-400">${totalItems} ${totalItems === 1 ? 'plato' : 'platos'}</p>
               <p class="text-base font-bold text-navy">${total.toFixed(2).replace('.', ',')}€</p>
             </div>
-            <button type="button" onclick="enviarPedidoPublico()" id="pubPedBtn" class="flex-1 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-3">Enviar pedido</button>
+            <button type="button" onclick="enviarPedidoPublico()" id="pubPedBtn" class="flex-1 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-3">${publicEditandoPedidoId ? 'Guardar cambios' : 'Enviar pedido'}</button>
           </div>
         </div>
       ` : ''}
@@ -7817,12 +7822,13 @@
     const footerHtml = `<footer class="pweb-footer">© ${new Date().getFullYear()} ${n} · Web creada con Restora</footer>`;
     const cartBar = totalItems > 0 ? `
       <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg px-4 py-3 sm:px-6" style="z-index:40;">
+        ${publicEditandoPedidoId ? `<p class="max-w-lg mx-auto text-center text-[11px] text-slate-400 mb-1.5">Editando tu pedido · <button type="button" onclick="cancelarEdicionPedidoPublico()" class="underline hover:text-navy">Cancelar</button></p>` : ''}
         <div class="max-w-lg mx-auto flex items-center gap-3">
           <div class="min-w-0 shrink-0">
             <p class="text-xs text-slate-400">${totalItems} ${totalItems === 1 ? 'plato' : 'platos'}</p>
             <p class="text-base font-bold text-navy">${total.toFixed(2).replace('.', ',')}€</p>
           </div>
-          <button type="button" onclick="enviarPedidoPublico()" id="pubPedBtn" class="flex-1 rounded-full transition text-white text-sm font-semibold px-5 py-3" style="background:${paleta.color1};">Enviar pedido</button>
+          <button type="button" onclick="enviarPedidoPublico()" id="pubPedBtn" class="flex-1 rounded-full transition text-white text-sm font-semibold px-5 py-3" style="background:${paleta.color1};">${publicEditandoPedidoId ? 'Guardar cambios' : 'Enviar pedido'}</button>
         </div>
       </div>` : '';
     return `<div class="text-left" style="${totalItems > 0 ? 'padding-bottom:88px;' : ''}">
@@ -7839,48 +7845,85 @@
   async function enviarPedidoPublico() {
     const btn = document.getElementById('pubPedBtn');
     const errorEl = document.getElementById('pubPedError');
+    const editando = !!publicEditandoPedidoId;
     const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
     const items = Object.keys(publicPedidoCarrito)
       .map(idx => ({ nombre: menu[idx] && menu[idx].nombre, cantidad: publicPedidoCarrito[idx], nota: (publicPedidoCarritoNotas[idx] || '').trim() }))
       .filter(it => it.nombre && it.cantidad > 0);
     if (!items.length) return;
-    if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+    if (btn) { btn.disabled = true; btn.textContent = editando ? 'Guardando…' : 'Enviando…'; }
+    const notaGeneral = (publicPedidoNotaGeneral || '').trim();
     try {
       const mesaInt = parseInt(publicMenuMesaNumero, 10);
-      let { data, error } = await supabaseClient.rpc('crear_pedido_publico', {
-        p_user_id: publicMenuCuentaId, p_mesa: mesaInt, p_items: items, p_nota_general: (publicPedidoNotaGeneral || '').trim(),
-      });
-      if (error && error.code === 'PGRST202') {
-        // La función en Supabase todavía no acepta p_nota_general (falta desplegar la versión nueva) —
-        // reintenta con la firma antigua para no bloquear el envío de pedidos mientras tanto.
-        ({ data, error } = await supabaseClient.rpc('crear_pedido_publico', {
-          p_user_id: publicMenuCuentaId, p_mesa: mesaInt, p_items: items,
+      let data, error;
+      if (editando) {
+        ({ data, error } = await supabaseClient.rpc('editar_pedido_publico', {
+          p_user_id: publicMenuCuentaId, p_order_id: publicEditandoPedidoId, p_items: items, p_nota_general: notaGeneral,
         }));
+      } else {
+        ({ data, error } = await supabaseClient.rpc('crear_pedido_publico', {
+          p_user_id: publicMenuCuentaId, p_mesa: mesaInt, p_items: items, p_nota_general: notaGeneral,
+        }));
+        if (error && error.code === 'PGRST202') {
+          // La función en Supabase todavía no acepta p_nota_general (falta desplegar la versión nueva) —
+          // reintenta con la firma antigua para no bloquear el envío de pedidos mientras tanto.
+          ({ data, error } = await supabaseClient.rpc('crear_pedido_publico', {
+            p_user_id: publicMenuCuentaId, p_mesa: mesaInt, p_items: items,
+          }));
+        }
       }
       if (error || !data || data.error) {
         if (errorEl) {
           errorEl.textContent = (data && data.error) || 'No se ha podido enviar el pedido. Inténtalo de nuevo.';
           errorEl.classList.remove('hidden');
         }
-        if (btn) { btn.disabled = false; btn.textContent = 'Enviar pedido'; }
+        if (btn) { btn.disabled = false; btn.textContent = editando ? 'Guardar cambios' : 'Enviar pedido'; }
         return;
       }
-      document.getElementById('publicMenuBody').innerHTML = `
-        <div class="text-center py-16 px-6 max-w-lg mx-auto">
-          <div class="w-11 h-11 rounded-full bg-accent/10 text-accent flex items-center justify-center mb-4 mx-auto">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          </div>
-          <h1 class="text-xl font-bold text-navy">¡Pedido enviado!</h1>
-          <p class="text-sm text-slate-500 mt-2">Tu pedido en la Mesa ${publicMenuMesaNumero} se ha enviado a cocina. En breve lo recibirás.</p>
-        </div>
-      `;
+      publicUltimoPedido = { id: editando ? publicEditandoPedidoId : data.id, items, notaGeneral };
+      publicEditandoPedidoId = null;
+      mostrarConfirmacionPedidoPublico(editando);
     } catch (e) {
       if (errorEl) {
         errorEl.textContent = 'No se ha podido enviar el pedido. Inténtalo de nuevo.';
         errorEl.classList.remove('hidden');
       }
-      if (btn) { btn.disabled = false; btn.textContent = 'Enviar pedido'; }
+      if (btn) { btn.disabled = false; btn.textContent = editando ? 'Guardar cambios' : 'Enviar pedido'; }
     }
+  }
+  function mostrarConfirmacionPedidoPublico(esEdicion) {
+    const puedeEditar = !!(publicUltimoPedido && publicUltimoPedido.id);
+    document.getElementById('publicMenuBody').innerHTML = `
+      <div class="text-center py-16 px-6 max-w-lg mx-auto">
+        <div class="w-11 h-11 rounded-full bg-accent/10 text-accent flex items-center justify-center mb-4 mx-auto">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <h1 class="text-xl font-bold text-navy">${esEdicion ? '¡Pedido actualizado!' : '¡Pedido enviado!'}</h1>
+        <p class="text-sm text-slate-500 mt-2">Tu pedido en la Mesa ${publicMenuMesaNumero} se ha enviado a cocina. En breve lo recibirás.</p>
+        ${puedeEditar ? `
+          <button type="button" onclick="volverAEditarPedidoPublico()" class="mt-6 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">✏️ Editar pedido</button>
+          <p class="text-[11px] text-slate-400 mt-2">Podrás editarlo mientras cocina no lo haya empezado a preparar.</p>` : ''}
+      </div>
+    `;
+  }
+  function volverAEditarPedidoPublico() {
+    if (!publicUltimoPedido) return;
+    const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
+    publicPedidoCarrito = {};
+    publicPedidoCarritoNotas = {};
+    (publicUltimoPedido.items || []).forEach(it => {
+      const idx = menu.findIndex(m => m.nombre === it.nombre);
+      if (idx === -1) return;
+      publicPedidoCarrito[idx] = (publicPedidoCarrito[idx] || 0) + it.cantidad;
+      if (it.nota) publicPedidoCarritoNotas[idx] = it.nota;
+    });
+    publicPedidoNotaGeneral = publicUltimoPedido.notaGeneral || '';
+    publicEditandoPedidoId = publicUltimoPedido.id;
+    renderPublicMenuBody();
+  }
+  function cancelarEdicionPedidoPublico() {
+    publicEditandoPedidoId = null;
+    mostrarConfirmacionPedidoPublico(false);
   }
 
   function opcionesHora15min(seleccionada) {
