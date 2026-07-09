@@ -5158,6 +5158,7 @@
     await logoutReal();
   }
   function abrirEditarEmpleado(i) {
+    clearInterval(fichaEmpleadoTimer);
     document.getElementById('modalCard').classList.remove('modal-wide');
     document.getElementById('modalBody').innerHTML = editPersonalFormHtml(i);
     document.getElementById('modalOverlay').classList.add('open');
