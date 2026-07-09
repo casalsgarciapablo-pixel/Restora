@@ -1690,11 +1690,7 @@
           <p class="text-xs text-slate-400 mt-1">Sincronizado con tus apps de delivery.</p>
         </div>
       </div>
-      <div class="mt-5 rounded-xl border border-dashed border-slate-300 p-8 text-center">
-        <p class="text-sm font-semibold text-navy">Aún no has conectado ninguna plataforma</p>
-        <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Conecta Glovo, Uber Eats o JustEat desde Apps para ver aquí tus pedidos a domicilio.</p>
-        <button onclick="goSection('apps')" class="mt-4 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Ir a Apps</button>
-      </div>
+      <div id="deliveryBody" class="mt-5"></div>
     </section>
 
     <!-- INVENTARIO -->
@@ -1855,7 +1851,7 @@
             <p class="text-sm font-semibold text-navy">Glovo</p>
             <p class="text-xs text-slate-400">Recibe tus pedidos de delivery.</p>
           </div>
-          <button id="integGlovoBtn" onclick="toggleIntegracion('glovo')" class="text-xs bg-slate-100 text-slate-500 rounded-full px-2.5 py-1 font-medium hover:opacity-80 transition shrink-0">No conectado</button>
+          <button id="integGlovoBtn" onclick="openModal('conectar-glovo')" class="text-xs bg-slate-100 text-slate-500 rounded-full px-2.5 py-1 font-medium hover:opacity-80 transition shrink-0">Conectar</button>
         </div>
         <div class="lift-card rounded-xl border border-slate-200 bg-white p-4 flex items-center gap-3">
           <span class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 016.5 3H12v18H6.5A2.5 2.5 0 014 18.5v-13zM20 5.5A2.5 2.5 0 0017.5 3H12v18h5.5a2.5 2.5 0 002.5-2.5v-13z"/></svg></span>
@@ -1863,7 +1859,7 @@
             <p class="text-sm font-semibold text-navy">Uber Eats</p>
             <p class="text-xs text-slate-400">Recibe tus pedidos de delivery.</p>
           </div>
-          <button id="integUberBtn" onclick="toggleIntegracion('uber')" class="text-xs bg-slate-100 text-slate-500 rounded-full px-2.5 py-1 font-medium hover:opacity-80 transition shrink-0">No conectado</button>
+          <button id="integUberBtn" onclick="openModal('conectar-uber')" class="text-xs bg-slate-100 text-slate-500 rounded-full px-2.5 py-1 font-medium hover:opacity-80 transition shrink-0">Conectar</button>
         </div>
         <div class="lift-card rounded-xl border border-slate-200 bg-white p-4 flex items-center gap-3">
           <span class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path stroke-linecap="round" d="M9 8h6M9 12h6"/></svg></span>
@@ -1871,7 +1867,7 @@
             <p class="text-sm font-semibold text-navy">JustEat</p>
             <p class="text-xs text-slate-400">Recibe tus pedidos de delivery.</p>
           </div>
-          <button id="integJusteatBtn" onclick="toggleIntegracion('justeat')" class="text-xs bg-slate-100 text-slate-500 rounded-full px-2.5 py-1 font-medium hover:opacity-80 transition shrink-0">No conectado</button>
+          <button id="integJusteatBtn" onclick="openModal('conectar-justeat')" class="text-xs bg-slate-100 text-slate-500 rounded-full px-2.5 py-1 font-medium hover:opacity-80 transition shrink-0">Conectar</button>
         </div>
       </div>
     </section>
@@ -2102,6 +2098,9 @@
       'add-reserva': addReservaFormHtml,
       'conectar-reservas': conectarReservasFormHtml,
       'conectar-tpv': conectarTPVFormHtml,
+      'conectar-glovo': () => conectarDeliveryFormHtml('glovo'),
+      'conectar-uber': () => conectarDeliveryFormHtml('uber'),
+      'conectar-justeat': () => conectarDeliveryFormHtml('justeat'),
       'add-pedido': addPedidoFormHtml,
       'paste-menu': pasteMenuFormHtml,
       'upload-menu': uploadMenuFormHtml,
@@ -2476,6 +2475,9 @@
     DIAS_SEMANA.forEach(d => { h[d.key] = { abierto: true, apertura: '13:00', cierre: '23:00' }; });
     return h;
   }
+  function defaultDeliveryIntegracion() {
+    return { connected: false, storeId: '', apiKey: '', apiSecret: '', webhookToken: '' };
+  }
   function defaultAccountData(nombre) {
     return {
       perfil: { nombre: nombre, direccion: '', mesas: '', telefono: '', horarioConfigurado: false, horario: defaultHorario() },
@@ -2493,7 +2495,7 @@
       menuSecciones: [],
       personal: [],
       inventario: [],
-      integraciones: { square: false, glovo: false, uber: false, justeat: false, notifs: false, googleCalendar: false },
+      integraciones: { square: false, glovo: defaultDeliveryIntegracion(), uber: defaultDeliveryIntegracion(), justeat: defaultDeliveryIntegracion(), notifs: false, googleCalendar: false },
       iaConversaciones: [],
       iaInformes: [],
       caja: { abierta: false, fecha: null, efectivoInicial: 0, aperturaHora: null, historico: [] },
@@ -2615,9 +2617,15 @@
     data.menu.forEach(m => { if (!Array.isArray(m.receta)) m.receta = []; });
     data.integraciones = data.integraciones || {};
     data.integraciones.square = !!data.integraciones.square;
-    data.integraciones.glovo = !!data.integraciones.glovo;
-    data.integraciones.uber = !!data.integraciones.uber;
-    data.integraciones.justeat = !!data.integraciones.justeat;
+    ['glovo', 'uber', 'justeat'].forEach(key => {
+      const val = data.integraciones[key];
+      if (val && typeof val === 'object') {
+        data.integraciones[key] = Object.assign(defaultDeliveryIntegracion(), val);
+      } else {
+        // Migración desde el antiguo modelo (booleano simple, sin credenciales)
+        data.integraciones[key] = Object.assign(defaultDeliveryIntegracion(), { connected: !!val });
+      }
+    });
     data.integraciones.notifs = !!data.integraciones.notifs;
     data.integraciones.googleCalendar = !!data.integraciones.googleCalendar;
     data.iaConversaciones = Array.isArray(data.iaConversaciones) ? data.iaConversaciones : [];
@@ -4533,7 +4541,7 @@
     return `<div class="kds-plato ${urgente ? 'kds-plato-urgente' : ''}">
       <div class="kds-plato-top">
         <span class="kds-mesa">${svgEsc(p.mesa)}</span>
-        <span class="kds-hora">${p.origen === 'qr' ? '📱 ' : ''}${horaCorta(p.fecha)}${columna === 'cocina' && mins > 0 ? ' · ' + mins + ' min' : ''}</span>
+        <span class="kds-hora">${p.origen === 'qr' ? '📱 ' : ''}${['glovo', 'uber', 'justeat'].includes(p.origen) ? '🛵 ' : ''}${horaCorta(p.fecha)}${columna === 'cocina' && mins > 0 ? ' · ' + mins + ' min' : ''}</span>
       </div>
       <div class="kds-plato-mid">
         <span class="kds-cant">${cant}×</span>
@@ -4633,6 +4641,160 @@
       <p class="mt-1.5 text-sm text-slate-500">Si el restaurante ya usa otro TPV, puedes sincronizarlo aquí en vez de sustituirlo por el de Restora.</p>
       <div class="mt-4 space-y-3">${filas}</div>
       <button onclick="closeModal()" class="mt-5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>
+    `;
+  }
+  // ---- Delivery (Glovo / Uber Eats / JustEat) ----
+  const DELIVERY_PLATAFORMAS = {
+    glovo: { nombre: 'Glovo', idField: 'Store ID (Store Address ID)', portal: 'partners.glovoapp.com', color: 'bg-rose-50 text-rose-600' },
+    uber: { nombre: 'Uber Eats', idField: 'Store ID (Location ID)', portal: 'developer.uber.com/docs/eats', color: 'bg-emerald-50 text-emerald-600' },
+    justeat: { nombre: 'JustEat', idField: 'Restaurant ID', portal: 'partner-api docs de Just Eat Takeaway', color: 'bg-amber-50 text-amber-600' },
+  };
+  function deliveryWebhookUrl(token) {
+    return SUPABASE_URL + '/functions/v1/delivery-webhook?platform={PLATFORM}&token=' + token;
+  }
+  function conectarDeliveryFormHtml(key) {
+    const meta = DELIVERY_PLATAFORMAS[key];
+    const acc = getCurrentAccount();
+    const ig = acc.data.integraciones[key] || defaultDeliveryIntegracion();
+    const urlWebhook = ig.webhookToken ? deliveryWebhookUrl(ig.webhookToken).replace('{PLATFORM}', key) : '';
+    return `
+      <h3 class="text-xl font-bold text-navy">Conectar ${meta.nombre}</h3>
+      <p class="mt-1.5 text-sm text-slate-500">Para recibir pedidos reales necesitas una cuenta de partner/integrador de ${meta.nombre} (o de un agregador ya conectado a las tres plataformas, como Deliverect u Otter). Allí te dan un ID de tienda y una clave de API — pégalos aquí.</p>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">${meta.idField}</label>
+      <input id="delStoreId" type="text" value="${svgEsc(ig.storeId || '')}" placeholder="Ej. 12345" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">API Key / Client Secret</label>
+      <input id="delApiKey" type="text" value="${svgEsc(ig.apiKey || '')}" placeholder="Clave proporcionada por ${meta.nombre}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      ${ig.connected ? `
+        <div class="mt-4 rounded-lg bg-slate-50 border border-slate-200 p-3">
+          <p class="text-xs font-semibold text-navy">URL de webhook (pégala en el panel de ${meta.nombre})</p>
+          <div class="mt-1.5 flex items-center gap-1.5">
+            <input readonly value="${svgEsc(urlWebhook)}" class="flex-1 min-w-0 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-600" onclick="this.select()">
+            <button type="button" onclick="copiarWebhookUrl('${key}')" class="shrink-0 text-xs font-semibold text-accent hover:opacity-70">Copiar</button>
+          </div>
+        </div>` : ''}
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" onclick="submitConectarDelivery('${key}')" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">${ig.connected ? 'Guardar cambios' : 'Conectar'}</button>
+      ${ig.connected ? `<button type="button" onclick="desconectarDelivery('${key}')" class="mt-2.5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-rose-600 text-sm font-semibold px-5 py-2.5">Desconectar</button>` : ''}
+      <button type="button" onclick="closeModal()" class="mt-2.5 w-full text-xs text-slate-400 hover:text-slate-600 transition">Cerrar</button>
+    `;
+  }
+  function submitConectarDelivery(key) {
+    const storeId = document.getElementById('delStoreId').value.trim();
+    const apiKey = document.getElementById('delApiKey').value.trim();
+    if (!storeId) return modalFormError('Escribe el ID de tienda que te ha dado ' + DELIVERY_PLATAFORMAS[key].nombre + '.');
+    const acc = getCurrentAccount();
+    const ig = acc.data.integraciones[key] || defaultDeliveryIntegracion();
+    ig.storeId = storeId;
+    ig.apiKey = apiKey;
+    ig.connected = true;
+    if (!ig.webhookToken) ig.webhookToken = (crypto.randomUUID ? crypto.randomUUID() : (Date.now() + '-' + Math.random())).replace(/-/g, '');
+    acc.data.integraciones[key] = ig;
+    saveCurrentAccountData(acc.data);
+    renderIntegraciones();
+    document.getElementById('modalBody').innerHTML = conectarDeliveryFormHtml(key);
+    showToast(DELIVERY_PLATAFORMAS[key].nombre + ' conectado');
+  }
+  function desconectarDelivery(key) {
+    const acc = getCurrentAccount();
+    const ig = acc.data.integraciones[key] || defaultDeliveryIntegracion();
+    ig.connected = false;
+    acc.data.integraciones[key] = ig;
+    saveCurrentAccountData(acc.data);
+    renderIntegraciones();
+    closeModal();
+    showToast(DELIVERY_PLATAFORMAS[key].nombre + ' desconectado');
+  }
+  function copiarWebhookUrl(key) {
+    const acc = getCurrentAccount();
+    const ig = acc.data.integraciones[key];
+    const url = deliveryWebhookUrl(ig.webhookToken).replace('{PLATFORM}', key);
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url);
+    showToast('URL copiada');
+  }
+  // Inserta un pedido de prueba con origen de una plataforma de delivery, para probar el flujo
+  // (tablero de cocina, sección Delivery) sin depender de un pedido real entrante por webhook.
+  function simularPedidoDelivery(key) {
+    const acc = getCurrentAccount();
+    const menuDisponible = platosDisponiblesPedido();
+    if (!menuDisponible.length) { showToast('Añade platos disponibles en el Menú antes de simular un pedido.'); return; }
+    const nPlatos = Math.min(menuDisponible.length, 1 + Math.floor(Math.random() * 3));
+    const elegidos = [];
+    for (let i = 0; i < nPlatos; i++) elegidos.push(menuDisponible[Math.floor(Math.random() * menuDisponible.length)]);
+    const platos = elegidos.map(m => ({ nombre: m.nombre, cantidad: 1, precio: m.precio, estado: 'cocina' }));
+    const total = totalConPromos(elegidos.map(m => ({ nombre: m.nombre, precio: m.precio, cantidad: 1 })));
+    const items = elegidos.map(m => '1x ' + m.nombre).join(', ');
+    const codigo = Math.random().toString(36).slice(2, 6).toUpperCase();
+    acc.data.pedidos.push({
+      id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+      mesa: DELIVERY_PLATAFORMAS[key].nombre + ' #' + codigo,
+      items, platos, personas: null, total,
+      estado: 'En cocina', fecha: new Date().toISOString(),
+      origen: key, externalId: 'demo-' + codigo, creadoPor: '',
+    });
+    saveCurrentAccountData(acc.data);
+    renderPedidos();
+    renderDashboardStats();
+    renderDelivery();
+    showToast('🛵 Pedido de prueba de ' + DELIVERY_PLATAFORMAS[key].nombre + ' recibido');
+    reproducirSonido('cocina');
+  }
+  const DELIVERY_ESTADO_LABEL = { 'En cocina': 'Preparando', 'Listo': 'Listo para recoger', 'Servido': 'Recogido', 'Pagado': 'Cobrado', 'Anulado': 'Anulado' };
+  const DELIVERY_ESTADO_COLOR = { 'En cocina': 'bg-amber-50 text-amber-600', 'Listo': 'bg-indigo-50 text-indigo-600', 'Servido': 'bg-emerald-50 text-emerald-600', 'Pagado': 'bg-emerald-50 text-emerald-600', 'Anulado': 'bg-slate-100 text-slate-400' };
+  function renderDelivery() {
+    const wrap = document.getElementById('deliveryBody');
+    if (!wrap) return;
+    const acc = getCurrentAccount();
+    const ig = acc.data.integraciones;
+    const conectadas = ['glovo', 'uber', 'justeat'].filter(k => ig[k] && ig[k].connected);
+    if (!conectadas.length) {
+      wrap.innerHTML = `
+        <div class="rounded-xl border border-dashed border-slate-300 p-8 text-center">
+          <p class="text-sm font-semibold text-navy">Aún no has conectado ninguna plataforma</p>
+          <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Conecta Glovo, Uber Eats o JustEat desde Apps para ver aquí tus pedidos a domicilio.</p>
+          <button onclick="goSection('apps')" class="mt-4 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Ir a Apps</button>
+        </div>`;
+      return;
+    }
+    const hoy = new Date().toISOString().slice(0, 10);
+    const statsHtml = conectadas.map(k => {
+      const meta = DELIVERY_PLATAFORMAS[k];
+      const deHoy = acc.data.pedidos.filter(p => p.origen === k && (p.fecha || '').slice(0, 10) === hoy);
+      const totalHoy = deHoy.reduce((s, p) => s + (p.total || 0), 0);
+      return `<div class="lift-card rounded-xl border border-slate-200 bg-white p-4">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-lg ${meta.color} flex items-center justify-center shrink-0 text-xs font-bold">${meta.nombre.slice(0, 2).toUpperCase()}</span>
+          <p class="text-sm font-semibold text-navy">${meta.nombre}</p>
+        </div>
+        <p class="mt-3 text-2xl font-bold text-navy">${deHoy.length}</p>
+        <p class="text-xs text-slate-400">pedidos hoy · ${totalHoy.toFixed(2).replace('.', ',')}€</p>
+        <button type="button" onclick="simularPedidoDelivery('${k}')" class="mt-3 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-3 py-1.5">Simular pedido de prueba</button>
+      </div>`;
+    }).join('');
+    const pedidosDelivery = acc.data.pedidos
+      .map((p, idx) => ({ p, idx }))
+      .filter(x => conectadas.includes(x.p.origen))
+      .sort((a, b) => new Date(b.p.fecha) - new Date(a.p.fecha))
+      .slice(0, 30);
+    const filasHtml = pedidosDelivery.length ? pedidosDelivery.map(x => {
+      const p = x.p, meta = DELIVERY_PLATAFORMAS[p.origen];
+      return `<div class="flex items-center gap-3 border-b border-slate-100 last:border-0 py-3">
+        <span class="w-8 h-8 rounded-lg ${meta.color} flex items-center justify-center shrink-0 text-[10px] font-bold">${meta.nombre.slice(0, 2).toUpperCase()}</span>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-semibold text-navy truncate">${svgEsc(p.mesa)}</p>
+          <p class="text-xs text-slate-400 truncate">${svgEsc(p.items || '')}</p>
+        </div>
+        <span class="text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${DELIVERY_ESTADO_COLOR[p.estado] || 'bg-slate-100 text-slate-400'}">${DELIVERY_ESTADO_LABEL[p.estado] || p.estado}</span>
+        <p class="text-sm font-semibold text-navy w-16 text-right shrink-0">${(p.total || 0).toFixed(2).replace('.', ',')}€</p>
+        <button type="button" onclick="abrirEditarPedido(${x.idx})" class="shrink-0 text-xs font-semibold text-accent hover:opacity-70">Ver</button>
+      </div>`;
+    }).join('') : '<p class="text-sm text-slate-400 text-center py-6">Todavía no ha llegado ningún pedido de delivery.</p>';
+    wrap.innerHTML = `
+      <div class="grid sm:grid-cols-3 gap-4">${statsHtml}</div>
+      <div class="mt-5 rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-sm font-semibold text-navy mb-1">Pedidos recientes</p>
+        ${filasHtml}
+      </div>
+      <p class="mt-4 text-xs text-slate-400">Gestiona las claves de conexión desde <button type="button" onclick="goSection('apps')" class="text-accent font-semibold hover:opacity-70">Apps</button>.</p>
     `;
   }
   function renderTPV() {
@@ -7289,7 +7451,7 @@
   function renderIntegraciones() {
     const acc = getCurrentAccount();
     const ig = acc.data.integraciones;
-    const map = { square: ['integSquareBtn','Conectado','No conectado'], glovo: ['integGlovoBtn','Conectado','No conectado'], uber: ['integUberBtn','Conectado','No conectado'], justeat: ['integJusteatBtn','Conectado','No conectado'], notifs: ['integNotifsBtn','Activadas','Desactivadas'] };
+    const map = { square: ['integSquareBtn','Conectado','No conectado'], notifs: ['integNotifsBtn','Activadas','Desactivadas'] };
     Object.keys(map).forEach(key => {
       const cfg = map[key];
       const btn = document.getElementById(cfg[0]);
@@ -7302,6 +7464,19 @@
         btn.className = 'text-xs bg-slate-100 text-slate-500 rounded-full px-2.5 py-1 font-medium hover:opacity-80 transition shrink-0';
       }
     });
+    const deliveryBtnMap = { glovo: 'integGlovoBtn', uber: 'integUberBtn', justeat: 'integJusteatBtn' };
+    Object.keys(deliveryBtnMap).forEach(key => {
+      const btn = document.getElementById(deliveryBtnMap[key]);
+      if (!btn) return;
+      if (ig[key] && ig[key].connected) {
+        btn.textContent = 'Conectado';
+        btn.className = 'text-xs bg-emerald-50 text-emerald-600 rounded-full px-2.5 py-1 font-medium hover:opacity-80 transition shrink-0';
+      } else {
+        btn.textContent = 'Conectar';
+        btn.className = 'text-xs bg-slate-100 text-slate-500 rounded-full px-2.5 py-1 font-medium hover:opacity-80 transition shrink-0';
+      }
+    });
+    renderDelivery();
   }
 
   const PALETAS_CARTA = {
@@ -8309,6 +8484,19 @@
     "Sincronizado con tus apps de delivery.": ["Sincronitzat amb les teves apps de delivery.", "Synced with your delivery apps."],
     "No conectado": ["No connectat", "Not connected"],
     "Aún no has conectado ninguna plataforma": ["Encara no has connectat cap plataforma", "You haven't connected any platform yet"],
+    "Simular pedido de prueba": ["Simula una comanda de prova", "Simulate a test order"],
+    "Pedidos recientes": ["Comandes recents", "Recent orders"],
+    "Todavía no ha llegado ningún pedido de delivery.": ["Encara no ha arribat cap comanda de delivery.", "No delivery orders have arrived yet."],
+    "pedidos hoy": ["comandes avui", "orders today"],
+    "Ver": ["Veure", "View"],
+    "Guardar cambios": ["Desa els canvis", "Save changes"],
+    "Desconectar": ["Desconnecta", "Disconnect"],
+    "Cerrar": ["Tanca", "Close"],
+    "Preparando": ["Preparant", "Preparing"],
+    "Listo para recoger": ["Llest per recollir", "Ready for pickup"],
+    "Recogido": ["Recollit", "Picked up"],
+    "Cobrado": ["Cobrat", "Charged"],
+    "Anulado": ["Anul·lat", "Cancelled"],
     "📄 Informe Semanal": ["📄 Informe Setmanal", "📄 Weekly Report"],
     // SaaS: estados comunes (solo visual, los selects no se tocan)
     "Pendiente": ["Pendent", "Pending"],
