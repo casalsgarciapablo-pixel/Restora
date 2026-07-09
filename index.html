@@ -4547,6 +4547,8 @@
         <span class="kds-cant">${cant}×</span>
         <span class="kds-nombre">${svgEsc(pl.nombre)}</span>
       </div>
+      ${pl.nota ? `<p class="text-xs font-semibold text-rose-600 mt-1">⚠️ ${svgEsc(pl.nota)}</p>` : ''}
+      ${p.notaGeneral ? `<p class="text-xs font-semibold text-amber-600 mt-1">📝 Pedido: ${svgEsc(p.notaGeneral)}</p>` : ''}
       <div class="kds-plato-actions">${accion}<button onclick="abrirEditarPedido(${f.pedidoIdx})" class="kds-btn-editar" title="Editar pedido">✏️</button></div>
     </div>`;
   }
@@ -5540,7 +5542,7 @@
     const numero = parseInt(document.getElementById('pedMesa').value, 10);
     const personas = parseInt(document.getElementById('pedPersonas').value, 10);
     if (!numero || !personas || personas < 1) return modalFormError('Elige la mesa y escribe el número de personas.');
-    pedidoEnCurso = { numero, personas, cantidades: {} };
+    pedidoEnCurso = { numero, personas, cantidades: {}, notas: {}, notaGeneral: '' };
     document.getElementById('modalCard').classList.add('modal-wide');
     document.getElementById('modalBody').innerHTML = platosPedidoFormHtml();
   }
@@ -5559,16 +5561,19 @@
     const filas = disponibles.length
       ? disponibles.map(m => {
           const qty = pedidoEnCurso.cantidades[m.idx] || 0;
-          return `<div class="flex items-center justify-between gap-2 py-2 border-b border-slate-100">
-            <div class="min-w-0">
-              <p class="text-sm font-medium text-navy truncate">${m.nombre}</p>
-              <p class="text-xs text-slate-400">${m.precio}</p>
+          return `<div class="py-2 border-b border-slate-100">
+            <div class="flex items-center justify-between gap-2">
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-navy truncate">${m.nombre}</p>
+                <p class="text-xs text-slate-400">${m.precio}</p>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button type="button" onclick="cambiarCantidadPlato(${m.idx}, -1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">−</button>
+                <span class="text-sm font-semibold text-navy w-5 text-center">${qty}</span>
+                <button type="button" onclick="cambiarCantidadPlato(${m.idx}, 1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">+</button>
+              </div>
             </div>
-            <div class="flex items-center gap-1.5 shrink-0">
-              <button type="button" onclick="cambiarCantidadPlato(${m.idx}, -1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">−</button>
-              <span class="text-sm font-semibold text-navy w-5 text-center">${qty}</span>
-              <button type="button" onclick="cambiarCantidadPlato(${m.idx}, 1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">+</button>
-            </div>
+            ${qty > 0 ? `<input type="text" value="${svgEsc(pedidoEnCurso.notas[m.idx] || '')}" oninput="pedidoEnCurso.notas[${m.idx}] = this.value" placeholder="Observación de este plato (ej. sin gluten, sin cebolla…)" class="mt-1.5 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">` : ''}
           </div>`;
         }).join('')
       : '<p class="text-sm text-slate-400 py-4 text-center">No tienes platos disponibles en el menú.</p>';
@@ -5581,6 +5586,8 @@
         <h3 class="text-xl font-bold text-navy">Elige los platos</h3>
       </div>
       <div class="mt-3 grid grid-cols-2 platos-grid">${filas}</div>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Observaciones del pedido (alergias, peticiones generales…)</label>
+      <textarea oninput="pedidoEnCurso.notaGeneral = this.value" rows="2" placeholder="Ej. alergia a los frutos secos en la mesa" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(pedidoEnCurso.notaGeneral || '')}</textarea>
       <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
         <p class="text-sm font-semibold text-navy">Total</p>
         <p class="text-lg font-bold text-navy">${total.toFixed(2).replace('.', ',')}€</p>
@@ -5599,11 +5606,11 @@
     const elegidos = disponibles.filter(m => (pedidoEnCurso.cantidades[m.idx] || 0) > 0);
     if (!elegidos.length) return modalFormError('Elige al menos un plato.');
     const items = elegidos.map(m => pedidoEnCurso.cantidades[m.idx] + 'x ' + m.nombre).join(', ');
-    const platos = elegidos.map(m => ({ nombre: m.nombre, cantidad: pedidoEnCurso.cantidades[m.idx], precio: m.precio, estado: 'cocina' }));
+    const platos = elegidos.map(m => ({ nombre: m.nombre, cantidad: pedidoEnCurso.cantidades[m.idx], precio: m.precio, estado: 'cocina', nota: (pedidoEnCurso.notas[m.idx] || '').trim() }));
     const total = totalConPromos(elegidos.map(m => ({ nombre: m.nombre, precio: m.precio, cantidad: pedidoEnCurso.cantidades[m.idx] })));
     const mesa = 'Mesa ' + pedidoEnCurso.numero;
     const acc = getCurrentAccount();
-    acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: pedidoEnCurso.personas, total, estado: 'En cocina', fecha: new Date().toISOString(), creadoPor: identidadChatActual().nombre });
+    acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: pedidoEnCurso.personas, total, estado: 'En cocina', fecha: new Date().toISOString(), creadoPor: identidadChatActual().nombre, notaGeneral: (pedidoEnCurso.notaGeneral || '').trim() });
     marcarEstadoMesa(acc, pedidoEnCurso.numero - 1, 'Ocupada');
     saveCurrentAccountData(acc.data);
     renderPedidos();
@@ -5620,7 +5627,7 @@
     const acc = getCurrentAccount();
     const p = acc.data.pedidos[idx];
     if (!p) return;
-    pedidoEditando = { idx, personas: p.personas || 1, platos: (p.platos || []).map(pl => Object.assign({}, pl)) };
+    pedidoEditando = { idx, personas: p.personas || 1, platos: (p.platos || []).map(pl => Object.assign({}, pl)), notaGeneral: p.notaGeneral || '' };
     document.getElementById('modalCard').classList.add('modal-wide');
     document.getElementById('modalBody').innerHTML = editarPedidoFormHtml();
     document.getElementById('modalOverlay').classList.add('open');
@@ -5631,17 +5638,20 @@
     const disponibles = platosDisponiblesPedido();
     const filasActuales = pedidoEditando.platos.length
       ? pedidoEditando.platos.map((pl, i) => `
-        <div class="flex items-center justify-between gap-2 py-2 border-b border-slate-100 last:border-0">
-          <div class="min-w-0">
-            <p class="text-sm font-medium text-navy truncate">${svgEsc(pl.nombre)}</p>
-            <p class="text-xs text-slate-400">${svgEsc(pl.precio || '')}${pl.estado ? ' · ' + svgEsc(pl.estado) : ''}</p>
+        <div class="py-2 border-b border-slate-100 last:border-0">
+          <div class="flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-navy truncate">${svgEsc(pl.nombre)}</p>
+              <p class="text-xs text-slate-400">${svgEsc(pl.precio || '')}${pl.estado ? ' · ' + svgEsc(pl.estado) : ''}</p>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button type="button" onclick="cambiarCantidadPedidoEditando(${i}, -1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">−</button>
+              <span class="text-sm font-semibold text-navy w-5 text-center">${pl.cantidad || 1}</span>
+              <button type="button" onclick="cambiarCantidadPedidoEditando(${i}, 1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">+</button>
+              <button type="button" onclick="quitarPlatoPedidoEditando(${i})" class="text-slate-300 hover:text-rose-500 transition ml-1" title="Quitar">✕</button>
+            </div>
           </div>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <button type="button" onclick="cambiarCantidadPedidoEditando(${i}, -1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">−</button>
-            <span class="text-sm font-semibold text-navy w-5 text-center">${pl.cantidad || 1}</span>
-            <button type="button" onclick="cambiarCantidadPedidoEditando(${i}, 1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">+</button>
-            <button type="button" onclick="quitarPlatoPedidoEditando(${i})" class="text-slate-300 hover:text-rose-500 transition ml-1" title="Quitar">✕</button>
-          </div>
+          <input type="text" value="${svgEsc(pl.nota || '')}" oninput="pedidoEditando.platos[${i}].nota = this.value" placeholder="Observación de este plato (ej. sin gluten, sin cebolla…)" class="mt-1.5 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
         </div>`).join('')
       : '<p class="text-sm text-slate-400 py-3 text-center">Este pedido se ha quedado sin platos. Añade alguno abajo o elimina el pedido.</p>';
     const nombresActuales = pedidoEditando.platos.map(pl => (pl.nombre || '').toLowerCase());
@@ -5662,6 +5672,8 @@
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Platos del pedido</label>
       <div class="border border-slate-200 rounded-lg px-3 max-h-52 overflow-y-auto">${filasActuales}</div>
       ${filasAnadir ? `<label class="block text-sm font-medium text-navy mb-1.5 mt-4">Añadir otro plato</label><div class="border border-slate-200 rounded-lg px-3 max-h-40 overflow-y-auto">${filasAnadir}</div>` : ''}
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Observaciones del pedido (alergias, peticiones generales…)</label>
+      <textarea oninput="pedidoEditando.notaGeneral = this.value" rows="2" placeholder="Ej. alergia a los frutos secos en la mesa" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(pedidoEditando.notaGeneral || '')}</textarea>
       <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
         <p class="text-sm font-semibold text-navy">Total</p>
         <p class="text-lg font-bold text-navy">${total.toFixed(2).replace('.', ',')}€</p>
@@ -5688,7 +5700,7 @@
     const acc = getCurrentAccount();
     const m = acc.data.menu[menuIdx];
     if (!m) return;
-    pedidoEditando.platos.push({ nombre: m.nombre, cantidad: 1, precio: m.precio, estado: 'cocina' });
+    pedidoEditando.platos.push({ nombre: m.nombre, cantidad: 1, precio: m.precio, estado: 'cocina', nota: '' });
     document.getElementById('modalBody').innerHTML = editarPedidoFormHtml();
   }
   function submitEditarPedido() {
@@ -5703,6 +5715,7 @@
     p.items = p.platos.map(pl => (pl.cantidad || 1) + 'x ' + pl.nombre).join(', ');
     p.total = totalConPromos(p.platos.map(pl => ({ nombre: pl.nombre, precio: pl.precio, cantidad: pl.cantidad || 1 })));
     p.estado = estadoPedidoDesdePlatos(p);
+    p.notaGeneral = (pedidoEditando.notaGeneral || '').trim();
     saveCurrentAccountData(acc.data);
     pedidoEditando = null;
     closeModal();
@@ -7558,6 +7571,8 @@
   let publicMenuMesaNumero = null;
   let publicMenuIsPreview = false;
   let publicPedidoCarrito = {};
+  let publicPedidoCarritoNotas = {};
+  let publicPedidoNotaGeneral = '';
   async function renderPublicMenu(cuentaId, mesaNumero, isPreview) {
     document.getElementById('landingRoot').style.display = 'none';
     document.getElementById('publicMenuRoot').style.display = 'block';
@@ -7598,6 +7613,8 @@
       publicMenuCuentaId = cuentaId;
       publicMenuMesaNumero = mesaNumero;
       publicPedidoCarrito = {};
+      publicPedidoCarritoNotas = {};
+      publicPedidoNotaGeneral = '';
       renderPublicMenuBody();
     } catch (e) {
       body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar el menú (${(e && e.message) || 'error de red'}). Prueba a escanear el QR de nuevo.</p>`;
@@ -7624,14 +7641,18 @@
       const cardStyle = temaActivo ? `style="border-left:3px solid ${paleta.color1}; box-shadow:0 1px 2px rgba(16,24,40,0.04);"` : '';
       const cardClass = temaActivo ? 'rounded-xl bg-white p-3' : 'rounded-xl border border-slate-200 bg-white p-3';
       const precioStyle = temaActivo ? `style="color:${paleta.color1};"` : '';
-      return `<div class="flex items-center gap-3 ${cardClass} ${disponible ? '' : 'opacity-50'}" ${cardStyle}>
-        ${foto}
-        <div class="min-w-0 flex-1 text-left">
-          <p class="text-sm font-semibold text-navy truncate">${svgEsc(m.nombre)}</p>
-          ${m.descripcion ? `<p class="text-xs text-slate-500 mt-0.5" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${svgEsc(m.descripcion)}</p>` : `<p class="text-xs text-slate-400 mt-0.5">${disponible ? 'Disponible' : 'Agotado'}</p>`}
+      const notaInput = qty > 0 ? `<input type="text" value="${svgEsc(publicPedidoCarritoNotas[idx] || '')}" oninput="publicPedidoCarritoNotas[${idx}] = this.value" placeholder="Observación (ej. sin gluten, sin cebolla…)" class="mt-2 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">` : '';
+      return `<div class="${cardClass} ${disponible ? '' : 'opacity-50'}" ${cardStyle}>
+        <div class="flex items-center gap-3">
+          ${foto}
+          <div class="min-w-0 flex-1 text-left">
+            <p class="text-sm font-semibold text-navy truncate">${svgEsc(m.nombre)}</p>
+            ${m.descripcion ? `<p class="text-xs text-slate-500 mt-0.5" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${svgEsc(m.descripcion)}</p>` : `<p class="text-xs text-slate-400 mt-0.5">${disponible ? 'Disponible' : 'Agotado'}</p>`}
+          </div>
+          <p class="text-sm font-bold shrink-0 ${temaActivo ? '' : 'text-navy'}" ${precioStyle}>${svgEsc(m.precio)}</p>
+          ${stepper}
         </div>
-        <p class="text-sm font-bold shrink-0 ${temaActivo ? '' : 'text-navy'}" ${precioStyle}>${svgEsc(m.precio)}</p>
-        ${stepper}
+        ${notaInput}
       </div>`;
     };
     // Agrupar por secciones (orden: menuSecciones del restaurante, o primera aparición); "Sin sección" al final
@@ -7679,10 +7700,14 @@
       : `<p class="text-xs font-semibold text-accent">Mesa ${publicMenuMesaNumero}</p>
          <h1 class="text-2xl font-extrabold text-navy mt-1">${nombre}</h1>
          <p class="text-sm text-slate-500 mt-1">Carta del restaurante · pide desde aquí</p>`;
+    const notaGeneralHtml = totalItems > 0 ? `
+        <label class="block text-xs font-semibold text-slate-500 mb-1.5 mt-4">Observaciones del pedido (alergias, peticiones…)</label>
+        <textarea oninput="publicPedidoNotaGeneral = this.value" rows="2" placeholder="Ej. alergia a los frutos secos" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(publicPedidoNotaGeneral || '')}</textarea>` : '';
     body.innerHTML = `
       <div class="text-left" style="${totalItems > 0 ? 'padding-bottom:88px' : ''}">
         ${headerHtml}
         <div class="${temaActivo ? '' : 'mt-6'} space-y-3">${itemsHtml}</div>
+        ${notaGeneralHtml}
         <p id="pubPedError" class="text-xs text-rose-600 hidden mt-3"></p>
         ${temaActivo ? `<p class="text-center text-[11px] text-slate-300 mt-8">Carta digital creada con Restora</p>` : ''}
       </div>
@@ -7736,6 +7761,9 @@
         <h2>Pide desde tu mesa</h2>
         <p class="pweb-texto" style="margin-top:8px;">Elige tus platos y envía el pedido directamente a cocina.</p>
         <div class="pweb-carta-list">${itemsHtml}</div>
+        ${totalItems > 0 ? `
+          <label class="block text-xs font-semibold text-slate-500 mb-1.5 mt-4">Observaciones del pedido (alergias, peticiones…)</label>
+          <textarea oninput="publicPedidoNotaGeneral = this.value" rows="2" placeholder="Ej. alergia a los frutos secos" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(publicPedidoNotaGeneral || '')}</textarea>` : ''}
         <p id="pubPedError" class="text-xs text-rose-600 hidden mt-3"></p>
       </section>`;
     const galeriaHtml = (sec.galeria && fotos.galeria.length) ? `
@@ -7792,7 +7820,7 @@
   function cambiarCantidadPublico(idx, delta) {
     const actual = publicPedidoCarrito[idx] || 0;
     const nuevo = Math.max(0, actual + delta);
-    if (nuevo === 0) delete publicPedidoCarrito[idx];
+    if (nuevo === 0) { delete publicPedidoCarrito[idx]; delete publicPedidoCarritoNotas[idx]; }
     else publicPedidoCarrito[idx] = nuevo;
     renderPublicMenuBody();
   }
@@ -7801,15 +7829,22 @@
     const errorEl = document.getElementById('pubPedError');
     const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
     const items = Object.keys(publicPedidoCarrito)
-      .map(idx => ({ nombre: menu[idx] && menu[idx].nombre, cantidad: publicPedidoCarrito[idx] }))
+      .map(idx => ({ nombre: menu[idx] && menu[idx].nombre, cantidad: publicPedidoCarrito[idx], nota: (publicPedidoCarritoNotas[idx] || '').trim() }))
       .filter(it => it.nombre && it.cantidad > 0);
     if (!items.length) return;
     if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
     try {
       const mesaInt = parseInt(publicMenuMesaNumero, 10);
-      const { data, error } = await supabaseClient.rpc('crear_pedido_publico', {
-        p_user_id: publicMenuCuentaId, p_mesa: mesaInt, p_items: items,
+      let { data, error } = await supabaseClient.rpc('crear_pedido_publico', {
+        p_user_id: publicMenuCuentaId, p_mesa: mesaInt, p_items: items, p_nota_general: (publicPedidoNotaGeneral || '').trim(),
       });
+      if (error && error.code === 'PGRST202') {
+        // La función en Supabase todavía no acepta p_nota_general (falta desplegar la versión nueva) —
+        // reintenta con la firma antigua para no bloquear el envío de pedidos mientras tanto.
+        ({ data, error } = await supabaseClient.rpc('crear_pedido_publico', {
+          p_user_id: publicMenuCuentaId, p_mesa: mesaInt, p_items: items,
+        }));
+      }
       if (error || !data || data.error) {
         if (errorEl) {
           errorEl.textContent = (data && data.error) || 'No se ha podido enviar el pedido. Inténtalo de nuevo.';
@@ -8485,6 +8520,10 @@
     "No conectado": ["No connectat", "Not connected"],
     "Aún no has conectado ninguna plataforma": ["Encara no has connectat cap plataforma", "You haven't connected any platform yet"],
     "Simular pedido de prueba": ["Simula una comanda de prova", "Simulate a test order"],
+    "Observación (ej. sin gluten, sin cebolla…)": ["Observació (ex. sense gluten, sense ceba…)", "Notes (e.g. gluten-free, no onion…)"],
+    "Observaciones del pedido (alergias, peticiones…)": ["Observacions de la comanda (al·lèrgies, peticions…)", "Order notes (allergies, requests…)"],
+    "Ej. alergia a los frutos secos": ["Ex. al·lèrgia als fruits secs", "E.g. nut allergy"],
+    "Enviar pedido": ["Envia la comanda", "Send order"],
     "Pedidos recientes": ["Comandes recents", "Recent orders"],
     "Todavía no ha llegado ningún pedido de delivery.": ["Encara no ha arribat cap comanda de delivery.", "No delivery orders have arrived yet."],
     "pedidos hoy": ["comandes avui", "orders today"],
