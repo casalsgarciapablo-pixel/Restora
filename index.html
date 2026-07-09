@@ -241,6 +241,11 @@
   .ia-quick-msg-user { align-self: flex-end; max-width: 85%; background: #4F3FFF; color: #fff; border-radius: 16px 16px 4px 16px; padding: 9px 13px; font-size: 14px; white-space: pre-wrap; }
   .ia-quick-msg-ia { align-self: flex-start; max-width: 90%; background: #F5F5F8; color: #26262E; border-radius: 16px 16px 16px 4px; padding: 9px 13px; font-size: 14px; white-space: pre-wrap; line-height: 1.5; }
   .ia-quick-welcome { text-align: center; color: #8B8B96; font-size: 13px; padding: 18px 8px 6px; }
+  /* Icono de eliminar conversación: solo visible al pasar el cursor (en táctil se mantiene visible) */
+  @media (hover: hover) {
+    .ia-conv-del { opacity: 0; transition: opacity .15s ease; }
+    .ia-conv-row:hover .ia-conv-del, .ia-conv-del:focus-visible { opacity: 1; }
+  }
   .mesas-tab { display: inline-flex; align-items: center; gap: 2px; background: #F1F3F7; border-radius: 999px; padding: 3px 3px 3px 4px; }
   .mesas-tab button { border: none; background: transparent; cursor: pointer; }
   .mesas-tab > button:first-child { font-size: 13px; font-weight: 600; color: #64748B; padding: 7px 6px 7px 10px; border-radius: 999px; transition: color .15s ease; }
