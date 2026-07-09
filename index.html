@@ -2563,6 +2563,19 @@
   }
 
   let staffSession = null;
+  const STAFF_SESSION_KEY = 'restora_staff_session';
+  function guardarSesionStaff() {
+    try { localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(staffSession)); } catch (e) {}
+  }
+  function borrarSesionStaff() {
+    try { localStorage.removeItem(STAFF_SESSION_KEY); } catch (e) {}
+  }
+  function cargarSesionStaffGuardada() {
+    try {
+      const raw = localStorage.getItem(STAFF_SESSION_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
   async function handleStaffLogin() {
     const email = document.getElementById('staffEmail').value.trim().toLowerCase();
     const codigo = document.getElementById('staffCodigo').value.trim().toUpperCase();
@@ -2570,6 +2583,7 @@
     const { data, error } = await supabaseClient.rpc('staff_login', { p_email: email, p_codigo: codigo });
     if (error || !data) return authError('Correo o código incorrectos.');
     staffSession = { userId: data.user_id, email, codigo, secciones: Array.isArray(data.secciones) ? data.secciones : [], restaurantName: data.restaurant_name, nombre: data.nombre };
+    guardarSesionStaff();
     closeModal();
     await enterStaffApp();
   }
@@ -2577,6 +2591,7 @@
     const { data, error } = await supabaseClient.rpc('staff_get_data', { p_user_id: staffSession.userId, p_email: staffSession.email, p_codigo: staffSession.codigo });
     if (error || !data) {
       staffSession = null;
+      borrarSesionStaff();
       showToast('No se ha podido cargar tu panel. Vuelve a intentarlo.');
       return;
     }
@@ -2646,6 +2661,7 @@
     if (realtimeChannel) { supabaseClient.removeChannel(realtimeChannel); realtimeChannel = null; }
     if (staffSession) {
       staffSession = null;
+      borrarSesionStaff();
       currentAccount = null;
       goToLanding();
       return;
@@ -6864,6 +6880,12 @@
     if (session && session.user) {
       await cargarCuentaDesdeServidor(session.user);
       enterApp();
+      return;
+    }
+    const sesionStaffGuardada = cargarSesionStaffGuardada();
+    if (sesionStaffGuardada) {
+      staffSession = sesionStaffGuardada;
+      await enterStaffApp();
     }
   })();
 
