@@ -3297,7 +3297,7 @@
           const acc = getCurrentAccount();
           acc.data.mesaPosiciones[idx] = { x: xPct, y: yPct };
           saveCurrentAccountData(acc.data);
-        } else {
+        } else if (!mesasModoEditar) {
           openMesaDetalle(idx);
         }
       });
