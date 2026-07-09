@@ -2237,22 +2237,34 @@
     }
     const estabaAbajo = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 60;
     let autorAnterior = null;
-    wrap.innerHTML = mensajes.map(m => {
+    wrap.innerHTML = mensajes.map((m, i) => {
       const esMio = !!(m.autorEmail && yo.email && m.autorEmail.toLowerCase() === yo.email.toLowerCase());
       const hora = new Date(m.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
       const mismoAutorQueAnterior = autorAnterior === (m.autorEmail || m.autor);
       autorAnterior = m.autorEmail || m.autor;
-      const fila = `<div class="flex items-end gap-2 max-w-[80%] ${esMio ? 'self-end flex-row-reverse' : 'self-start'} ${mismoAutorQueAnterior ? 'mt-0' : 'mt-1.5'}">
+      const fila = `<div class="group flex items-end gap-2 max-w-[80%] ${esMio ? 'self-end flex-row-reverse' : 'self-start'} ${mismoAutorQueAnterior ? 'mt-0' : 'mt-1.5'}">
         <span class="w-7 h-7 rounded-full ${esMio ? 'bg-navydeep' : 'bg-slate-300'} text-white text-[10px] font-bold flex items-center justify-center shrink-0" title="${svgEsc(m.autor)}">${inicialesChat(m.autor)}</span>
         <div class="flex flex-col rounded-2xl px-4 py-2 min-w-0 ${esMio ? 'bg-navydeep text-white rounded-br-md' : 'bg-slate-100 text-navy rounded-bl-md'}">
           <p class="text-[11px] font-semibold mb-1 ${esMio ? 'text-white/80' : 'text-accent'}">${esMio ? 'Tú' : svgEsc(m.autor)}</p>
           <p class="text-sm" style="white-space:pre-wrap; word-break:break-word; line-height:1.35;">${svgEsc(m.texto)}</p>
           <p class="text-[10px] mt-1 text-right ${esMio ? 'text-white/70' : 'text-slate-400'}">${hora}</p>
         </div>
+        <button type="button" onclick="eliminarMensajeChat(${i})" title="Eliminar mensaje" class="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition opacity-0 group-hover:opacity-100">✕</button>
       </div>`;
       return fila;
     }).join('');
     if (estabaAbajo) wrap.scrollTop = wrap.scrollHeight;
+  }
+  function eliminarMensajeChat(i) {
+    const acc = getCurrentAccount();
+    const mensajes = acc.data.chatMensajes || [];
+    if (!mensajes[i]) return;
+    if (!confirm('¿Eliminar este mensaje? Esta acción no se puede deshacer.')) return;
+    mensajes.splice(i, 1);
+    saveCurrentAccountData(acc.data);
+    clearTimeout(saveTimer);
+    syncAccountToServer();
+    renderChat();
   }
   function enviarMensajeChat() {
     const input = document.getElementById('chatInput');
