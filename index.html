@@ -4620,8 +4620,11 @@
       descontarStockPedido(acc, p);
       p.stockDescontado = true;
     }
-    // Cada vez que un plato pasa de cocina a listo, avisa (con sonido) al camarero: hay un plato que recoger
-    if (nuevoEstado === 'listo' && estadoAnteriorPlato === 'cocina') {
+    // Cada vez que un plato pasa de cocina a listo, avisa (con sonido) al camarero: hay un plato que recoger.
+    // Solo en ESTE dispositivo si es de sala (o sin rol definido) — si es un dispositivo de cocina, quien
+    // acaba de pulsar el botón es el propio cocinero y no debe sonarle a él; el aviso a sala real llega
+    // por el canal de tiempo real (subscribeRealtime), que ya filtra por esDispositivoSala() en cada dispositivo.
+    if (nuevoEstado === 'listo' && estadoAnteriorPlato === 'cocina' && esDispositivoSala()) {
       const nombrePlato = (p.platos[platoIdx].cantidad || 1) + '× ' + p.platos[platoIdx].nombre;
       showToast('🔔 ' + p.mesa + ' · ' + nombrePlato + ' listo para servir');
       reproducirSonido('listo');
