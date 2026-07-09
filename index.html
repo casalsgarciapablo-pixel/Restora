@@ -2070,21 +2070,23 @@
       .channel('restaurant_data_' + currentAccount.userId)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'restaurant_data', filter: 'user_id=eq.' + currentAccount.userId }, (payload) => {
         if (!currentAccount || !payload.new) return;
-        // Estado anterior por id de pedido, para detectar transiciones (pedido nuevo / pedido recién listo)
+        // Estado anterior por id de pedido, para detectar transiciones (pedido nuevo / plato recién listo)
         const antes = {};
-        (currentAccount.data.pedidos || []).forEach(p => { antes[p.id] = estadoPedidoDesdePlatos(p); });
+        (currentAccount.data.pedidos || []).forEach(p => { antes[p.id] = { listos: platosListosCount(p) }; });
         currentAccount.data = normalizeAccountData(payload.new.data);
         currentAccount.restaurantName = payload.new.restaurant_name || currentAccount.restaurantName;
         currentAccount.data.pedidos.forEach(p => {
           if (p.estado === 'Pagado') return;
-          const estadoAntes = antes[p.id];
-          const estadoAhora = estadoPedidoDesdePlatos(p);
-          if (estadoAntes === undefined && estadoAhora === 'En cocina') {
-            // Pedido nuevo entrando en cocina → avisar a cocina
-            if (esDispositivoCocina()) pushNotification('🍳 Nuevo pedido en cocina · ' + p.mesa + (p.origen === 'qr' ? ' (QR)' : ''), 'cocina');
-          } else if (estadoAntes && estadoAntes !== 'Listo' && estadoAntes !== 'Servido' && estadoAhora === 'Listo') {
-            // Pedido que acaba de quedar totalmente cocinado → avisar a sala
-            if (esDispositivoSala()) pushNotification('🔔 Listo para servir · ' + p.mesa, 'listo');
+          const prev = antes[p.id];
+          const listosAhora = platosListosCount(p);
+          if (!prev) {
+            // Pedido nuevo: si aún no tiene platos listos, entra en cocina → avisar a cocina
+            if (listosAhora === 0 && esDispositivoCocina()) {
+              pushNotification('🍳 Nuevo pedido en cocina · ' + p.mesa + (p.origen === 'qr' ? ' (QR)' : ''), 'cocina');
+            }
+          } else if (listosAhora > prev.listos) {
+            // Uno o más platos acaban de quedar listos → avisar a sala para que los recoja
+            if (esDispositivoSala()) pushNotification('🔔 Plato listo para servir · ' + p.mesa, 'listo');
           }
         });
         renderAllSections();
@@ -3793,6 +3795,10 @@
   function estadoPlatosLista(p) {
     return (Array.isArray(p.platos) && p.platos.length) ? p.platos.map(pl => pl.estado || 'cocina') : ['cocina'];
   }
+  // Nº de platos que ya han llegado a "listo" o más allá (monótono: sirve para detectar platos recién listos)
+  function platosListosCount(p) {
+    return (p.platos || []).filter(pl => pl.estado === 'listo' || pl.estado === 'servido').length;
+  }
   function estadoPedidoDesdePlatos(p) {
     const est = estadoPlatosLista(p);
     if (est.every(e => e === 'servido')) return 'Servido';
@@ -3892,6 +3898,7 @@
     const p = acc.data.pedidos[pedidoIdx];
     if (!p || !p.platos || !p.platos[platoIdx]) return;
     const eraListoGlobal = estadoPedidoDesdePlatos(p) === 'Listo' || estadoPedidoDesdePlatos(p) === 'Servido';
+    const estadoAnteriorPlato = p.platos[platoIdx].estado || 'cocina';
     p.platos[platoIdx].estado = nuevoEstado;
     const nuevoGlobal = estadoPedidoDesdePlatos(p);
     p.estado = nuevoGlobal;
@@ -3900,9 +3907,10 @@
       descontarStockPedido(acc, p);
       p.stockDescontado = true;
     }
-    // Si al marcar este plato el pedido entero queda listo, avisa al camarero (en este mismo dispositivo, sin sonido)
-    if (nuevoEstado === 'listo' && nuevoGlobal === 'Listo' && !eraListoGlobal) {
-      showToast('🔔 ' + p.mesa + ': pedido listo para servir');
+    // Cada vez que un plato pasa de cocina a listo, avisa (con sonido) al camarero: hay un plato que recoger
+    if (nuevoEstado === 'listo' && estadoAnteriorPlato === 'cocina') {
+      const nombrePlato = (p.platos[platoIdx].cantidad || 1) + '× ' + p.platos[platoIdx].nombre;
+      showToast('🔔 ' + p.mesa + ' · ' + nombrePlato + ' listo para servir');
       reproducirSonido('listo');
     }
     saveCurrentAccountData(acc.data);
