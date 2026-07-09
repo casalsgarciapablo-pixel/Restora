@@ -58,6 +58,7 @@
   .mesa-top { margin: 0 auto; border-width: 3px; border-style: solid; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; text-align: center; line-height: 1.15; padding: 4px; overflow: hidden; transition: transform .15s ease; }
   .mesa-item:hover .mesa-top { transform: scale(1.08); }
   .mesa-capacidad-label { font-size: 10px; color: #94a3b8; }
+  .mesa-info-label { font-size: 10px; font-weight: 600; white-space: nowrap; }
   .notif-panel { position: absolute; top: calc(100% + 10px); right: 0; width: 280px; max-height: 320px; overflow-y: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 12px 32px -8px rgba(11,33,66,0.18); display: none; z-index: 50; }
   .notif-panel.open { display: block; }
   @media print {
@@ -2484,6 +2485,7 @@
       mesaCapacidades: [],
       mesaFormas: [],
       mesaPosiciones: [],
+      mesaOcupadaDesde: [],
       espacios: [{ nombre: 'Sala principal', mesaIndices: [] }],
       reservas: [],
       pedidos: [],
@@ -2532,6 +2534,8 @@
     data.mesaCapacidades = Array.isArray(data.mesaCapacidades) ? data.mesaCapacidades : [];
     data.mesaFormas = Array.isArray(data.mesaFormas) ? data.mesaFormas : [];
     data.mesaPosiciones = Array.isArray(data.mesaPosiciones) ? data.mesaPosiciones : [];
+    data.mesaOcupadaDesde = Array.isArray(data.mesaOcupadaDesde) ? data.mesaOcupadaDesde : [];
+    data.mesaEstados.forEach((s, i) => { if (s !== 'Ocupada') data.mesaOcupadaDesde[i] = null; });
     data.espacios = (Array.isArray(data.espacios) && data.espacios.length) ? data.espacios : [{ nombre: 'Sala principal', mesaIndices: [] }];
     data.espacios.forEach(e => {
       e.nombre = e.nombre || 'Sala';
@@ -3322,6 +3326,11 @@
     renderCartaDigitalPreview();
     actualizarMesasPorReservas();
     if (!window._reservaMesaTimer) window._reservaMesaTimer = setInterval(actualizarMesasPorReservas, 60000);
+    // Refresca la hora de reserva / tiempo ocupada sobre cada mesa cada minuto, aunque su estado no cambie
+    if (!window._mesaTiempoTimer) window._mesaTiempoTimer = setInterval(() => {
+      const sec = document.getElementById('sec-mesas');
+      if (sec && sec.classList.contains('active')) renderMesas();
+    }, 60000);
     const c = acc.data.cuenta;
     document.getElementById('cuentaTitular').value = c.titular || '';
     document.getElementById('cuentaTelefono').value = c.telefono || '';
@@ -3362,6 +3371,18 @@
   }
 
   // ---- Mesas ----
+  // Cambia el estado de una mesa llevando también la cuenta de desde cuándo está "Ocupada"
+  // (para poder mostrar el tiempo que lleva ocupada sobre la propia mesa).
+  function marcarEstadoMesa(acc, idx, nuevoEstado) {
+    if (idx == null || idx < 0) return;
+    const antes = acc.data.mesaEstados[idx];
+    acc.data.mesaEstados[idx] = nuevoEstado;
+    if (nuevoEstado === 'Ocupada') {
+      if (antes !== 'Ocupada') acc.data.mesaOcupadaDesde[idx] = new Date().toISOString();
+    } else {
+      acc.data.mesaOcupadaDesde[idx] = null;
+    }
+  }
   const mesaCycle = ['Libre','Reservada','Ocupada'];
   const stateColor = { 'Sin definir':'bg-slate-100 text-slate-400 border-slate-200', Libre:'bg-emerald-50 text-emerald-600 border-emerald-200', Ocupada:'bg-rose-50 text-rose-500 border-rose-200', Reservada:'bg-amber-50 text-amber-600 border-amber-200' };
   const mesaStateStyle = {
@@ -3384,6 +3405,39 @@
     const acc = getCurrentAccount();
     const f = acc.data.mesaFormas[i];
     return (f === 'redonda' || f === 'cuadrada') ? f : 'rectangular';
+  }
+  // Reserva de hoy que explica por qué la mesa está "Reservada" ahora mismo (la próxima que siga
+  // vigente, es decir que no haya pasado ya su margen de gracia sin presentarse).
+  function reservaVigenteDeMesa(i) {
+    const acc = getCurrentAccount();
+    const ahora = new Date();
+    const hoyStr = ahora.getFullYear() + '-' + String(ahora.getMonth() + 1).padStart(2, '0') + '-' + String(ahora.getDate()).padStart(2, '0');
+    const target = ('mesa ' + (i + 1)).toLowerCase();
+    let mejor = null;
+    (acc.data.reservas || []).forEach(r => {
+      if (r.fecha !== hoyStr || !r.hora || (r.mesa || '').toLowerCase() !== target) return;
+      const [hh, mm] = r.hora.split(':').map(n => parseInt(n, 10));
+      const horaReserva = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), hh, mm);
+      const minParaReserva = (horaReserva - ahora) / 60000;
+      if (minParaReserva > -RESERVA_GRACIA_MIN && (!mejor || minParaReserva < mejor.minParaReserva)) mejor = { r, minParaReserva };
+    });
+    return mejor ? mejor.r : null;
+  }
+  // Cuánto tiempo lleva ocupada una mesa: usa la marca guardada al ocuparla, y si no existe (mesas ya
+  // ocupadas antes de esta función, o clientes que ocuparon vía QR) recurre a la fecha del pedido
+  // activo más antiguo de esa mesa.
+  function tiempoOcupadaMesa(i) {
+    const acc = getCurrentAccount();
+    let desde = acc.data.mesaOcupadaDesde[i];
+    if (!desde) {
+      const target = ('mesa ' + (i + 1)).toLowerCase();
+      const activos = acc.data.pedidos.filter(p => p.estado !== 'Pagado' && p.estado !== 'Anulado' && (p.mesa || '').toLowerCase() === target);
+      activos.forEach(p => { if (p.fecha && (!desde || new Date(p.fecha) < new Date(desde))) desde = p.fecha; });
+    }
+    if (!desde) return null;
+    const ms = Date.now() - new Date(desde).getTime();
+    if (isNaN(ms) || ms < 0) return null;
+    return fmtDuracion(ms);
   }
   function mesaVisualHtml(capacidad, etiqueta, st, forma) {
     const n = Math.max(1, Math.min(12, capacidad));
@@ -3476,11 +3530,20 @@
       const s = acc.data.mesaEstados[i];
       const st = mesaStateStyle[s];
       const pos = acc.data.mesaPosiciones[i] || defaultMesaPos(posIdx, total);
+      let infoExtra = '';
+      if (s === 'Reservada') {
+        const r = reservaVigenteDeMesa(i);
+        if (r) infoExtra = `<p class="mesa-info-label" style="color:${st.text}" title="Hora de la reserva">🕐 ${svgEsc(r.hora)}</p>`;
+      } else if (s === 'Ocupada') {
+        const t = tiempoOcupadaMesa(i);
+        if (t) infoExtra = `<p class="mesa-info-label" style="color:${st.text}" title="Tiempo que lleva ocupada">⏱ ${t}</p>`;
+      }
       return `
       <div class="mesa-item" data-idx="${i}" style="position:absolute; left:${pos.x}%; top:${pos.y}%; transform:translate(-50%,-50%); touch-action:${mesasModoEditar ? 'none' : 'manipulation'}; cursor:${mesasModoEditar ? 'grab' : 'pointer'};">
         ${mesaVisualHtml(getMesaCapacidad(i), getMesaEtiqueta(i), st, getMesaForma(i))}
         <p class="mesa-capacidad-label">${getMesaCapacidad(i)} pers.</p>
         <p class="mesa-label" style="color:${st.text}" onclick="event.stopPropagation(); cycleMesa(${i})" title="Toca para cambiar el estado">${s}</p>
+        ${infoExtra}
       </div>`;
     }).join('');
     activarArrastreMesas();
@@ -3660,6 +3723,7 @@
         acc.data.mesaCapacidades.push(4);
         acc.data.mesaFormas.push('rectangular');
         acc.data.mesaPosiciones.push(null);
+        acc.data.mesaOcupadaDesde.push(null);
       }
     }
     saveCurrentAccountData(acc.data);
@@ -3684,7 +3748,7 @@
     const acc = getCurrentAccount();
     const current = acc.data.mesaEstados[i];
     const next = current === 'Sin definir' ? 'Libre' : mesaCycle[(mesaCycle.indexOf(current) + 1) % mesaCycle.length];
-    acc.data.mesaEstados[i] = next;
+    marcarEstadoMesa(acc, i, next);
     saveCurrentAccountData(acc.data);
     renderMesas();
   }
@@ -3709,10 +3773,10 @@
       const minParaReserva = (horaReserva - ahora) / 60000;
       const estadoActual = acc.data.mesaEstados[idx];
       if (minParaReserva <= RESERVA_ANTELACION_MIN && minParaReserva > -RESERVA_GRACIA_MIN && (estadoActual === 'Libre' || estadoActual === 'Sin definir')) {
-        acc.data.mesaEstados[idx] = 'Reservada';
+        marcarEstadoMesa(acc, idx, 'Reservada');
         cambiado = true;
       } else if (minParaReserva <= -RESERVA_GRACIA_MIN && estadoActual === 'Reservada') {
-        acc.data.mesaEstados[idx] = 'Libre';
+        marcarEstadoMesa(acc, idx, 'Libre');
         cambiado = true;
       }
     });
@@ -4762,7 +4826,7 @@
       if (mMatch) {
         const idx = parseInt(mMatch[1], 10) - 1;
         const otrosPendientes = acc.data.pedidos.some((o, oi) => oi !== i && o.mesa === p.mesa && o.estado !== 'Pagado' && o.estado !== 'Anulado');
-        if (!otrosPendientes && acc.data.mesaEstados[idx] !== undefined) acc.data.mesaEstados[idx] = 'Libre';
+        if (!otrosPendientes && acc.data.mesaEstados[idx] !== undefined) marcarEstadoMesa(acc, idx, 'Libre');
       }
     }
     saveCurrentAccountData(acc.data);
@@ -5127,7 +5191,7 @@
     const mesa = ventaRapidaEnCurso.mesaNumero ? 'Mesa ' + ventaRapidaEnCurso.mesaNumero : 'Venta directa';
     const acc = getCurrentAccount();
     acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: null, total, estado: 'Servido', fecha: new Date().toISOString(), origen: 'tpv', creadoPor: identidadChatActual().nombre });
-    if (ventaRapidaEnCurso.mesaNumero) acc.data.mesaEstados[ventaRapidaEnCurso.mesaNumero - 1] = 'Ocupada';
+    if (ventaRapidaEnCurso.mesaNumero) marcarEstadoMesa(acc, ventaRapidaEnCurso.mesaNumero - 1, 'Ocupada');
     saveCurrentAccountData(acc.data);
     const nuevoIdx = acc.data.pedidos.length - 1;
     ventaRapidaEnCurso = null;
@@ -5367,7 +5431,7 @@
     const mesa = 'Mesa ' + pedidoEnCurso.numero;
     const acc = getCurrentAccount();
     acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: pedidoEnCurso.personas, total, estado: 'En cocina', fecha: new Date().toISOString(), creadoPor: identidadChatActual().nombre });
-    acc.data.mesaEstados[pedidoEnCurso.numero - 1] = 'Ocupada';
+    marcarEstadoMesa(acc, pedidoEnCurso.numero - 1, 'Ocupada');
     saveCurrentAccountData(acc.data);
     renderPedidos();
     renderDashboardStats();
@@ -5525,7 +5589,7 @@
     if (mMatch) {
       const idx = parseInt(mMatch[1], 10) - 1;
       const otrosPendientes = acc.data.pedidos.some((o, oi) => oi !== i && o.mesa === p.mesa && o.estado !== 'Pagado' && o.estado !== 'Anulado');
-      if (!otrosPendientes && acc.data.mesaEstados[idx] !== undefined) acc.data.mesaEstados[idx] = 'Libre';
+      if (!otrosPendientes && acc.data.mesaEstados[idx] !== undefined) marcarEstadoMesa(acc, idx, 'Libre');
     }
     saveCurrentAccountData(acc.data);
     closeModal();
