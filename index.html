@@ -1361,6 +1361,7 @@
 </div>
 
 <div id="appRoot" class="h-screen flex flex-col" style="display:none">
+<div id="offlineBanner" class="hidden shrink-0 px-4 py-2 text-center text-xs font-semibold" style="background:#FEF3C7;color:#92400E;"></div>
 <!-- Top bar -->
 <header class="app-topbar flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-white shrink-0">
   <div class="flex items-center gap-3">
@@ -1527,6 +1528,19 @@
           <div id="dashChartComensales" style="position:relative"></div>
         </div>
       </div>
+
+      <div class="mt-4 grid grid-cols-1 dash-two-col gap-4">
+        <div class="rounded-2xl border border-slate-200 bg-white p-5">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Ventas por camarero</p>
+          <p class="text-xs text-slate-400 mt-1 mb-3">Ingresos generados por cada persona</p>
+          <div id="dashChartCamareros"></div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Rentabilidad por plato</p>
+          <p class="text-xs text-slate-400 mt-1 mb-3">Margen según el coste que hayas indicado en cada plato</p>
+          <div id="dashRentabilidad"></div>
+        </div>
+      </div>
     </section>
 
     <!-- MESAS -->
@@ -1658,6 +1672,7 @@
         <div class="flex gap-2 flex-wrap">
           <button onclick="openModal('upload-menu')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Subir foto del menú</button>
           <button onclick="openModal('paste-menu')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Pegar menú</button>
+          <button onclick="abrirPromociones()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">🏷️ Promociones</button>
           <button onclick="anadirSeccionMenu()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">+ Sección</button>
           <button onclick="abrirAnadirPlato()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir plato</button>
         </div>
@@ -2270,7 +2285,7 @@
         currentAccount.data = normalizeAccountData(payload.new.data);
         currentAccount.restaurantName = payload.new.restaurant_name || currentAccount.restaurantName;
         currentAccount.data.pedidos.forEach(p => {
-          if (p.estado === 'Pagado') return;
+          if (p.estado === 'Pagado' || p.estado === 'Anulado') return;
           const prev = antes[p.id];
           const listosAhora = platosListosCount(p);
           if (!prev) {
@@ -2539,8 +2554,8 @@
           pl.pagadoCantidad = pl.pagadoCantidad || 0;
         });
       }
-      // Normalizar el estado global a los nuevos valores del flujo de cocina (salvo Pagado, que manda)
-      if (p.estado !== 'Pagado') p.estado = estadoPedidoDesdePlatos(p);
+      // Normalizar el estado global a los nuevos valores del flujo de cocina (salvo Pagado/Anulado, que mandan)
+      if (p.estado !== 'Pagado' && p.estado !== 'Anulado') p.estado = estadoPedidoDesdePlatos(p);
       p.pagado = typeof p.pagado === 'number' ? p.pagado : (p.estado === 'Pagado' ? (p.total || 0) : 0);
       p.cobros = Array.isArray(p.cobros) ? p.cobros : (p.estado === 'Pagado' && p.metodoPago ? [{ importe: p.total || 0, metodo: p.metodoPago, fecha: p.fechaPago || p.fecha, detalle: 'Pago completo' }] : []);
       p.creadoPor = p.creadoPor || '';
@@ -2554,6 +2569,13 @@
       m.costo = typeof m.costo === 'string' ? m.costo : '';
     });
     data.promociones = Array.isArray(data.promociones) ? data.promociones : [];
+    data.promociones.forEach(pr => {
+      pr.activa = pr.activa !== false;
+      pr.tipo = pr.tipo === 'cliente' ? 'cliente' : 'articulo';
+      pr.dosPorUno = !!pr.dosPorUno;
+      pr.descuentoPct = typeof pr.descuentoPct === 'number' ? pr.descuentoPct : null;
+      pr.platoNombre = pr.platoNombre || '';
+    });
     data.anulaciones = Array.isArray(data.anulaciones) ? data.anulaciones : [];
     data.ultimoTicketNumero = typeof data.ultimoTicketNumero === 'number' ? data.ultimoTicketNumero : 0;
     data.ultimoTicketHash = typeof data.ultimoTicketHash === 'string' ? data.ultimoTicketHash : '';
@@ -2635,17 +2657,90 @@
     clearTimeout(saveTimer);
     saveTimer = setTimeout(syncAccountToServer, 500);
   }
+  // ---- Modo offline: si no hay conexión (o falla la subida), el pedido/cobro ya se ha hecho en
+  // memoria y sigue funcionando; el cambio se guarda también en este dispositivo (localStorage) y
+  // se reintenta subir solo, en cuanto vuelva la conexión. Esto NO sincroniza entre dispositivos
+  // distintos mientras estén todos sin internet (eso necesitaría un servidor local en el propio
+  // restaurante); sincroniza este dispositivo con el servidor en cuanto él mismo recupere conexión.
+  let offlineQueuePendiente = false;
+  let offlineReintentoTimer = null;
+  function offlineKey() {
+    return currentAccount ? ('restora_offline_' + currentAccount.userId) : null;
+  }
+  function guardarSnapshotOffline() {
+    const key = offlineKey();
+    if (!key || !currentAccount) return;
+    try { localStorage.setItem(key, JSON.stringify({ data: currentAccount.data, restaurantName: currentAccount.restaurantName, guardadoEn: new Date().toISOString() })); } catch (e) {}
+  }
+  function borrarSnapshotOffline() {
+    const key = offlineKey();
+    if (key) { try { localStorage.removeItem(key); } catch (e) {} }
+  }
+  function actualizarIndicadorOffline() {
+    const banner = document.getElementById('offlineBanner');
+    if (!banner) return;
+    if (!navigator.onLine || offlineQueuePendiente) {
+      banner.textContent = navigator.onLine
+        ? '🔄 Reconectando… tus cambios se están guardando en este dispositivo y se subirán solos.'
+        : '📡 Sin conexión a internet — puedes seguir tomando pedidos y cobrando en efectivo; se sincronizará todo solo al reconectar.';
+      banner.classList.remove('hidden');
+    } else {
+      banner.classList.add('hidden');
+    }
+  }
+  function programarReintentoOffline() {
+    if (offlineReintentoTimer) return;
+    offlineReintentoTimer = setInterval(() => {
+      if (navigator.onLine && currentAccount) {
+        clearInterval(offlineReintentoTimer);
+        offlineReintentoTimer = null;
+        syncAccountToServer();
+      }
+    }, 15000);
+  }
+  window.addEventListener('online', () => { actualizarIndicadorOffline(); if (currentAccount) syncAccountToServer(); });
+  window.addEventListener('offline', () => actualizarIndicadorOffline());
+  function comprobarSnapshotOfflinePendiente() {
+    const key = offlineKey();
+    if (!key) return;
+    let snap;
+    try { snap = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { snap = null; }
+    if (!snap || !snap.data) return;
+    const fecha = new Date(snap.guardadoEn).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const usarOffline = confirm('Hay cambios de este dispositivo sin sincronizar, guardados el ' + fecha + ' (de la última vez que se quedó sin conexión).\n\nAceptar: seguir con esos cambios y subirlos ahora.\nCancelar: descartarlos y quedarte con los datos del servidor.');
+    if (usarOffline) {
+      currentAccount.data = normalizeAccountData(snap.data);
+      currentAccount.restaurantName = snap.restaurantName || currentAccount.restaurantName;
+      offlineQueuePendiente = true;
+      syncAccountToServer();
+    } else {
+      borrarSnapshotOffline();
+    }
+  }
   async function syncAccountToServer() {
     if (!currentAccount) return;
-    if (staffSession) {
-      await supabaseClient.rpc('staff_save_data', { p_user_id: staffSession.userId, p_email: staffSession.email, p_codigo: staffSession.codigo, p_new_data: currentAccount.data });
-      return;
+    try {
+      if (staffSession) {
+        await supabaseClient.rpc('staff_save_data', { p_user_id: staffSession.userId, p_email: staffSession.email, p_codigo: staffSession.codigo, p_new_data: currentAccount.data });
+      } else {
+        await supabaseClient.from('restaurant_data').upsert({
+          user_id: currentAccount.userId,
+          restaurant_name: currentAccount.restaurantName,
+          data: currentAccount.data,
+        });
+      }
+      if (offlineQueuePendiente) {
+        offlineQueuePendiente = false;
+        borrarSnapshotOffline();
+        actualizarIndicadorOffline();
+        showToast('✅ Sincronizado con el servidor');
+      }
+    } catch (e) {
+      offlineQueuePendiente = true;
+      guardarSnapshotOffline();
+      actualizarIndicadorOffline();
+      programarReintentoOffline();
     }
-    await supabaseClient.from('restaurant_data').upsert({
-      user_id: currentAccount.userId,
-      restaurant_name: currentAccount.restaurantName,
-      data: currentAccount.data,
-    });
   }
   function initials(nombre) {
     return nombre.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '??';
@@ -2763,6 +2858,8 @@
     document.getElementById('landingRoot').style.display = 'none';
     document.getElementById('appRoot').style.display = 'flex';
     resetNavVisibility();
+    comprobarSnapshotOfflinePendiente();
+    actualizarIndicadorOffline();
     hydrateApp();
     subscribeRealtime();
   }
@@ -2786,6 +2883,7 @@
   }
   async function logoutReal() {
     if (realtimeChannel) { supabaseClient.removeChannel(realtimeChannel); realtimeChannel = null; }
+    if (offlineReintentoTimer) { clearInterval(offlineReintentoTimer); offlineReintentoTimer = null; }
     if (staffSession) {
       staffSession = null;
       borrarSesionStaff();
@@ -3462,7 +3560,7 @@
   function findPedidoDeMesa(numero) {
     const acc = getCurrentAccount();
     const target = ('mesa ' + numero).toLowerCase();
-    return acc.data.pedidos.find(p => (p.mesa || '').trim().toLowerCase() === target);
+    return acc.data.pedidos.find(p => p.estado !== 'Anulado' && (p.mesa || '').trim().toLowerCase() === target);
   }
   function openMesaDetalle(i) {
     const acc = getCurrentAccount();
@@ -4337,7 +4435,7 @@
   function lineasPlatos(acc, filtroEstado) {
     const filas = [];
     acc.data.pedidos.forEach((p, pi) => {
-      if (p.estado === 'Pagado') return;
+      if (p.estado === 'Pagado' || p.estado === 'Anulado') return;
       (p.platos || []).forEach((pl, li) => {
         const est = pl.estado || 'cocina';
         if (est === filtroEstado) filas.push({ pedidoIdx: pi, platoIdx: li, pedido: p, plato: pl });
@@ -4398,7 +4496,7 @@
       </button>`).join('');
     const etapa = PEDIDOS_ETAPAS.find(e => e.key === pedidosEtapaActiva) || PEDIDOS_ETAPAS[0];
     const filas = lineasPlatos(acc, pedidosEtapaActiva);
-    const activos = acc.data.pedidos.filter(p => p.estado !== 'Pagado').length;
+    const activos = acc.data.pedidos.filter(p => p.estado !== 'Pagado' && p.estado !== 'Anulado').length;
     if (!activos) {
       grid.innerHTML = `<div class="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
         <p class="font-semibold text-navy text-sm">No hay pedidos activos</p>
@@ -4437,14 +4535,6 @@
     renderMesas();
     renderTPV();
     renderInventario();
-  }
-  function eliminarPedido(i) {
-    const acc = getCurrentAccount();
-    acc.data.pedidos.splice(i, 1);
-    saveCurrentAccountData(acc.data);
-    renderPedidos();
-    renderDashboardStats();
-    showToast('Pedido eliminado');
   }
   // ---- TPV ----
   function conectarTPVFormHtml() {
@@ -4513,24 +4603,42 @@
     const pedidos = acc.data.pedidos;
     const hoy = new Date().toISOString().slice(0, 10);
     const cobradosHoy = pedidos.filter(p => p.estado === 'Pagado' && (p.fechaPago || '').slice(0, 10) === hoy);
-    const pendientes = pedidos.map((p, i) => Object.assign({ _idx: i }, p)).filter(p => p.estado !== 'Pagado');
+    const pendientes = pedidos.map((p, i) => Object.assign({ _idx: i }, p)).filter(p => p.estado !== 'Pagado' && p.estado !== 'Anulado');
     const porMetodo = porMetodoDelDia(cobradosHoy);
     const totalHoy = cobradosHoy.reduce((s, p) => s + p.total, 0);
     const ticketsHtml = pendientes.length
       ? pendientes.map(p => `
         <div class="lift-card rounded-xl border border-slate-200 bg-white p-4">
           <div class="flex justify-between items-start gap-2">
-            <p class="font-semibold text-navy text-sm">${p.mesa}</p>
-            <span class="text-xs bg-slate-100 text-slate-500 rounded-full px-2 py-0.5 font-medium">${p.estado}</span>
+            <p class="font-semibold text-navy text-sm">${svgEsc(p.mesa)}</p>
+            <span class="text-xs bg-slate-100 text-slate-500 rounded-full px-2 py-0.5 font-medium">${svgEsc(p.estado)}</span>
           </div>
-          <p class="text-xs text-slate-500 mt-2">${p.items}</p>
-          <div class="flex items-center justify-between mt-3">
+          <p class="text-xs text-slate-500 mt-2">${svgEsc(p.items)}</p>
+          <div class="flex items-center justify-between mt-3 gap-2">
             <p class="text-sm font-semibold text-navy">${p.total.toFixed(2).replace('.', ',')}€</p>
-            <button onclick="abrirCobroPedido(${p._idx})" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-1.5">Cobrar</button>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="abrirAnularPedido(${p._idx})" class="text-slate-300 hover:text-rose-500 transition" title="Anular pedido">✕</button>
+              <button onclick="abrirCobroPedido(${p._idx})" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-1.5">Cobrar</button>
+            </div>
           </div>
         </div>
       `).join('')
       : `<div class="rounded-xl border border-dashed border-slate-200 bg-white p-4 text-center col-span-full"><p class="text-sm text-slate-400">No hay cuentas pendientes de cobro.</p></div>`;
+    const cobradosHtml = cobradosHoy.length
+      ? cobradosHoy.slice().reverse().map(p => {
+          const idx = pedidos.indexOf(p);
+          return `<div class="flex items-center justify-between gap-2 py-2 border-b border-slate-100 last:border-0">
+            <div class="min-w-0">
+              <p class="text-sm text-navy truncate">${svgEsc(p.mesa)} <span class="text-slate-400">· ${svgEsc(p.metodoPago || '')}${p.ticketNumero ? ' · Tk ' + p.ticketNumero : ''}</span></p>
+              <p class="text-xs text-slate-400">${horaCorta(p.fechaPago || p.fecha)}</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <p class="text-sm font-semibold text-navy">${p.total.toFixed(2).replace('.', ',')}€</p>
+              <button onclick="abrirAnularPedido(${idx})" class="text-xs font-semibold text-rose-500 hover:text-rose-600 transition" title="Anular y devolver">↩️</button>
+            </div>
+          </div>`;
+        }).join('')
+      : '<p class="text-sm text-slate-400 text-center py-4">Nada cobrado todavía hoy.</p>';
     document.getElementById('tpvBody').innerHTML = `
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex gap-3 flex-wrap">
@@ -4549,10 +4657,15 @@
         </div>
         <div class="flex gap-2">
           <button onclick="abrirVentaRapida()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Venta rápida</button>
+          <button onclick="abrirHistorialAnulaciones()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Anulaciones</button>
           <button onclick="abrirCerrarCaja()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Cerrar caja</button>
         </div>
       </div>
       <div class="mt-5 grid md:grid-cols-3 gap-4">${ticketsHtml}</div>
+      <div class="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-sm font-semibold text-navy mb-1">Cobrado hoy</p>
+        <div>${cobradosHtml}</div>
+      </div>
     `;
   }
   // Suma por método de pago a partir de los cobros reales de cada pedido (no del método "global" del
@@ -4564,6 +4677,23 @@
   }
   function pendienteCobro(p) {
     return Math.max(0, Math.round(((p.total || 0) - (p.pagado || 0)) * 100) / 100);
+  }
+  function aplicarDescuentoClienteDesdeSelect(i) {
+    const sel = document.getElementById('descuentoClienteSel');
+    if (!sel) return;
+    aplicarDescuentoCliente(i, parseInt(sel.value, 10));
+  }
+  function aplicarDescuentoCliente(i, idxPromo) {
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[i];
+    const promo = promocionesActivasCliente()[idxPromo];
+    if (!p || !promo) return;
+    const importeDescuento = Math.round(pendienteCobro(p) * (promo.descuentoPct / 100) * 100) / 100;
+    p.descuento = { nombre: promo.nombre, pct: promo.descuentoPct, importe: importeDescuento };
+    p.total = Math.round((p.total - importeDescuento) * 100) / 100;
+    saveCurrentAccountData(acc.data);
+    showToast('Descuento "' + promo.nombre + '" aplicado');
+    document.getElementById('modalBody').innerHTML = cobroPedidoFormHtml(i);
   }
   function abrirCobroPedido(i) {
     document.getElementById('modalCard').classList.remove('modal-wide');
@@ -4585,10 +4715,19 @@
         <p class="text-sm font-semibold text-navy">Total</p>
         <p class="text-lg font-bold text-navy">${p.total.toFixed(2).replace('.', ',')}€</p>
       </div>
+      ${p.descuento ? `<div class="flex items-center justify-between mt-1"><p class="text-xs font-medium text-accent">Descuento ${svgEsc(p.descuento.nombre)} (${p.descuento.pct}%)</p><p class="text-xs font-semibold text-accent">-${p.descuento.importe.toFixed(2).replace('.', ',')}€</p></div>` : ''}
       ${yaPagado > 0 ? `
       <div class="flex items-center justify-between mt-1"><p class="text-xs font-medium text-emerald-600">Ya cobrado</p><p class="text-xs font-semibold text-emerald-600">${yaPagado.toFixed(2).replace('.', ',')}€</p></div>
       <div class="flex items-center justify-between mt-1"><p class="text-sm font-semibold text-navy">Pendiente</p><p class="text-lg font-bold text-rose-600">${pendiente.toFixed(2).replace('.', ',')}€</p></div>
       ${cobrosHtml}` : ''}
+      ${(!p.descuento && promocionesActivasCliente().length) ? `
+      <div class="mt-3">
+        <label class="block text-xs font-medium text-slate-500 mb-1">Descuento de cliente</label>
+        <div class="flex gap-2">
+          <select id="descuentoClienteSel" class="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${promocionesActivasCliente().map((pr, pi) => `<option value="${pi}">${svgEsc(pr.nombre)} (${pr.descuentoPct}%)</option>`).join('')}</select>
+          <button type="button" onclick="aplicarDescuentoClienteDesdeSelect(${i})" class="rounded-lg bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-3">Aplicar</button>
+        </div>
+      </div>` : ''}
       <p class="text-xs text-amber-600 font-medium mt-3">El cobro con tarjeta se registra manualmente: aún no hay datáfono conectado (falta enlazar Stripe/Redsys con una cuenta de comercio real).</p>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Cobrar el pendiente (${pendiente.toFixed(2).replace('.', ',')}€)</label>
       <div class="grid grid-cols-3 gap-2">
@@ -4622,7 +4761,7 @@
       const mMatch = /^Mesa (\d+)$/i.exec(p.mesa || '');
       if (mMatch) {
         const idx = parseInt(mMatch[1], 10) - 1;
-        const otrosPendientes = acc.data.pedidos.some((o, oi) => oi !== i && o.mesa === p.mesa && o.estado !== 'Pagado');
+        const otrosPendientes = acc.data.pedidos.some((o, oi) => oi !== i && o.mesa === p.mesa && o.estado !== 'Pagado' && o.estado !== 'Anulado');
         if (!otrosPendientes && acc.data.mesaEstados[idx] !== undefined) acc.data.mesaEstados[idx] = 'Libre';
       }
     }
@@ -4811,7 +4950,10 @@
     const fecha = new Date(p.fechaPago || p.fecha);
     const logo = acc.data.cartaDigital && acc.data.cartaDigital.logo;
     const itemsHtml = (p.platos && p.platos.length)
-      ? p.platos.map(pl => `<div class="flex justify-between text-sm py-1"><span>${pl.cantidad}x ${svgEsc(pl.nombre)}</span><span>${(precioToNumero(pl.precio) * pl.cantidad).toFixed(2).replace('.', ',')}€</span></div>`).join('')
+      ? p.platos.map(pl => {
+          const r = precioLineaConPromo(pl.nombre, pl.precio, pl.cantidad);
+          return `<div class="flex justify-between text-sm py-1"><span>${pl.cantidad}x ${svgEsc(pl.nombre)}${r.promo ? ' <span class="text-accent text-xs">(' + svgEsc(r.promo) + ')</span>' : ''}</span><span>${r.total.toFixed(2).replace('.', ',')}€</span></div>`;
+        }).join('')
       : `<p class="text-sm">${svgEsc(p.items)}</p>`;
     const cobrosHtml = (p.cobros && p.cobros.length > 1)
       ? p.cobros.map(c => `<div class="flex justify-between text-xs text-slate-500 py-0.5"><span>${svgEsc(c.detalle || 'Cobro')}</span><span>${c.importe.toFixed(2).replace('.', ',')}€ · ${svgEsc(c.metodo)}</span></div>`).join('')
@@ -4824,6 +4966,7 @@
         <p class="text-xs text-slate-400">${svgEsc(p.mesa)}${p.ticketNumero ? ' · Ticket nº ' + p.ticketNumero : ''}</p>
       </div>
       <div class="mt-4 border-t border-b border-dashed border-slate-300 py-3">${itemsHtml}</div>
+      ${p.descuento ? `<div class="flex justify-between text-sm text-accent py-1"><span>Descuento ${svgEsc(p.descuento.nombre)} (${p.descuento.pct}%)</span><span>-${p.descuento.importe.toFixed(2).replace('.', ',')}€</span></div>` : ''}
       <div class="flex justify-between mt-3 text-base font-bold text-navy">
         <span>Total</span><span>${p.total.toFixed(2).replace('.', ',')}€</span>
       </div>
@@ -4952,7 +5095,7 @@
           </div>`;
         }).join('')
       : '<p class="text-sm text-slate-400 py-4 text-center">No tienes platos disponibles en el menú.</p>';
-    const total = disponibles.reduce((sum, m) => sum + precioToNumero(m.precio) * (ventaRapidaEnCurso.cantidades[m.idx] || 0), 0);
+    const total = totalConPromos(disponibles.map(m => ({ nombre: m.nombre, precio: m.precio, cantidad: ventaRapidaEnCurso.cantidades[m.idx] || 0 })));
     return `
       <div class="flex items-center gap-2">
         <button type="button" onclick="volverVentaRapidaPaso1()" class="text-slate-400 hover:text-navy transition" title="Atrás">
@@ -4980,7 +5123,7 @@
     if (!elegidos.length) return modalFormError('Elige al menos un plato.');
     const items = elegidos.map(m => ventaRapidaEnCurso.cantidades[m.idx] + 'x ' + m.nombre).join(', ');
     const platos = elegidos.map(m => ({ nombre: m.nombre, cantidad: ventaRapidaEnCurso.cantidades[m.idx], precio: m.precio, estado: 'servido' }));
-    const total = elegidos.reduce((sum, m) => sum + precioToNumero(m.precio) * ventaRapidaEnCurso.cantidades[m.idx], 0);
+    const total = totalConPromos(elegidos.map(m => ({ nombre: m.nombre, precio: m.precio, cantidad: ventaRapidaEnCurso.cantidades[m.idx] })));
     const mesa = ventaRapidaEnCurso.mesaNumero ? 'Mesa ' + ventaRapidaEnCurso.mesaNumero : 'Venta directa';
     const acc = getCurrentAccount();
     acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: null, total, estado: 'Servido', fecha: new Date().toISOString(), origen: 'tpv', creadoPor: identidadChatActual().nombre });
@@ -5003,6 +5146,138 @@
   }
   function precioToNumero(precio) {
     return parseFloat(String(precio).replace('€', '').replace(',', '.')) || 0;
+  }
+  // ---- Promociones (2x1 / descuento por artículo, descuento de cliente aplicado al cobrar) ----
+  function promoArticuloDe(nombrePlato) {
+    const acc = getCurrentAccount();
+    return (acc.data.promociones || []).find(pr => pr.activa && pr.tipo === 'articulo' && pr.platoNombre && pr.platoNombre.toLowerCase() === String(nombrePlato).toLowerCase()) || null;
+  }
+  // Calcula el precio de una línea (nombre, precio unitario, cantidad) aplicando su promoción de
+  // artículo si tiene una activa (2x1 o % de descuento). Devuelve el importe total de la línea y,
+  // si aplica, el nombre de la promoción para mostrarlo en el ticket.
+  function precioLineaConPromo(nombre, precioUnitario, cantidad) {
+    const unit = precioToNumero(precioUnitario);
+    const promo = promoArticuloDe(nombre);
+    if (!promo) return { total: unit * cantidad, promo: null };
+    if (promo.dosPorUno) {
+      const pares = Math.floor(cantidad / 2);
+      const impares = cantidad % 2;
+      return { total: (pares + impares) * unit, promo: promo.nombre };
+    }
+    if (promo.descuentoPct) {
+      return { total: unit * cantidad * (1 - promo.descuentoPct / 100), promo: promo.nombre };
+    }
+    return { total: unit * cantidad, promo: null };
+  }
+  // Suma el total de una lista de líneas {nombre, precio, cantidad} aplicando promociones de artículo.
+  function totalConPromos(lineas) {
+    return lineas.reduce((sum, l) => sum + precioLineaConPromo(l.nombre, l.precio, l.cantidad).total, 0);
+  }
+  function promocionesActivasCliente() {
+    const acc = getCurrentAccount();
+    return (acc.data.promociones || []).filter(pr => pr.activa && pr.tipo === 'cliente');
+  }
+  function abrirPromociones() {
+    const acc = getCurrentAccount();
+    const lista = acc.data.promociones || [];
+    const filas = lista.length
+      ? lista.map((pr, i) => `
+        <div class="flex items-center justify-between gap-2 py-2.5 border-b border-slate-100 last:border-0">
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-navy truncate">${svgEsc(pr.nombre)}</p>
+            <p class="text-xs text-slate-400">${pr.tipo === 'cliente' ? 'Descuento de cliente · ' + pr.descuentoPct + '%' : (pr.dosPorUno ? '2x1 · ' + svgEsc(pr.platoNombre) : 'Descuento · ' + pr.descuentoPct + '% · ' + svgEsc(pr.platoNombre))}</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button type="button" onclick="cicloEstadoPromo(${i})" class="text-xs font-semibold rounded-full px-2.5 py-1 ${pr.activa ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'}">${pr.activa ? 'Activa' : 'Pausada'}</button>
+            <button type="button" onclick="eliminarPromo(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button>
+          </div>
+        </div>`).join('')
+      : '<p class="text-sm text-slate-400 text-center py-6">Todavía no has creado ninguna promoción.</p>';
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Promociones y descuentos</h3>
+      <p class="mt-1 text-sm text-slate-500">Los "2x1" y descuentos por artículo se aplican solos al hacer el pedido. Los descuentos de cliente (ej. "VIP 10%") se eligen al cobrar.</p>
+      <div class="mt-3 max-h-64 overflow-y-auto">${filas}</div>
+      <button type="button" onclick="abrirNuevaPromo()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">+ Nueva promoción</button>
+      <button type="button" onclick="closeModal()" class="mt-2.5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>
+    `;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function abrirNuevaPromo() {
+    const acc = getCurrentAccount();
+    const opcionesPlatos = acc.data.menu.map(m => `<option value="${escAttr(m.nombre)}">${svgEsc(m.nombre)}</option>`).join('');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Nueva promoción</h3>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Nombre</label>
+      <input id="promoNombre" type="text" placeholder="Ej. VIP, 2x1 cervezas..." class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Tipo</label>
+      <select id="promoTipo" onchange="actualizarCamposPromo()" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+        <option value="articulo">Promoción de artículo (2x1 o % de descuento en un plato)</option>
+        <option value="cliente">Descuento de cliente (% sobre el total, se elige al cobrar)</option>
+      </select>
+      <div id="promoCamposArticulo" class="mt-2">
+        <label class="block text-sm font-medium text-navy mb-1.5 mt-2">Plato</label>
+        <select id="promoPlato" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${opcionesPlatos}</select>
+        <label class="block text-sm font-medium text-navy mb-1.5 mt-3">
+          <input type="checkbox" id="promoDosPorUno" onchange="document.getElementById('promoPctWrap').classList.toggle('hidden', this.checked)" style="width:16px;height:16px;"> Es un 2x1
+        </label>
+        <div id="promoPctWrap">
+          <label class="block text-sm font-medium text-navy mb-1.5 mt-2">% de descuento</label>
+          <input id="promoPct" type="number" min="1" max="99" placeholder="20" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+        </div>
+      </div>
+      <div id="promoCamposCliente" class="mt-2 hidden">
+        <label class="block text-sm font-medium text-navy mb-1.5 mt-2">% de descuento</label>
+        <input id="promoPctCliente" type="number" min="1" max="99" placeholder="10" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      </div>
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" onclick="submitNuevaPromo()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar promoción</button>
+      <button type="button" onclick="abrirPromociones()" class="mt-2.5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cancelar</button>
+    `;
+  }
+  function actualizarCamposPromo() {
+    const esCliente = document.getElementById('promoTipo').value === 'cliente';
+    document.getElementById('promoCamposArticulo').classList.toggle('hidden', esCliente);
+    document.getElementById('promoCamposCliente').classList.toggle('hidden', !esCliente);
+  }
+  function submitNuevaPromo() {
+    const nombre = document.getElementById('promoNombre').value.trim();
+    const tipo = document.getElementById('promoTipo').value;
+    if (!nombre) return modalFormError('Escribe un nombre para la promoción.');
+    const acc = getCurrentAccount();
+    let promo;
+    if (tipo === 'cliente') {
+      const pct = parseInt(document.getElementById('promoPctCliente').value, 10);
+      if (!pct || pct < 1 || pct > 99) return modalFormError('Escribe un % de descuento válido (1-99).');
+      promo = { id: 'promo-' + Date.now(), nombre, tipo: 'cliente', descuentoPct: pct, dosPorUno: false, platoNombre: '', activa: true };
+    } else {
+      const plato = document.getElementById('promoPlato').value;
+      if (!plato) return modalFormError('Tu menú está vacío: añade platos antes de crear una promoción de artículo.');
+      const dosPorUno = document.getElementById('promoDosPorUno').checked;
+      let pct = null;
+      if (!dosPorUno) {
+        pct = parseInt(document.getElementById('promoPct').value, 10);
+        if (!pct || pct < 1 || pct > 99) return modalFormError('Escribe un % de descuento válido (1-99), o marca "Es un 2x1".');
+      }
+      promo = { id: 'promo-' + Date.now(), nombre, tipo: 'articulo', descuentoPct: pct, dosPorUno, platoNombre: plato, activa: true };
+    }
+    acc.data.promociones.push(promo);
+    saveCurrentAccountData(acc.data);
+    showToast('Promoción creada');
+    abrirPromociones();
+  }
+  function cicloEstadoPromo(i) {
+    const acc = getCurrentAccount();
+    acc.data.promociones[i].activa = !acc.data.promociones[i].activa;
+    saveCurrentAccountData(acc.data);
+    abrirPromociones();
+  }
+  function eliminarPromo(i) {
+    const acc = getCurrentAccount();
+    if (!confirm('¿Eliminar la promoción "' + acc.data.promociones[i].nombre + '"?')) return;
+    acc.data.promociones.splice(i, 1);
+    saveCurrentAccountData(acc.data);
+    abrirPromociones();
   }
   function addPedidoFormHtml() {
     const acc = getCurrentAccount();
@@ -5060,7 +5335,7 @@
           </div>`;
         }).join('')
       : '<p class="text-sm text-slate-400 py-4 text-center">No tienes platos disponibles en el menú.</p>';
-    const total = disponibles.reduce((sum, m) => sum + precioToNumero(m.precio) * (pedidoEnCurso.cantidades[m.idx] || 0), 0);
+    const total = totalConPromos(disponibles.map(m => ({ nombre: m.nombre, precio: m.precio, cantidad: pedidoEnCurso.cantidades[m.idx] || 0 })));
     return `
       <div class="flex items-center gap-2">
         <button type="button" onclick="volverPedidoPaso1()" class="text-slate-400 hover:text-navy transition" title="Atrás">
@@ -5088,7 +5363,7 @@
     if (!elegidos.length) return modalFormError('Elige al menos un plato.');
     const items = elegidos.map(m => pedidoEnCurso.cantidades[m.idx] + 'x ' + m.nombre).join(', ');
     const platos = elegidos.map(m => ({ nombre: m.nombre, cantidad: pedidoEnCurso.cantidades[m.idx], precio: m.precio, estado: 'cocina' }));
-    const total = elegidos.reduce((sum, m) => sum + precioToNumero(m.precio) * pedidoEnCurso.cantidades[m.idx], 0);
+    const total = totalConPromos(elegidos.map(m => ({ nombre: m.nombre, precio: m.precio, cantidad: pedidoEnCurso.cantidades[m.idx] })));
     const mesa = 'Mesa ' + pedidoEnCurso.numero;
     const acc = getCurrentAccount();
     acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: pedidoEnCurso.personas, total, estado: 'En cocina', fecha: new Date().toISOString(), creadoPor: identidadChatActual().nombre });
@@ -5140,7 +5415,7 @@
           <span class="text-xs text-slate-400 shrink-0">${svgEsc(m.precio)} · + añadir</span>
         </button>`).join('')
       : '';
-    const total = pedidoEditando.platos.reduce((sum, pl) => sum + precioToNumero(pl.precio) * (pl.cantidad || 1), 0);
+    const total = totalConPromos(pedidoEditando.platos.map(pl => ({ nombre: pl.nombre, precio: pl.precio, cantidad: pl.cantidad || 1 })));
     return `
       <h3 class="text-xl font-bold text-navy">Editar pedido · ${svgEsc(p.mesa)}</h3>
       <p class="mt-1 text-sm text-slate-500">Corrige los platos o las cantidades de este pedido.</p>
@@ -5155,7 +5430,7 @@
       </div>
       <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
       <button type="button" onclick="submitEditarPedido()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar cambios</button>
-      <button type="button" onclick="eliminarPedidoDesdeEdicion()" class="mt-2.5 w-full rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-sm font-semibold px-5 py-2.5">🗑️ Eliminar pedido</button>
+      <button type="button" onclick="anularPedidoDesdeEdicion()" class="mt-2.5 w-full rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-sm font-semibold px-5 py-2.5">✕ Anular pedido</button>
       <button type="button" onclick="closeModal()" class="mt-2.5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cancelar</button>
     `;
   }
@@ -5181,14 +5456,14 @@
   function submitEditarPedido() {
     const personas = parseInt(document.getElementById('pedEditPersonas').value, 10);
     if (!personas || personas < 1) return modalFormError('Escribe un número de personas válido.');
-    if (!pedidoEditando.platos.length) return modalFormError('El pedido necesita al menos un plato. Si quieres borrarlo del todo, usa "Eliminar pedido".');
+    if (!pedidoEditando.platos.length) return modalFormError('El pedido necesita al menos un plato. Si quieres borrarlo del todo, usa "Anular pedido".');
     const acc = getCurrentAccount();
     const p = acc.data.pedidos[pedidoEditando.idx];
     if (!p) return closeModal();
     p.personas = personas;
     p.platos = pedidoEditando.platos;
     p.items = p.platos.map(pl => (pl.cantidad || 1) + 'x ' + pl.nombre).join(', ');
-    p.total = p.platos.reduce((sum, pl) => sum + precioToNumero(pl.precio) * (pl.cantidad || 1), 0);
+    p.total = totalConPromos(p.platos.map(pl => ({ nombre: pl.nombre, precio: pl.precio, cantidad: pl.cantidad || 1 })));
     p.estado = estadoPedidoDesdePlatos(p);
     saveCurrentAccountData(acc.data);
     pedidoEditando = null;
@@ -5199,13 +5474,92 @@
     renderTPV();
     showToast('Pedido actualizado');
   }
-  function eliminarPedidoDesdeEdicion() {
+  function anularPedidoDesdeEdicion() {
     if (!pedidoEditando) return;
     const idx = pedidoEditando.idx;
-    if (!confirm('¿Eliminar este pedido por completo? Esta acción no se puede deshacer.')) return;
     pedidoEditando = null;
+    abrirAnularPedido(idx);
+  }
+  // ---- Anulaciones / devoluciones, con auditoría (quién, cuándo, por qué) ----
+  function abrirAnularPedido(i) {
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[i];
+    if (!p) return;
+    const esDevolucion = p.estado === 'Pagado';
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">${esDevolucion ? 'Anular y devolver' : 'Anular pedido'} · ${svgEsc(p.mesa)}</h3>
+      <p class="mt-1.5 text-sm text-slate-500">${svgEsc(p.items)}</p>
+      <p class="mt-1 text-sm font-semibold text-navy">${p.total.toFixed(2).replace('.', ',')}€</p>
+      ${esDevolucion ? `<p class="text-xs text-amber-600 font-medium mt-3">Se registrará como devuelto. No hay pasarela de pago real conectada, así que el dinero no se mueve solo: gestiona el reembolso físico o con tu banco aparte.</p>` : ''}
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Motivo (obligatorio)</label>
+      <textarea id="anulMotivo" rows="3" placeholder="Ej. El cliente ha rechazado el plato, error al tomar la comanda..." class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></textarea>
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" onclick="confirmarAnularPedido(${i})" class="mt-4 w-full rounded-full bg-rose-500 hover:bg-rose-600 transition text-white text-sm font-semibold px-5 py-2.5">${esDevolucion ? 'Confirmar devolución' : 'Confirmar anulación'}</button>
+      <button type="button" onclick="closeModal()" class="mt-2.5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cancelar</button>
+    `;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function confirmarAnularPedido(i) {
+    const motivo = document.getElementById('anulMotivo').value.trim();
+    if (!motivo) return modalFormError('Escribe el motivo de la anulación.');
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[i];
+    if (!p) return closeModal();
+    const esDevolucion = p.estado === 'Pagado';
+    acc.data.anulaciones = acc.data.anulaciones || [];
+    acc.data.anulaciones.push({
+      id: 'anul-' + Date.now(),
+      pedidoId: p.id,
+      mesa: p.mesa,
+      tipo: esDevolucion ? 'devolucion' : 'anulacion',
+      importe: p.total,
+      motivo,
+      quien: identidadChatActual().nombre,
+      fecha: new Date().toISOString(),
+    });
+    p.anulado = true;
+    p.estado = 'Anulado';
+    p.pagado = 0;
+    const mMatch = /^Mesa (\d+)$/i.exec(p.mesa || '');
+    if (mMatch) {
+      const idx = parseInt(mMatch[1], 10) - 1;
+      const otrosPendientes = acc.data.pedidos.some((o, oi) => oi !== i && o.mesa === p.mesa && o.estado !== 'Pagado' && o.estado !== 'Anulado');
+      if (!otrosPendientes && acc.data.mesaEstados[idx] !== undefined) acc.data.mesaEstados[idx] = 'Libre';
+    }
+    saveCurrentAccountData(acc.data);
     closeModal();
-    eliminarPedido(idx);
+    renderPedidos();
+    renderDashboardStats();
+    renderMesas();
+    renderTPV();
+    showToast(esDevolucion ? 'Pedido anulado y marcado como devuelto' : 'Pedido anulado');
+  }
+  function anulacionesEnRango(acc) {
+    return (acc.data.anulaciones || []).slice().sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  }
+  function abrirHistorialAnulaciones() {
+    const acc = getCurrentAccount();
+    const lista = anulacionesEnRango(acc);
+    const filas = lista.length
+      ? lista.slice(0, 50).map(a => `
+        <div class="py-2.5 border-b border-slate-100 last:border-0">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-sm font-semibold text-navy">${svgEsc(a.mesa)} <span class="text-xs font-normal text-slate-400">· ${a.tipo === 'devolucion' ? 'Devolución' : 'Anulación'}</span></p>
+            <p class="text-sm font-semibold text-rose-500">-${a.importe.toFixed(2).replace('.', ',')}€</p>
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5">${svgEsc(a.motivo)}</p>
+          <p class="text-[11px] text-slate-400 mt-0.5">${svgEsc(a.quien || 'Encargado')} · ${new Date(a.fecha).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+        </div>`).join('')
+      : '<p class="text-sm text-slate-400 text-center py-6">Todavía no se ha anulado ningún pedido.</p>';
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Anulaciones y devoluciones</h3>
+      <p class="mt-1 text-sm text-slate-500">Historial con quién, cuándo y por qué.</p>
+      <div class="mt-3 max-h-80 overflow-y-auto">${filas}</div>
+      <button type="button" onclick="closeModal()" class="mt-4 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>
+    `;
+    document.getElementById('modalOverlay').classList.add('open');
   }
 
   // ---- Menú ----
@@ -6344,7 +6698,7 @@
     const wl = document.getElementById('dashWelcome');
     if (wl) wl.textContent = '¡Bienvenido' + (acc.restaurantName ? ', ' + acc.restaurantName : '') + '!';
     renderDashRangeMenu();
-    const pedidos = pedidosEnRango(acc.data.pedidos);
+    const pedidos = pedidosEnRango(acc.data.pedidos.filter(p => p.estado !== 'Anulado'));
     const ingresos = pedidos.reduce((sum, p) => sum + (p.total || 0), 0);
     const comensales = pedidos.reduce((sum, p) => sum + (p.personas || 0), 0);
     const ticket = pedidos.length ? ingresos / pedidos.length : 0;
@@ -6608,6 +6962,52 @@
     if (!arr.length || arr.every(a => a.value === 0)) return svgEmpty('Aún no hay ingresos por mesa');
     return svgHBar(arr, { color: '#7C3AED', fmt: fmtEur0 });
   }
+  function chartCamareros(pedidos) {
+    const map = new Map();
+    pedidos.forEach(p => {
+      const nombre = p.creadoPor || (p.origen === 'qr' ? 'Pedidos QR (cliente)' : 'Sin asignar');
+      map.set(nombre, (map.get(nombre) || 0) + (p.total || 0));
+    });
+    const arr = Array.from(map.entries()).map(([nombre, ing]) => ({ label: nombre, value: ing })).sort((a, b) => b.value - a.value).slice(0, 8);
+    if (!arr.length || arr.every(a => a.value === 0)) return svgEmpty('Aún no hay ventas registradas');
+    return svgHBar(arr, { color: '#F59E0B', fmt: fmtEur0 });
+  }
+  function renderRentabilidad(pedidos) {
+    const el = document.getElementById('dashRentabilidad');
+    if (!el) return;
+    const acc = getCurrentAccount();
+    const costosPorNombre = {};
+    (acc.data.menu || []).forEach(m => { if (m.costo) costosPorNombre[m.nombre.toLowerCase()] = precioToNumero(m.costo); });
+    const map = new Map();
+    pedidos.forEach(p => (p.platos || []).forEach(pl => {
+      const o = map.get(pl.nombre) || { nombre: pl.nombre, unidades: 0, ingresos: 0 };
+      o.unidades += pl.cantidad || 0;
+      o.ingresos += precioLineaConPromo(pl.nombre, pl.precio, pl.cantidad).total;
+      map.set(pl.nombre, o);
+    }));
+    const filas = Array.from(map.values()).map(o => {
+      const costoUnit = costosPorNombre[o.nombre.toLowerCase()];
+      const tieneCosto = typeof costoUnit === 'number';
+      const margen = tieneCosto ? o.ingresos - costoUnit * o.unidades : null;
+      const margenPct = (tieneCosto && o.ingresos > 0) ? (margen / o.ingresos * 100) : null;
+      return { nombre: o.nombre, unidades: o.unidades, ingresos: o.ingresos, margen, margenPct, tieneCosto };
+    }).sort((a, b) => b.ingresos - a.ingresos).slice(0, 10);
+    if (!filas.length) { el.innerHTML = svgEmpty('Aún no hay platos vendidos'); return; }
+    el.innerHTML = `
+      <div class="overflow-x-auto">
+      <table class="w-full text-xs">
+        <thead><tr class="text-slate-400 text-left"><th class="font-medium pb-2">Plato</th><th class="font-medium pb-2 text-right">Uds.</th><th class="font-medium pb-2 text-right">Ingresos</th><th class="font-medium pb-2 text-right">Margen</th></tr></thead>
+        <tbody>${filas.map(f => `<tr class="border-t border-slate-100">
+          <td class="py-2 pr-2 text-navy font-medium truncate max-w-[140px]">${svgEsc(f.nombre)}</td>
+          <td class="py-2 text-right text-slate-500">${f.unidades}</td>
+          <td class="py-2 text-right text-navy">${f.ingresos.toFixed(2).replace('.', ',')}€</td>
+          <td class="py-2 text-right ${f.tieneCosto ? (f.margen >= 0 ? 'text-emerald-600' : 'text-rose-500') : 'text-slate-300'} font-medium">${f.tieneCosto ? f.margen.toFixed(2).replace('.', ',') + '€ (' + Math.round(f.margenPct) + '%)' : 'Sin coste'}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+      </div>
+      ${filas.some(f => !f.tieneCosto) ? '<p class="text-[11px] text-slate-400 mt-2">Añade el "Coste del plato" al editar cada plato en el Menú para ver su margen.</p>' : ''}
+    `;
+  }
   function chartCanal(pedidos) {
     if (!pedidos.length) return svgEmpty('Aún no hay pedidos registrados');
     const g = { sala: 0, tpv: 0, qr: 0 };
@@ -6753,6 +7153,8 @@
     mountChart('dashChartTicket', chartTicketDia(pedidos, 'dashTicketSvg'));
     mountChart('dashChartComensales', chartComensalesDia(pedidos, 'dashComensalesSvg'));
     mountChart('dashChartMesas', chartMesas(pedidos));
+    mountChart('dashChartCamareros', chartCamareros(pedidos));
+    renderRentabilidad(pedidos);
   }
 
   // ---- Búsqueda global del topbar ----
