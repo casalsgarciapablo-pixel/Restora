@@ -5447,38 +5447,62 @@
     return svgDonut(segs);
   }
 
+  const DASH_DIAS_CORTOS = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+  // Fecha de referencia para "esta semana / este mes / este año": el pedido más reciente, o hoy si no hay
+  function fechaReferencia(pedidos) {
+    let ref = null;
+    pedidos.forEach(p => { const d = new Date(p.fecha); if (!isNaN(d) && (!ref || d > ref)) ref = d; });
+    return ref || new Date();
+  }
   function ingresosPorPeriodo(pedidos, periodo) {
-    const map = new Map();
     if (periodo === 'dia') {
-      pedidosPorDia(pedidos).forEach(d => map.set(d.date.getTime(), { date: d.date, value: d.ingresos }));
-    } else if (periodo === 'semana') {
-      pedidos.forEach(p => {
-        let d = new Date(p.fecha); if (isNaN(d)) d = new Date();
-        const monday = new Date(d); const wd = (monday.getDay() + 6) % 7;
-        monday.setDate(monday.getDate() - wd); monday.setHours(0, 0, 0, 0);
-        const key = monday.getTime();
-        if (!map.has(key)) map.set(key, { date: monday, value: 0 });
-        map.get(key).value += p.total || 0;
-      });
-    } else if (periodo === 'mes') {
-      pedidos.forEach(p => {
-        let d = new Date(p.fecha); if (isNaN(d)) d = new Date();
-        const key = d.getFullYear() * 12 + d.getMonth();
-        if (!map.has(key)) map.set(key, { date: new Date(d.getFullYear(), d.getMonth(), 1), value: 0 });
-        map.get(key).value += p.total || 0;
-      });
-    } else {
-      pedidos.forEach(p => {
-        let d = new Date(p.fecha); if (isNaN(d)) d = new Date();
-        const key = d.getFullYear();
-        if (!map.has(key)) map.set(key, { date: new Date(key, 0, 1), value: 0 });
-        map.get(key).value += p.total || 0;
-      });
+      return pedidosPorDia(pedidos).slice(-14).map(d => ({ label: fmtDia(d.date), value: d.ingresos }));
     }
-    const arr = Array.from(map.values()).sort((a, b) => a.date - b.date);
-    const sliced = periodo === 'dia' ? arr.slice(-14) : periodo === 'semana' ? arr.slice(-12) : periodo === 'mes' ? arr.slice(-12) : arr.slice(-8);
-    const fmtLabel = periodo === 'dia' || periodo === 'semana' ? fmtDia : periodo === 'mes' ? (d => DASH_MESES[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2)) : (d => String(d.getFullYear()));
-    return sliced.map(o => ({ label: fmtLabel(o.date), value: o.value }));
+    const ref = fechaReferencia(pedidos);
+    if (periodo === 'semana') {
+      // Los 7 días de la semana (lunes a domingo) que contiene la fecha de referencia
+      const monday = new Date(ref); const wd = (monday.getDay() + 6) % 7;
+      monday.setDate(monday.getDate() - wd); monday.setHours(0, 0, 0, 0);
+      const dias = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday); d.setDate(monday.getDate() + i);
+        dias.push({ ini: d.getTime(), fin: d.getTime() + 86400000, label: DASH_DIAS_CORTOS[i] + ' ' + d.getDate(), value: 0 });
+      }
+      pedidos.forEach(p => {
+        const t = new Date(p.fecha).getTime();
+        const b = dias.find(x => t >= x.ini && t < x.fin);
+        if (b) b.value += p.total || 0;
+      });
+      return dias.map(x => ({ label: x.label, value: x.value }));
+    }
+    if (periodo === 'mes') {
+      // Las semanas del mes de referencia (1-7, 8-14, 15-21, 22-28, 29-fin)
+      const y = ref.getFullYear(), m = ref.getMonth();
+      const diasEnMes = new Date(y, m + 1, 0).getDate();
+      const semanas = [];
+      for (let inicio = 1; inicio <= diasEnMes; inicio += 7) {
+        const fin = Math.min(inicio + 6, diasEnMes);
+        semanas.push({ ini: new Date(y, m, inicio).getTime(), fin: new Date(y, m, fin).getTime() + 86400000, label: 'Sem ' + semanas.length + 1, value: 0 });
+      }
+      semanas.forEach((s, i) => { s.label = 'Sem ' + (i + 1); });
+      pedidos.forEach(p => {
+        const d = new Date(p.fecha);
+        if (d.getFullYear() !== y || d.getMonth() !== m) return;
+        const t = d.getTime();
+        const b = semanas.find(x => t >= x.ini && t < x.fin);
+        if (b) b.value += p.total || 0;
+      });
+      return semanas.map(x => ({ label: x.label, value: x.value }));
+    }
+    // Año: los 12 meses del año de referencia
+    const y = ref.getFullYear();
+    const meses = DASH_MESES.map((nombre, i) => ({ mes: i, label: nombre, value: 0 }));
+    pedidos.forEach(p => {
+      const d = new Date(p.fecha);
+      if (d.getFullYear() !== y) return;
+      meses[d.getMonth()].value += p.total || 0;
+    });
+    return meses.map(x => ({ label: x.label, value: x.value }));
   }
 
   function mountChart(containerId, result) {
@@ -5520,8 +5544,8 @@
   }
 
   const DASH_REV_SUB = {
-    dia: 'Evolución diaria de tus ingresos', semana: 'Evolución semanal de tus ingresos',
-    mes: 'Evolución mensual de tus ingresos', anio: 'Evolución anual de tus ingresos',
+    dia: 'Evolución diaria de tus ingresos', semana: 'Ingresos de cada día de la semana',
+    mes: 'Ingresos de cada semana del mes', anio: 'Ingresos de cada mes del año',
   };
   let dashRevPeriodo = 'dia';
   function setDashRevPeriodo(p) {
