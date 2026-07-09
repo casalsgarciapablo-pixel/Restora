@@ -205,14 +205,16 @@
   .kds-plato-mid { display: flex; align-items: baseline; gap: 7px; margin-top: 6px; }
   .kds-cant { font-size: 15px; font-weight: 800; color: #16161D; }
   .kds-nombre { font-size: 13.5px; font-weight: 600; color: #26262E; line-height: 1.25; }
-  .kds-plato-actions { margin-top: 10px; }
-  .kds-btn { width: 100%; border: none; border-radius: 9px; font-size: 12.5px; font-weight: 700; padding: 9px; cursor: pointer; transition: filter .15s ease, background-color .15s ease; }
+  .kds-plato-actions { margin-top: 10px; display: flex; gap: 6px; }
+  .kds-btn { flex: 1 1 auto; width: auto; border: none; border-radius: 9px; font-size: 12.5px; font-weight: 700; padding: 9px; cursor: pointer; transition: filter .15s ease, background-color .15s ease; }
   .kds-btn-cocina { background: #F59E0B; color: #fff; }
   .kds-btn-cocina:hover { filter: brightness(1.05); }
   .kds-btn-listo { background: #4F3FFF; color: #fff; }
   .kds-btn-listo:hover { filter: brightness(1.06); }
   .kds-btn-revertir { background: #F1F1F5; color: #55555F; }
   .kds-btn-revertir:hover { background: #E7E7EE; }
+  .kds-btn-editar { flex: 0 0 34px; border: none; border-radius: 9px; font-size: 14px; cursor: pointer; background: #F1F1F5; color: #55555F; transition: background-color .15s ease; }
+  .kds-btn-editar:hover { background: #E7E7EE; }
   /* Asistente IA rápido (botón flotante + panel lateral) */
   .ia-quick-fab { position: fixed; bottom: 22px; right: 22px; width: 56px; height: 56px; border-radius: 999px; border: none; cursor: pointer; z-index: 90; color: #fff; background: linear-gradient(135deg, #6E60FF, #4F3FFF); box-shadow: 0 10px 26px -6px rgba(79,63,255,0.6), 0 3px 8px rgba(11,11,20,0.2); display: flex; align-items: center; justify-content: center; transition: transform .18s ease, box-shadow .18s ease; }
   .ia-quick-fab:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 16px 34px -8px rgba(79,63,255,0.7), 0 4px 10px rgba(11,11,20,0.22); }
@@ -4348,7 +4350,7 @@
         <span class="kds-cant">${cant}×</span>
         <span class="kds-nombre">${svgEsc(pl.nombre)}</span>
       </div>
-      <div class="kds-plato-actions">${accion}</div>
+      <div class="kds-plato-actions">${accion}<button onclick="abrirEditarPedido(${f.pedidoIdx})" class="kds-btn-editar" title="Editar pedido">✏️</button></div>
     </div>`;
   }
   const PEDIDOS_ETAPAS = [
@@ -4856,6 +4858,111 @@
     closeModal();
     showToast('Pedido enviado a cocina');
     reproducirSonido('cocina');
+  }
+  let pedidoEditando = null; // { idx, personas, platos: [{nombre, cantidad, precio, estado}] }
+  function abrirEditarPedido(idx) {
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[idx];
+    if (!p) return;
+    pedidoEditando = { idx, personas: p.personas || 1, platos: (p.platos || []).map(pl => Object.assign({}, pl)) };
+    document.getElementById('modalCard').classList.add('modal-wide');
+    document.getElementById('modalBody').innerHTML = editarPedidoFormHtml();
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function editarPedidoFormHtml() {
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[pedidoEditando.idx];
+    const disponibles = platosDisponiblesPedido();
+    const filasActuales = pedidoEditando.platos.length
+      ? pedidoEditando.platos.map((pl, i) => `
+        <div class="flex items-center justify-between gap-2 py-2 border-b border-slate-100 last:border-0">
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-navy truncate">${svgEsc(pl.nombre)}</p>
+            <p class="text-xs text-slate-400">${svgEsc(pl.precio || '')}${pl.estado ? ' · ' + svgEsc(pl.estado) : ''}</p>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" onclick="cambiarCantidadPedidoEditando(${i}, -1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">−</button>
+            <span class="text-sm font-semibold text-navy w-5 text-center">${pl.cantidad || 1}</span>
+            <button type="button" onclick="cambiarCantidadPedidoEditando(${i}, 1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">+</button>
+            <button type="button" onclick="quitarPlatoPedidoEditando(${i})" class="text-slate-300 hover:text-rose-500 transition ml-1" title="Quitar">✕</button>
+          </div>
+        </div>`).join('')
+      : '<p class="text-sm text-slate-400 py-3 text-center">Este pedido se ha quedado sin platos. Añade alguno abajo o elimina el pedido.</p>';
+    const nombresActuales = pedidoEditando.platos.map(pl => (pl.nombre || '').toLowerCase());
+    const paraAnadir = disponibles.filter(m => !nombresActuales.includes(m.nombre.toLowerCase()));
+    const filasAnadir = paraAnadir.length
+      ? paraAnadir.map(m => `
+        <button type="button" onclick="anadirPlatoPedidoEditando(${m.idx})" class="flex items-center justify-between gap-2 w-full text-left py-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition rounded-lg px-1.5 -mx-1.5">
+          <span class="text-sm text-navy truncate">${svgEsc(m.nombre)}</span>
+          <span class="text-xs text-slate-400 shrink-0">${svgEsc(m.precio)} · + añadir</span>
+        </button>`).join('')
+      : '';
+    const total = pedidoEditando.platos.reduce((sum, pl) => sum + precioToNumero(pl.precio) * (pl.cantidad || 1), 0);
+    return `
+      <h3 class="text-xl font-bold text-navy">Editar pedido · ${svgEsc(p.mesa)}</h3>
+      <p class="mt-1 text-sm text-slate-500">Corrige los platos o las cantidades de este pedido.</p>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Personas</label>
+      <input id="pedEditPersonas" type="number" min="1" value="${pedidoEditando.personas}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Platos del pedido</label>
+      <div class="border border-slate-200 rounded-lg px-3 max-h-52 overflow-y-auto">${filasActuales}</div>
+      ${filasAnadir ? `<label class="block text-sm font-medium text-navy mb-1.5 mt-4">Añadir otro plato</label><div class="border border-slate-200 rounded-lg px-3 max-h-40 overflow-y-auto">${filasAnadir}</div>` : ''}
+      <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
+        <p class="text-sm font-semibold text-navy">Total</p>
+        <p class="text-lg font-bold text-navy">${total.toFixed(2).replace('.', ',')}€</p>
+      </div>
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" onclick="submitEditarPedido()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar cambios</button>
+      <button type="button" onclick="eliminarPedidoDesdeEdicion()" class="mt-2.5 w-full rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-sm font-semibold px-5 py-2.5">🗑️ Eliminar pedido</button>
+      <button type="button" onclick="closeModal()" class="mt-2.5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cancelar</button>
+    `;
+  }
+  function cambiarCantidadPedidoEditando(i, delta) {
+    const pl = pedidoEditando.platos[i];
+    if (!pl) return;
+    const nueva = (pl.cantidad || 1) + delta;
+    if (nueva < 1) pedidoEditando.platos.splice(i, 1);
+    else pl.cantidad = nueva;
+    document.getElementById('modalBody').innerHTML = editarPedidoFormHtml();
+  }
+  function quitarPlatoPedidoEditando(i) {
+    pedidoEditando.platos.splice(i, 1);
+    document.getElementById('modalBody').innerHTML = editarPedidoFormHtml();
+  }
+  function anadirPlatoPedidoEditando(menuIdx) {
+    const acc = getCurrentAccount();
+    const m = acc.data.menu[menuIdx];
+    if (!m) return;
+    pedidoEditando.platos.push({ nombre: m.nombre, cantidad: 1, precio: m.precio, estado: 'cocina' });
+    document.getElementById('modalBody').innerHTML = editarPedidoFormHtml();
+  }
+  function submitEditarPedido() {
+    const personas = parseInt(document.getElementById('pedEditPersonas').value, 10);
+    if (!personas || personas < 1) return modalFormError('Escribe un número de personas válido.');
+    if (!pedidoEditando.platos.length) return modalFormError('El pedido necesita al menos un plato. Si quieres borrarlo del todo, usa "Eliminar pedido".');
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[pedidoEditando.idx];
+    if (!p) return closeModal();
+    p.personas = personas;
+    p.platos = pedidoEditando.platos;
+    p.items = p.platos.map(pl => (pl.cantidad || 1) + 'x ' + pl.nombre).join(', ');
+    p.total = p.platos.reduce((sum, pl) => sum + precioToNumero(pl.precio) * (pl.cantidad || 1), 0);
+    p.estado = estadoPedidoDesdePlatos(p);
+    saveCurrentAccountData(acc.data);
+    pedidoEditando = null;
+    closeModal();
+    renderPedidos();
+    renderDashboardStats();
+    renderMesas();
+    renderTPV();
+    showToast('Pedido actualizado');
+  }
+  function eliminarPedidoDesdeEdicion() {
+    if (!pedidoEditando) return;
+    const idx = pedidoEditando.idx;
+    if (!confirm('¿Eliminar este pedido por completo? Esta acción no se puede deshacer.')) return;
+    pedidoEditando = null;
+    closeModal();
+    eliminarPedido(idx);
   }
 
   // ---- Menú ----
