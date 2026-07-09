@@ -543,6 +543,12 @@
     #iaChat { max-height: 42vh !important; }
     #iaInput { font-size: 16px !important; }
 
+    /* Pedidos (tablero de cocina): pestañas en fila deslizable y tarjetas más amplias */
+    #pedidosTabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; margin-left: -2px; padding-left: 2px; }
+    #pedidosTabs::-webkit-scrollbar { display: none; }
+    .pedidos-tab { flex-shrink: 0; padding: 8px 12px; font-size: 12.5px; }
+    .kds-hora { white-space: normal; text-align: right; }
+
     /* Modals */
     #modalCard { padding: 20px !important; max-height: 88vh; overflow-y: auto; }
     .modal-overlay { padding: 16px 10px !important; }
@@ -560,6 +566,8 @@
     .platos-grid { grid-template-columns: 1fr !important; }
     #sec-restaurante .grid-cols-2, #sec-config .grid-cols-2 { grid-template-columns: 1fr !important; gap: 12px !important; }
     #modalBody .grid-cols-2, #publicReservaBody .grid-cols-2 { grid-template-columns: 1fr !important; }
+    /* Tablero de cocina: una sola columna de tarjetas en móvil para que se lean y se toquen bien */
+    .kds-cards { grid-template-columns: 1fr !important; }
   }
 </style>
 <div id="landingRoot" class="font-sans text-navy antialiased">
