@@ -241,6 +241,21 @@
   .ia-quick-msg-user { align-self: flex-end; max-width: 85%; background: #4F3FFF; color: #fff; border-radius: 16px 16px 4px 16px; padding: 9px 13px; font-size: 14px; white-space: pre-wrap; }
   .ia-quick-msg-ia { align-self: flex-start; max-width: 90%; background: #F5F5F8; color: #26262E; border-radius: 16px 16px 16px 4px; padding: 9px 13px; font-size: 14px; white-space: pre-wrap; line-height: 1.5; }
   .ia-quick-welcome { text-align: center; color: #8B8B96; font-size: 13px; padding: 18px 8px 6px; }
+  /* Menú por secciones (panel del SaaS) */
+  .menu-sec { border: 1px solid #E9E9EF; border-radius: 16px; background: #fff; overflow: hidden; box-shadow: 0 1px 2px rgba(22,22,29,0.04); }
+  .menu-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; background: #FAFAFC; border-bottom: 1px solid #EFEFF4; }
+  .menu-sec-title { font-size: 14px; font-weight: 700; color: #16161D; letter-spacing: -0.01em; }
+  .menu-sec-count { font-size: 11.5px; font-weight: 700; color: #55555F; background: rgba(22,22,29,0.06); border-radius: 999px; min-width: 20px; text-align: center; padding: 1px 7px; }
+  .menu-sec-actions { display: flex; align-items: center; gap: 2px; }
+  .menu-sec-actions button { color: #A1A1AA; background: none; border: none; cursor: pointer; padding: 6px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: color .15s ease, background-color .15s ease; }
+  .menu-sec-actions button:hover:not(:disabled) { color: #16161D; background: #EEEEF3; }
+  .menu-sec-actions button:disabled { opacity: 0.3; cursor: default; }
+  .menu-sec-body > .menu-plato { border-bottom: 1px solid #F2F2F6; }
+  .menu-sec-body > .menu-plato:last-child { border-bottom: none; }
+  .menu-plato { display: flex; align-items: center; gap: 12px; padding: 11px 16px; cursor: pointer; transition: background-color .12s ease; }
+  .menu-plato:hover { background: #FAFAFD; }
+  .pweb-menu-cat { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 22px; margin-bottom: 2px; }
+  .pweb-menu-cat:first-child { margin-top: 0; }
   /* Icono de eliminar conversación: solo visible al pasar el cursor (en táctil se mantiene visible) */
   @media (hover: hover) {
     .ia-conv-del { opacity: 0; transition: opacity .15s ease; }
@@ -1612,18 +1627,14 @@
             <p class="text-xs text-slate-400 mt-1">Gestiona tus platos y precios.</p>
           </div>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap">
           <button onclick="openModal('upload-menu')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Subir foto del menú</button>
           <button onclick="openModal('paste-menu')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Pegar menú</button>
-          <button onclick="openModal('add-menu')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir plato</button>
+          <button onclick="anadirSeccionMenu()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">+ Sección</button>
+          <button onclick="abrirAnadirPlato()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir plato</button>
         </div>
       </div>
-      <div id="menuTableWrap" class="mt-5 rounded-xl border border-slate-200 overflow-hidden bg-white">
-        <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-slate-500 text-xs"><tr><th class="px-4 py-2.5 w-14"></th><th class="text-left font-medium px-4 py-2.5">Plato</th><th class="text-left font-medium px-4 py-2.5">Precio</th><th class="text-left font-medium px-4 py-2.5">Estado</th><th class="px-4 py-2.5 w-10"></th></tr></thead>
-          <tbody id="menuBody" class="divide-y divide-slate-100"></tbody>
-        </table>
-      </div>
+      <div id="menuSeccionesWrap" class="mt-5 space-y-4"></div>
     </section>
 
     <!-- DELIVERY -->
@@ -2048,7 +2059,6 @@
       'conectar-reservas': conectarReservasFormHtml,
       'conectar-tpv': conectarTPVFormHtml,
       'add-pedido': addPedidoFormHtml,
-      'add-menu': addMenuFormHtml,
       'paste-menu': pasteMenuFormHtml,
       'upload-menu': uploadMenuFormHtml,
       'add-personal': addPersonalFormHtml,
@@ -2350,6 +2360,7 @@
       reservas: [],
       pedidos: [],
       menu: [],
+      menuSecciones: [],
       personal: [],
       inventario: [],
       integraciones: { square: false, glovo: false, uber: false, justeat: false, notifs: false, googleCalendar: false },
@@ -2411,6 +2422,21 @@
       if (p.estado !== 'Pagado') p.estado = estadoPedidoDesdePlatos(p);
     });
     data.menu = Array.isArray(data.menu) ? data.menu : [];
+    data.menu.forEach(m => {
+      m.categoria = typeof m.categoria === 'string' ? m.categoria : '';
+      m.descripcion = typeof m.descripcion === 'string' ? m.descripcion : '';
+    });
+    // Secciones del menú (orden gestionable por el usuario). Si no hay lista pero los platos ya
+    // tienen categorías, se deriva de las categorías existentes en orden de aparición.
+    data.menuSecciones = Array.isArray(data.menuSecciones) ? data.menuSecciones.filter(s => typeof s === 'string' && s.trim()) : [];
+    if (!data.menuSecciones.length) {
+      const vistas = [];
+      data.menu.forEach(m => { if (m.categoria && vistas.indexOf(m.categoria) === -1) vistas.push(m.categoria); });
+      data.menuSecciones = vistas;
+    } else {
+      // Añade cualquier categoría de plato que no esté ya en la lista de secciones
+      data.menu.forEach(m => { if (m.categoria && data.menuSecciones.indexOf(m.categoria) === -1) data.menuSecciones.push(m.categoria); });
+    }
     data.personal = Array.isArray(data.personal) ? data.personal : [];
     data.inventario = Array.isArray(data.inventario) ? data.inventario : [];
     data.inventario = data.inventario.map(p => {
@@ -4587,73 +4613,210 @@
   }
 
   // ---- Menú ----
+  // Agrupa los platos por sección (en el orden de menuSecciones) + un grupo final "Sin sección"
+  function gruposMenu(acc) {
+    const grupos = acc.data.menuSecciones.map(nombre => ({ nombre, esOtros: false, indices: [] }));
+    const otros = { nombre: 'Sin sección', esOtros: true, indices: [] };
+    acc.data.menu.forEach((m, i) => {
+      const cat = m.categoria || '';
+      const g = cat ? grupos.find(x => x.nombre === cat) : null;
+      (g || otros).indices.push(i);
+    });
+    if (otros.indices.length) grupos.push(otros);
+    return grupos;
+  }
+  function menuPlatoRowHtml(m, i) {
+    const foto = m.foto ? `<img src="${m.foto}" class="w-11 h-11 rounded-lg object-cover shrink-0">` : `<div class="w-11 h-11 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-slate-300"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 016.5 3H12v18H6.5A2.5 2.5 0 014 18.5v-13zM20 5.5A2.5 2.5 0 0017.5 3H12v18h5.5a2.5 2.5 0 002.5-2.5v-13z"/></svg></div>`;
+    const agotado = m.estado !== 'Disponible';
+    return `<div class="menu-plato" onclick="abrirEditarPlato(${i})">
+      ${foto}
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2">
+          <p class="text-sm font-semibold text-navy truncate">${svgEsc(m.nombre)}</p>
+          ${agotado ? '<span class="text-[10px] font-semibold text-rose-500 bg-rose-50 rounded-full px-2 py-0.5 shrink-0">Agotado</span>' : ''}
+        </div>
+        ${m.descripcion ? `<p class="text-xs text-slate-400 mt-0.5 truncate">${svgEsc(m.descripcion)}</p>` : ''}
+      </div>
+      <p class="text-sm font-bold text-navy shrink-0">${svgEsc(m.precio)}</p>
+      <svg class="w-4 h-4 text-slate-300 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+    </div>`;
+  }
   function renderMenu() {
     const acc = getCurrentAccount();
-    const list = acc.data.menu;
-    if (!list.length) {
-      document.getElementById('menuBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="5">Tu menú está vacío</td></tr>`;
+    const wrap = document.getElementById('menuSeccionesWrap');
+    if (!wrap) return;
+    if (!acc.data.menu.length && !acc.data.menuSecciones.length) {
+      wrap.innerHTML = `<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+        <p class="text-sm font-semibold text-navy">Tu menú está vacío</p>
+        <p class="text-xs text-slate-400 mt-1">Sube una foto de tu carta, pégala, o crea secciones y añade platos para organizarlo.</p>
+      </div>`;
       return;
     }
-    document.getElementById('menuBody').innerHTML = list.map((m,i) => {
-      const estadoCls = m.estado === 'Disponible' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-500 bg-rose-50';
-      const foto = m.foto ? `<img src="${m.foto}" class="w-9 h-9 rounded-md object-cover">` : `<div class="w-9 h-9 rounded-md bg-slate-100"></div>`;
-      return `<tr><td class="px-4 py-2.5">${foto}</td><td class="px-4 py-2.5" data-label="Plato">${m.nombre}</td><td class="px-4 py-2.5" data-label="Precio">${m.precio}</td><td class="px-4 py-2.5" data-label="Estado"><span onclick="cicloEstadoPlato(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${m.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarPlato(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
+    const grupos = gruposMenu(acc);
+    wrap.innerHTML = grupos.map((g, gi) => {
+      const platosHtml = g.indices.length
+        ? g.indices.map(i => menuPlatoRowHtml(acc.data.menu[i], i)).join('')
+        : `<p class="text-xs text-slate-400 px-4 py-4 text-center">Sección vacía · añade platos y asígnalos a esta sección.</p>`;
+      let acciones = '';
+      if (!g.esOtros) {
+        const idxSec = acc.data.menuSecciones.indexOf(g.nombre);
+        acciones = `<div class="menu-sec-actions">
+          <button onclick="moverSeccionMenu(${idxSec}, -1)" title="Subir" ${idxSec === 0 ? 'disabled' : ''}><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg></button>
+          <button onclick="moverSeccionMenu(${idxSec}, 1)" title="Bajar" ${idxSec === acc.data.menuSecciones.length - 1 ? 'disabled' : ''}><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></button>
+          <button onclick="renombrarSeccionMenu(${idxSec})" title="Cambiar nombre"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.5-9.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button onclick="eliminarSeccionMenu(${idxSec})" title="Eliminar sección" class="hover:text-rose-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 7h14M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/></svg></button>
+        </div>`;
+      }
+      return `<div class="menu-sec">
+        <div class="menu-sec-head">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="menu-sec-title">${svgEsc(g.nombre)}</span>
+            <span class="menu-sec-count">${g.indices.length}</span>
+          </div>
+          ${acciones}
+        </div>
+        <div class="menu-sec-body">${platosHtml}</div>
+      </div>`;
     }).join('');
   }
-  function cicloEstadoPlato(i) {
+  function anadirSeccionMenu() {
+    const nombre = prompt('Nombre de la nueva sección (ej. Entrantes, Principales, Postres, Bebidas)');
+    if (nombre === null) return;
+    const limpio = nombre.trim();
+    if (!limpio) return;
     const acc = getCurrentAccount();
-    acc.data.menu[i].estado = acc.data.menu[i].estado === 'Disponible' ? 'Agotado' : 'Disponible';
+    if (acc.data.menuSecciones.some(s => s.toLowerCase() === limpio.toLowerCase())) { showToast('Ya existe una sección con ese nombre'); return; }
+    acc.data.menuSecciones.push(limpio);
+    saveCurrentAccountData(acc.data);
+    renderMenu();
+    showToast('Sección añadida');
+  }
+  function renombrarSeccionMenu(idx) {
+    const acc = getCurrentAccount();
+    const actual = acc.data.menuSecciones[idx];
+    if (actual == null) return;
+    const nombre = prompt('Nuevo nombre de la sección', actual);
+    if (nombre === null) return;
+    const limpio = nombre.trim();
+    if (!limpio) return;
+    if (acc.data.menuSecciones.some((s, i) => i !== idx && s.toLowerCase() === limpio.toLowerCase())) { showToast('Ya existe una sección con ese nombre'); return; }
+    // Reasignar los platos de esa sección al nuevo nombre
+    acc.data.menu.forEach(m => { if (m.categoria === actual) m.categoria = limpio; });
+    acc.data.menuSecciones[idx] = limpio;
     saveCurrentAccountData(acc.data);
     renderMenu();
   }
-  function eliminarPlato(i) {
+  function eliminarSeccionMenu(idx) {
     const acc = getCurrentAccount();
-    acc.data.menu.splice(i, 1);
+    const nombre = acc.data.menuSecciones[idx];
+    if (nombre == null) return;
+    const nPlatos = acc.data.menu.filter(m => m.categoria === nombre).length;
+    const msg = nPlatos ? '¿Eliminar la sección "' + nombre + '"? Sus ' + nPlatos + ' plato(s) no se borran, pasarán a "Sin sección".' : '¿Eliminar la sección "' + nombre + '"?';
+    if (!confirm(msg)) return;
+    acc.data.menu.forEach(m => { if (m.categoria === nombre) m.categoria = ''; });
+    acc.data.menuSecciones.splice(idx, 1);
     saveCurrentAccountData(acc.data);
     renderMenu();
-    showToast('Plato eliminado');
+    showToast('Sección eliminada');
   }
-  function addMenuFormHtml() {
+  function moverSeccionMenu(idx, dir) {
+    const acc = getCurrentAccount();
+    const destino = idx + dir;
+    if (destino < 0 || destino >= acc.data.menuSecciones.length) return;
+    const arr = acc.data.menuSecciones;
+    const tmp = arr[idx]; arr[idx] = arr[destino]; arr[destino] = tmp;
+    saveCurrentAccountData(acc.data);
+    renderMenu();
+  }
+  function opcionesSeccionSelect(acc, seleccionada) {
+    const opts = acc.data.menuSecciones.map(s => `<option value="${escAttr(s)}" ${seleccionada === s ? 'selected' : ''}>${svgEsc(s)}</option>`).join('');
+    return `<option value="" ${!seleccionada ? 'selected' : ''}>Sin sección</option>` + opts;
+  }
+  function platoFormFieldsHtml(acc, m) {
+    m = m || { nombre: '', precio: '', descripcion: '', categoria: '', estado: 'Disponible', foto: '' };
     return `
-      <h3 class="text-xl font-bold text-navy">Añadir plato</h3>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Nombre del plato</label>
-      <input id="menuNombre" type="text" placeholder="Paella valenciana" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
-      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Precio</label>
-      <input id="menuPrecio" type="text" placeholder="14,50€" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
-      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Estado</label>
-      <select id="menuEstado" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
-        <option value="Disponible">Disponible</option>
-        <option value="Agotado">Agotado</option>
-      </select>
+      <input id="menuNombre" type="text" placeholder="Paella valenciana" value="${escAttr(m.nombre)}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <div class="grid grid-cols-2 gap-3 mt-4">
+        <div><label class="block text-sm font-medium text-navy mb-1.5">Precio</label><input id="menuPrecio" type="text" placeholder="14,50€" value="${escAttr(m.precio)}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+        <div><label class="block text-sm font-medium text-navy mb-1.5">Estado</label><select id="menuEstado" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"><option value="Disponible" ${m.estado !== 'Agotado' ? 'selected' : ''}>Disponible</option><option value="Agotado" ${m.estado === 'Agotado' ? 'selected' : ''}>Agotado</option></select></div>
+      </div>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Sección</label>
+      <select id="menuCategoria" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${opcionesSeccionSelect(acc, m.categoria)}</select>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Descripción (opcional)</label>
+      <textarea id="menuDescripcion" rows="2" placeholder="Arroz con pollo, conejo y verduras, al estilo tradicional" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(m.descripcion || '')}</textarea>
+      <p class="mt-1 text-xs text-slate-400">Aparecerá bajo el nombre del plato en tu web pública.</p>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Foto (opcional)</label>
-      <input id="menuFoto" type="file" accept="image/*" class="w-full text-sm text-slate-500">
-      <p class="mt-1.5 text-xs text-slate-400">Solo se usa como imagen del plato en tu panel; no se procesa ni se sube a ningún sitio.</p>
-      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
-      <button type="button" onclick="submitAddMenu()" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar plato</button>
-    `;
+      ${m.foto ? `<div class="flex items-center gap-3 mb-2 rounded-lg border border-slate-200 p-2"><img src="${m.foto}" class="w-11 h-11 rounded-md object-cover shrink-0"><label class="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer"><input type="checkbox" id="menuQuitarFoto">Quitar foto actual</label></div>` : ''}
+      <input id="menuFoto" type="file" accept="image/*" class="w-full text-sm text-slate-500">`;
   }
-  function submitAddMenu() {
+  function abrirAnadirPlato() {
+    const acc = getCurrentAccount();
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Añadir plato</h3>
+      ${platoFormFieldsHtml(acc, null)}
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" onclick="submitPlato(-1)" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar plato</button>`;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function abrirEditarPlato(i) {
+    const acc = getCurrentAccount();
+    const m = acc.data.menu[i];
+    if (!m) return;
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Editar plato</h3>
+      ${platoFormFieldsHtml(acc, m)}
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" onclick="submitPlato(${i})" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar cambios</button>
+      <button type="button" onclick="eliminarPlato(${i})" class="mt-2.5 w-full rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-sm font-semibold px-5 py-2.5">🗑️ Eliminar plato</button>`;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function submitPlato(i) {
+    const acc = getCurrentAccount();
     const nombre = document.getElementById('menuNombre').value.trim();
     const precio = document.getElementById('menuPrecio').value.trim();
     const estado = document.getElementById('menuEstado').value;
+    const categoria = document.getElementById('menuCategoria').value;
+    const descripcion = document.getElementById('menuDescripcion').value.trim();
     const fileInput = document.getElementById('menuFoto');
+    const quitarFoto = document.getElementById('menuQuitarFoto');
     if (!nombre || !precio) return modalFormError('Escribe al menos el nombre y el precio.');
-    const acc = getCurrentAccount();
     const finish = (foto) => {
-      acc.data.menu.push({ nombre, precio, estado, foto: foto || '' });
+      if (i === -1) {
+        acc.data.menu.push({ nombre, precio, estado, categoria, descripcion, foto: foto || '' });
+      } else {
+        const m = acc.data.menu[i];
+        Object.assign(m, { nombre, precio, estado, categoria, descripcion, foto });
+      }
       saveCurrentAccountData(acc.data);
       renderMenu();
+      renderCartaDigitalPreview();
       closeModal();
-      showToast('Plato añadido');
+      showToast(i === -1 ? 'Plato añadido' : 'Plato actualizado');
     };
-    const file = fileInput.files[0];
+    const file = fileInput && fileInput.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => finish(reader.result);
       reader.readAsDataURL(file);
-    } else {
+    } else if (quitarFoto && quitarFoto.checked) {
       finish('');
+    } else {
+      finish(i === -1 ? '' : (acc.data.menu[i].foto || ''));
     }
+  }
+  function eliminarPlato(i) {
+    const acc = getCurrentAccount();
+    if (!acc.data.menu[i]) return;
+    if (!confirm('¿Eliminar "' + acc.data.menu[i].nombre + '" del menú?')) return;
+    acc.data.menu.splice(i, 1);
+    saveCurrentAccountData(acc.data);
+    renderMenu();
+    renderCartaDigitalPreview();
+    closeModal();
+    showToast('Plato eliminado');
   }
   function uploadMenuFormHtml() {
     return `
@@ -4688,9 +4851,16 @@
           btn.textContent = 'Transcribir con IA';
           return;
         }
-        const lines = items.map(it => (it.nombre || '') + ' - ' + (it.precio || '')).join('\n');
+        // Si la IA devuelve secciones (it.seccion/categoria), las incluimos como cabeceras
+        let lines = '';
+        let seccionPrevia = null;
+        items.forEach(it => {
+          const secc = (it.seccion || it.categoria || '').trim();
+          if (secc && secc !== seccionPrevia) { lines += (lines ? '\n\n' : '') + secc + '\n'; seccionPrevia = secc; }
+          lines += (it.nombre || '') + ' - ' + (it.precio || '') + '\n';
+        });
         document.getElementById('modalBody').innerHTML = pasteMenuFormHtml();
-        document.getElementById('menuPasteText').value = lines;
+        document.getElementById('menuPasteText').value = lines.trim();
         showToast(items.length + ' platos detectados, revísalos antes de importar');
       } catch (e) {
         modalFormError('Error de red al leer el menú.');
@@ -4712,8 +4882,8 @@
   function pasteMenuFormHtml() {
     return `
       <h3 class="text-xl font-bold text-navy">Pegar menú</h3>
-      <p class="mt-1.5 text-sm text-slate-500">Una línea por plato, con el precio al final. Ej: <br><i>Paella valenciana - 14,50€</i></p>
-      <textarea id="menuPasteText" rows="8" placeholder="Paella valenciana - 14,50€&#10;Solomillo a la parrilla - 18,50€&#10;Ensalada César - 9,50€" class="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></textarea>
+      <p class="mt-1.5 text-sm text-slate-500">Una línea por plato, con el precio al final. Escribe el nombre de una sección en su propia línea (sin precio) y los platos siguientes se agruparán en ella.</p>
+      <textarea id="menuPasteText" rows="9" placeholder="ENTRANTES&#10;Croquetas caseras - 8,50€&#10;Ensalada César - 9,50€&#10;&#10;PRINCIPALES&#10;Paella valenciana - 14,50€&#10;&#10;POSTRES&#10;Tarta de queso - 5,50€" class="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></textarea>
       <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
       <button type="button" onclick="submitPasteMenu()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Importar platos</button>
     `;
@@ -4724,11 +4894,20 @@
     if (!lines.length) return modalFormError('Pega al menos una línea.');
     const acc = getCurrentAccount();
     let added = 0;
+    let seccionActual = '';
     lines.forEach(line => {
       const parsed = parsePriceLine(line);
       if (parsed) {
-        acc.data.menu.push({ nombre: parsed.nombre, precio: parsed.precio, estado: 'Disponible', foto: '' });
+        acc.data.menu.push({ nombre: parsed.nombre, precio: parsed.precio, estado: 'Disponible', categoria: seccionActual, descripcion: '', foto: '' });
         added++;
+      } else {
+        // Línea sin precio → cabecera de sección
+        const nombreSecc = line.replace(/[:：].*$/, '').trim();
+        if (nombreSecc && nombreSecc.length <= 40) {
+          const existente = acc.data.menuSecciones.find(s => s.toLowerCase() === nombreSecc.toLowerCase());
+          if (existente) { seccionActual = existente; }
+          else { acc.data.menuSecciones.push(nombreSecc); seccionActual = nombreSecc; }
+        }
       }
     });
     if (!added) return modalFormError('No se ha podido reconocer ningún plato. Usa el formato "Nombre - Precio".');
@@ -5978,6 +6157,8 @@
               const perfil = propia.data.perfil || {};
               datosCompletos = Object.assign({}, datosCompletos, {
                 cartaDigital: propia.data.cartaDigital || null,
+                menu: Array.isArray(propia.data.menu) ? propia.data.menu : datosCompletos.menu,
+                menuSecciones: Array.isArray(propia.data.menuSecciones) ? propia.data.menuSecciones : [],
                 horario: datosCompletos.horario || perfil.horario || null,
                 horarioConfigurado: datosCompletos.horarioConfigurado != null ? datosCompletos.horarioConfigurado : !!perfil.horarioConfigurado,
               });
@@ -6002,29 +6183,45 @@
     const temaActivo = !!(cd && cd.activada);
     const webMode = !!(cd && cd.activada && cd.web);
     const paleta = temaActivo ? coloresCartaDigital(cd) : null;
+    const itemCard = (m, idx) => {
+      const disponible = m.estado === 'Disponible';
+      const foto = m.foto ? `<img src="${m.foto}" class="w-14 h-14 rounded-lg object-cover shrink-0">` : `<div class="w-14 h-14 rounded-lg ${temaActivo ? '' : 'bg-slate-100'} shrink-0" ${temaActivo ? `style="background:${paleta.color1}14;"` : ''}></div>`;
+      const qty = publicPedidoCarrito[idx] || 0;
+      const stepper = disponible ? `
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button type="button" onclick="cambiarCantidadPublico(${idx}, -1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">−</button>
+          <span class="text-sm font-semibold text-navy w-5 text-center">${qty}</span>
+          <button type="button" onclick="cambiarCantidadPublico(${idx}, 1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">+</button>
+        </div>` : '';
+      const cardStyle = temaActivo ? `style="border-left:3px solid ${paleta.color1}; box-shadow:0 1px 2px rgba(16,24,40,0.04);"` : '';
+      const cardClass = temaActivo ? 'rounded-xl bg-white p-3' : 'rounded-xl border border-slate-200 bg-white p-3';
+      const precioStyle = temaActivo ? `style="color:${paleta.color1};"` : '';
+      return `<div class="flex items-center gap-3 ${cardClass} ${disponible ? '' : 'opacity-50'}" ${cardStyle}>
+        ${foto}
+        <div class="min-w-0 flex-1 text-left">
+          <p class="text-sm font-semibold text-navy truncate">${svgEsc(m.nombre)}</p>
+          ${m.descripcion ? `<p class="text-xs text-slate-500 mt-0.5" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${svgEsc(m.descripcion)}</p>` : `<p class="text-xs text-slate-400 mt-0.5">${disponible ? 'Disponible' : 'Agotado'}</p>`}
+        </div>
+        <p class="text-sm font-bold shrink-0 ${temaActivo ? '' : 'text-navy'}" ${precioStyle}>${svgEsc(m.precio)}</p>
+        ${stepper}
+      </div>`;
+    };
+    // Agrupar por secciones (orden: menuSecciones del restaurante, o primera aparición); "Sin sección" al final
+    const ordenSecc = Array.isArray(publicMenuData.menuSecciones) ? publicMenuData.menuSecciones.slice() : [];
+    menu.forEach(m => { const c = m.categoria || ''; if (c && ordenSecc.indexOf(c) === -1) ordenSecc.push(c); });
+    const grupos = ordenSecc.map(nombre => ({ nombre, indices: [] }));
+    const otrosPub = { nombre: '', indices: [] };
+    menu.forEach((m, i) => { const c = m.categoria || ''; const g = c ? grupos.find(x => x.nombre === c) : null; (g || otrosPub).indices.push(i); });
+    if (otrosPub.indices.length) grupos.push(otrosPub);
+    const gruposConPlatos = grupos.filter(g => g.indices.length);
+    const catHeader = (nombre) => temaActivo
+      ? `<p class="pweb-menu-cat" style="color:${paleta.color1};">${svgEsc(nombre)}</p>`
+      : `<p class="text-xs font-bold uppercase tracking-wide text-accent mt-5 mb-1">${svgEsc(nombre)}</p>`;
+    const hayVariasSecc = gruposConPlatos.filter(g => g.nombre).length > 0;
     const itemsHtml = menu.length
-      ? menu.map((m, idx) => {
-          const disponible = m.estado === 'Disponible';
-          const foto = m.foto ? `<img src="${m.foto}" class="w-14 h-14 rounded-lg object-cover shrink-0">` : `<div class="w-14 h-14 rounded-lg ${temaActivo ? '' : 'bg-slate-100'} shrink-0" ${temaActivo ? `style="background:${paleta.color1}14;"` : ''}></div>`;
-          const qty = publicPedidoCarrito[idx] || 0;
-          const stepper = disponible ? `
-            <div class="flex items-center gap-1.5 shrink-0">
-              <button type="button" onclick="cambiarCantidadPublico(${idx}, -1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">−</button>
-              <span class="text-sm font-semibold text-navy w-5 text-center">${qty}</span>
-              <button type="button" onclick="cambiarCantidadPublico(${idx}, 1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">+</button>
-            </div>` : '';
-          const cardStyle = temaActivo ? `style="border-left:3px solid ${paleta.color1}; box-shadow:0 1px 2px rgba(16,24,40,0.04);"` : '';
-          const cardClass = temaActivo ? 'rounded-xl bg-white p-3' : 'rounded-xl border border-slate-200 bg-white p-3';
-          const precioStyle = temaActivo ? `style="color:${paleta.color1};"` : '';
-          return `<div class="flex items-center gap-3 ${cardClass} ${disponible ? '' : 'opacity-50'}" ${cardStyle}>
-            ${foto}
-            <div class="min-w-0 flex-1 text-left">
-              <p class="text-sm font-semibold text-navy truncate">${m.nombre}</p>
-              <p class="text-xs text-slate-400 mt-0.5">${disponible ? 'Disponible' : 'Agotado'}</p>
-            </div>
-            <p class="text-sm font-bold shrink-0 ${temaActivo ? '' : 'text-navy'}" ${precioStyle}>${m.precio}</p>
-            ${stepper}
-          </div>`;
+      ? gruposConPlatos.map(g => {
+          const cards = g.indices.map(i => itemCard(menu[i], i)).join('');
+          return (hayVariasSecc && g.nombre) ? catHeader(g.nombre) + `<div class="flex flex-col gap-3">${cards}</div>` : cards;
         }).join('')
       : `<p class="text-sm text-slate-400 mt-6">Este restaurante todavía no ha publicado su menú.</p>`;
     const totalItems = Object.values(publicPedidoCarrito).reduce((a, b) => a + b, 0);
