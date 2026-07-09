@@ -1410,6 +1410,7 @@
       <li data-sec="ia" onclick="showSection('ia', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-fuchsia-50 text-fuchsia-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L20 9.5l-6.1 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.9L12 2z"/></svg></span>Ayudante IA</li>
       <li data-sec="restaurante" onclick="showSection('restaurante', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-orange-50 text-orange-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 11l9-8 9 8"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 10v10h14V10"/></svg></span>Mi restaurante</li>
       <li data-sec="personal" onclick="showSection('personal', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-teal-50 text-teal-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path stroke-linecap="round" d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.3"/><path stroke-linecap="round" d="M15.5 14.2c2.6.5 4.5 2.6 4.5 5.8"/></svg></span>Personal</li>
+      <li onclick="showSection('chat', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-green-50 text-green-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></span>Chat<span id="chatNavBadge" class="hidden ml-auto bg-emerald-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">0</span></li>
     </ul>
     <ul class="mt-auto pt-3 border-t border-slate-100 text-slate-600">
       <li data-sec="apps" onclick="showSection('apps', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.3"/><rect x="14" y="3" width="7" height="7" rx="1.3"/><rect x="3" y="14" width="7" height="7" rx="1.3"/><rect x="14" y="14" width="7" height="7" rx="1.3"/></svg></span>Apps</li>
@@ -1559,6 +1560,26 @@
         <div class="mt-3" style="position:relative; min-height:65vh;">
           <div id="tableGrid" style="position:relative; width:100%; height:100%; min-height:65vh;"></div>
         </div>
+      </div>
+    </section>
+
+    <!-- CHAT -->
+    <section id="sec-chat" class="app-section">
+      <div class="flex items-center gap-3">
+        <span class="w-9 h-9 rounded-lg bg-green-50 text-green-600 flex items-center justify-center shrink-0"><svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></span>
+        <div>
+          <p class="text-sm font-semibold text-navy">Chat del equipo</p>
+          <p class="text-xs text-slate-400 mt-1">Mensajes entre el personal de tu restaurante, al instante.</p>
+        </div>
+      </div>
+      <div class="mt-5 rounded-xl border border-slate-200 bg-white flex flex-col" style="height:65vh;">
+        <div id="chatMensajesWrap" class="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-2.5"></div>
+        <form onsubmit="event.preventDefault(); enviarMensajeChat();" class="border-t border-slate-100 p-3 flex items-center gap-2 shrink-0">
+          <input id="chatInput" type="text" placeholder="Escribe un mensaje..." autocomplete="off" class="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+          <button type="submit" class="w-10 h-10 rounded-full bg-navydeep hover:bg-navy transition text-white flex items-center justify-center shrink-0" title="Enviar">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          </button>
+        </form>
       </div>
     </section>
 
@@ -2134,6 +2155,7 @@
   let currentAccount = null; // { userId, email, restaurantName, data }
   let saveTimer = null;
   let realtimeChannel = null;
+  let chatNoLeidos = 0;
   function renderAllSections() {
     applyTopbar(currentAccount);
     renderMesas();
@@ -2147,6 +2169,7 @@
     renderIAChat();
     renderTPV();
     renderCartaDigitalPreview();
+    renderChat();
   }
   function getPresentStaffEmails() {
     if (!realtimeChannel) return [];
@@ -2157,6 +2180,66 @@
     });
     return emails;
   }
+
+  // ---- Chat del equipo ----
+  function identidadChatActual() {
+    if (staffSession) return { nombre: staffSession.nombre || 'Trabajador', email: staffSession.email || '' };
+    const acc = getCurrentAccount();
+    return { nombre: (acc && acc.data.perfil.nombre) || 'Encargado', email: (acc && acc.email) || '' };
+  }
+  function chatSeccionActiva() {
+    const sec = document.getElementById('sec-chat');
+    return !!(sec && sec.classList.contains('active'));
+  }
+  function actualizarBadgeChatNav() {
+    const badge = document.getElementById('chatNavBadge');
+    if (!badge) return;
+    if (chatNoLeidos > 0) {
+      badge.textContent = chatNoLeidos > 9 ? '9+' : String(chatNoLeidos);
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+  function renderChat() {
+    const acc = getCurrentAccount();
+    const wrap = document.getElementById('chatMensajesWrap');
+    if (!acc || !wrap) return;
+    const mensajes = acc.data.chatMensajes || [];
+    const yo = identidadChatActual();
+    if (!mensajes.length) {
+      wrap.innerHTML = `<p class="text-sm text-slate-400 text-center m-auto">Aún no hay mensajes. ¡Escribe el primero!</p>`;
+      return;
+    }
+    const estabaAbajo = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 60;
+    wrap.innerHTML = mensajes.map(m => {
+      const esMio = !!(m.autorEmail && yo.email && m.autorEmail.toLowerCase() === yo.email.toLowerCase());
+      const hora = new Date(m.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      return `<div class="flex flex-col max-w-[75%] rounded-2xl px-3.5 py-2 ${esMio ? 'self-end bg-navydeep text-white' : 'self-start bg-slate-100 text-navy'}">
+        ${esMio ? '' : `<p class="text-[11px] font-semibold text-accent mb-0.5">${svgEsc(m.autor)}</p>`}
+        <p class="text-sm" style="white-space:pre-wrap; word-break:break-word;">${svgEsc(m.texto)}</p>
+        <p class="text-[10px] mt-1 text-right ${esMio ? 'text-white/70' : 'text-slate-400'}">${hora}</p>
+      </div>`;
+    }).join('');
+    if (estabaAbajo) wrap.scrollTop = wrap.scrollHeight;
+  }
+  function enviarMensajeChat() {
+    const input = document.getElementById('chatInput');
+    if (!input) return;
+    const texto = input.value.trim();
+    if (!texto) return;
+    const acc = getCurrentAccount();
+    const yo = identidadChatActual();
+    acc.data.chatMensajes = acc.data.chatMensajes || [];
+    acc.data.chatMensajes.push({ texto, autor: yo.nombre, autorEmail: yo.email, fecha: new Date().toISOString() });
+    if (acc.data.chatMensajes.length > 300) acc.data.chatMensajes = acc.data.chatMensajes.slice(-300);
+    input.value = '';
+    saveCurrentAccountData(acc.data);
+    clearTimeout(saveTimer);
+    syncAccountToServer();
+    renderChat();
+  }
+
   function subscribeRealtime() {
     if (!currentAccount) return;
     if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
@@ -2167,6 +2250,7 @@
         // Estado anterior por id de pedido, para detectar transiciones (pedido nuevo / plato recién listo)
         const antes = {};
         (currentAccount.data.pedidos || []).forEach(p => { antes[p.id] = { listos: platosListosCount(p) }; });
+        const chatAntes = (currentAccount.data.chatMensajes || []).length;
         currentAccount.data = normalizeAccountData(payload.new.data);
         currentAccount.restaurantName = payload.new.restaurant_name || currentAccount.restaurantName;
         currentAccount.data.pedidos.forEach(p => {
@@ -2183,6 +2267,14 @@
             if (esDispositivoSala()) pushNotification('🔔 Plato listo para servir · ' + p.mesa, 'listo');
           }
         });
+        // Mensajes de chat nuevos (de otra persona) → aviso instantáneo sin sonido
+        const yoChat = identidadChatActual();
+        currentAccount.data.chatMensajes.slice(chatAntes).forEach(m => {
+          if (m.autorEmail && yoChat.email && m.autorEmail.toLowerCase() === yoChat.email.toLowerCase()) return;
+          pushNotification('💬 ' + m.autor + ': ' + m.texto);
+          if (!chatSeccionActiva()) chatNoLeidos += 1;
+        });
+        actualizarBadgeChatNav();
         renderAllSections();
       })
       .on('presence', { event: 'sync' }, () => {
@@ -2373,6 +2465,7 @@
       iaInformes: [],
       caja: { abierta: false, fecha: null, efectivoInicial: 0, aperturaHora: null, historico: [] },
       cartaDigital: { activada: false, tipoRestaurante: '', paleta: '', colorPrimario: '', colorSecundario: '', tagline: '', logo: '', creadaEn: null, web: false, historia: '', fotosModo: '', fotoHero: '', fotosPropias: [], instagram: '', direccion: '', telefono: '', secciones: { nosotros: true, galeria: true, horario: true, contacto: true, reservas: true } },
+      chatMensajes: [],
     };
   }
   function normalizeAccountData(data) {
@@ -2498,6 +2591,7 @@
     data.cartaDigital.direccion = data.cartaDigital.direccion || '';
     data.cartaDigital.telefono = data.cartaDigital.telefono || '';
     data.cartaDigital.secciones = Object.assign({ nosotros: true, galeria: true, horario: true, contacto: true, reservas: true }, data.cartaDigital.secciones || {});
+    data.chatMensajes = Array.isArray(data.chatMensajes) ? data.chatMensajes.filter(m => m && m.texto) : [];
     return data;
   }
   function getCurrentAccount() {
@@ -3498,7 +3592,7 @@
   }
 
   // ---- Nav, toasts ----
-  const sectionNames = { dashboard:'Dashboard', reservas:'Reservas', pedidos:'Pedidos', mesas:'Mesas', menu:'Menú', delivery:'Delivery', inventario:'Inventario', tpv:'TPV', ia:'Ayudante IA', restaurante:'Mi restaurante', personal:'Personal', apps:'Apps', config:'Configuración' };
+  const sectionNames = { dashboard:'Dashboard', reservas:'Reservas', pedidos:'Pedidos', mesas:'Mesas', menu:'Menú', delivery:'Delivery', inventario:'Inventario', tpv:'TPV', ia:'Ayudante IA', restaurante:'Mi restaurante', personal:'Personal', chat:'Chat', apps:'Apps', config:'Configuración' };
   function showSection(name, el) {
     document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
     document.getElementById('sec-' + name).classList.add('active');
@@ -3509,6 +3603,12 @@
     if (name === 'restaurante') {
       setTimeout(ajustarEscalaMockup, 60);
       setTimeout(ajustarEscalaMockup, 350);
+    }
+    if (name === 'chat') {
+      chatNoLeidos = 0;
+      actualizarBadgeChatNav();
+      renderChat();
+      setTimeout(() => { const w = document.getElementById('chatMensajesWrap'); if (w) w.scrollTop = w.scrollHeight; }, 30);
     }
   }
   function toggleSidebarMobile(force) {
