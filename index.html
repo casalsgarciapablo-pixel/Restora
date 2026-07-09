@@ -2099,28 +2099,47 @@
       });
   }
 
-  // ---- Sonido de avisos (WebAudio, se desbloquea con el primer gesto del usuario) ----
+  // ---- Sonido de avisos (WebAudio, robusto en móvil) ----
   let audioCtx = null;
-  function desbloquearAudio() {
-    if (audioCtx) return;
+  function crearAudioCtx() {
+    if (audioCtx) return audioCtx;
     try {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      audioCtx = new AC();
     } catch (e) { audioCtx = null; }
+    return audioCtx;
   }
-  // Reintenta desbloquear/reanudar en cada interacción (no solo la primera): así el aviso de un
-  // pedido que entra por QR suena aunque la pantalla lleve un rato sin tocarse.
-  document.addEventListener('click', desbloquearAudio);
-  document.addEventListener('keydown', desbloquearAudio);
-  document.addEventListener('touchstart', desbloquearAudio, { passive: true });
-  function reproducirSonido(tipo) {
-    desbloquearAudio();
-    if (!audioCtx) return false;
+  // Desbloqueo/mantenimiento: crea el contexto, lo reanuda y reproduce un pulso silencioso.
+  // Ese "warm-up" dentro de un gesto es lo que desbloquea WebAudio de forma fiable en iOS/Android.
+  function desbloquearAudio() {
+    const ctx = crearAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     try {
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const buffer = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch (e) {}
+  }
+  // Reintenta en cada interacción (no solo la primera) y al volver a la pestaña, para que el
+  // contexto no se quede "dormido" y el aviso suene aunque la pantalla lleve rato sin tocarse.
+  ['click', 'keydown', 'touchstart', 'touchend', 'pointerdown'].forEach(ev =>
+    document.addEventListener(ev, desbloquearAudio, { passive: true }));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {}); });
+  window.addEventListener('focus', () => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {}); });
+
+  function _emitirTonos(tipo) {
+    if (!audioCtx || audioCtx.state !== 'running') return false;
+    try {
       // Dos avisos distintos: cocina (grave-agudo) y camarero (triple agudo, más alegre)
       const notas = tipo === 'listo' ? [784, 1046, 1318] : [523, 784];
-      const t0 = audioCtx.currentTime + 0.02;
+      const t0 = audioCtx.currentTime + 0.04;
+      const master = audioCtx.createGain();
+      master.gain.value = 1;
+      master.connect(audioCtx.destination);
       notas.forEach((freq, i) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -2128,25 +2147,42 @@
         osc.frequency.value = freq;
         const start = t0 + i * 0.18;
         gain.gain.setValueAtTime(0, start);
-        gain.gain.linearRampToValueAtTime(0.6, start + 0.03);
-        gain.gain.linearRampToValueAtTime(0, start + 0.36);
-        osc.connect(gain).connect(audioCtx.destination);
+        gain.gain.linearRampToValueAtTime(0.7, start + 0.03);
+        gain.gain.linearRampToValueAtTime(0, start + 0.38);
+        osc.connect(gain).connect(master);
         osc.start(start);
-        osc.stop(start + 0.38);
+        osc.stop(start + 0.4);
       });
       return true;
     } catch (e) { return false; }
   }
+  // Reproduce el aviso esperando a que el contexto esté 'running' (resume() es asíncrono):
+  // así no se pierde el sonido cuando el audio estaba suspendido.
+  function reproducirSonido(tipo) {
+    const ctx = crearAudioCtx();
+    if (!ctx) return false;
+    if (ctx.state === 'running') return _emitirTonos(tipo);
+    // Suspendido: reanudar y emitir cuando de verdad esté listo, con un pequeño reintento.
+    ctx.resume().then(() => _emitirTonos(tipo)).catch(() => {});
+    let intentos = 0;
+    const iv = setInterval(() => {
+      intentos += 1;
+      if (audioCtx && audioCtx.state === 'running') { _emitirTonos(tipo); clearInterval(iv); }
+      else if (intentos >= 8) clearInterval(iv);
+      else if (audioCtx) audioCtx.resume().catch(() => {});
+    }, 120);
+    return true;
+  }
   function probarSonidoAvisos() {
     desbloquearAudio();
-    if (!audioCtx) {
+    const ctx = crearAudioCtx();
+    if (!ctx) {
       showToast('Tu navegador no permite reproducir sonido (audio no soportado).');
       return;
     }
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const ok = reproducirSonido('cocina');
-    setTimeout(() => reproducirSonido('listo'), 900);
-    showToast(ok ? 'Sonido de prueba enviado · audio: ' + audioCtx.state : 'No se ha podido reproducir el sonido.');
+    reproducirSonido('cocina');
+    setTimeout(() => reproducirSonido('listo'), 950);
+    setTimeout(() => showToast('Sonido de prueba · audio: ' + (audioCtx ? audioCtx.state : 'no soportado')), 250);
   }
   // ¿Este dispositivo debe oír avisos de cocina / de sala? El dueño (sin sesión de staff) oye todo.
   function rolTexto() {
