@@ -2482,6 +2482,10 @@
       caja: { abierta: false, fecha: null, efectivoInicial: 0, aperturaHora: null, historico: [] },
       cartaDigital: { activada: false, tipoRestaurante: '', paleta: '', colorPrimario: '', colorSecundario: '', tagline: '', logo: '', creadaEn: null, web: false, historia: '', fotosModo: '', fotoHero: '', fotosPropias: [], instagram: '', direccion: '', telefono: '', secciones: { nosotros: true, galeria: true, horario: true, contacto: true, reservas: true } },
       chatMensajes: [],
+      promociones: [],
+      anulaciones: [],
+      ultimoTicketNumero: 0,
+      ultimoTicketHash: '',
     };
   }
   function normalizeAccountData(data) {
@@ -2530,16 +2534,29 @@
       // Estado por defecto de cada plato según el estado global del pedido (migración de pedidos antiguos)
       const estadoPlatoPorDefecto = p.estado === 'Pagado' || p.estado === 'Servido' ? 'servido' : (p.estado === 'Listo' ? 'listo' : 'cocina');
       if (Array.isArray(p.platos)) {
-        p.platos.forEach(pl => { if (!pl.estado) pl.estado = estadoPlatoPorDefecto; });
+        p.platos.forEach(pl => {
+          if (!pl.estado) pl.estado = estadoPlatoPorDefecto;
+          pl.pagadoCantidad = pl.pagadoCantidad || 0;
+        });
       }
       // Normalizar el estado global a los nuevos valores del flujo de cocina (salvo Pagado, que manda)
       if (p.estado !== 'Pagado') p.estado = estadoPedidoDesdePlatos(p);
+      p.pagado = typeof p.pagado === 'number' ? p.pagado : (p.estado === 'Pagado' ? (p.total || 0) : 0);
+      p.cobros = Array.isArray(p.cobros) ? p.cobros : (p.estado === 'Pagado' && p.metodoPago ? [{ importe: p.total || 0, metodo: p.metodoPago, fecha: p.fechaPago || p.fecha, detalle: 'Pago completo' }] : []);
+      p.creadoPor = p.creadoPor || '';
+      p.descuento = p.descuento || null;
+      p.anulado = !!p.anulado;
     });
     data.menu = Array.isArray(data.menu) ? data.menu : [];
     data.menu.forEach(m => {
       m.categoria = typeof m.categoria === 'string' ? m.categoria : '';
       m.descripcion = typeof m.descripcion === 'string' ? m.descripcion : '';
+      m.costo = typeof m.costo === 'string' ? m.costo : '';
     });
+    data.promociones = Array.isArray(data.promociones) ? data.promociones : [];
+    data.anulaciones = Array.isArray(data.anulaciones) ? data.anulaciones : [];
+    data.ultimoTicketNumero = typeof data.ultimoTicketNumero === 'number' ? data.ultimoTicketNumero : 0;
+    data.ultimoTicketHash = typeof data.ultimoTicketHash === 'string' ? data.ultimoTicketHash : '';
     // Secciones del menú (orden gestionable por el usuario). Si no hay lista pero los platos ya
     // tienen categorías, se deriva de las categorías existentes en orden de aparición.
     data.menuSecciones = Array.isArray(data.menuSecciones) ? data.menuSecciones.filter(s => typeof s === 'string' && s.trim()) : [];
@@ -4497,8 +4514,7 @@
     const hoy = new Date().toISOString().slice(0, 10);
     const cobradosHoy = pedidos.filter(p => p.estado === 'Pagado' && (p.fechaPago || '').slice(0, 10) === hoy);
     const pendientes = pedidos.map((p, i) => Object.assign({ _idx: i }, p)).filter(p => p.estado !== 'Pagado');
-    const porMetodo = { Efectivo: 0, Tarjeta: 0, Bizum: 0 };
-    cobradosHoy.forEach(p => { porMetodo[p.metodoPago] = (porMetodo[p.metodoPago] || 0) + p.total; });
+    const porMetodo = porMetodoDelDia(cobradosHoy);
     const totalHoy = cobradosHoy.reduce((s, p) => s + p.total, 0);
     const ticketsHtml = pendientes.length
       ? pendientes.map(p => `
@@ -4539,69 +4555,298 @@
       <div class="mt-5 grid md:grid-cols-3 gap-4">${ticketsHtml}</div>
     `;
   }
+  // Suma por método de pago a partir de los cobros reales de cada pedido (no del método "global" del
+  // pedido, que puede ser "Varios" si se dividió la cuenta entre varios métodos).
+  function porMetodoDelDia(cobradosHoy) {
+    const porMetodo = { Efectivo: 0, Tarjeta: 0, Bizum: 0 };
+    cobradosHoy.forEach(p => (p.cobros || []).forEach(c => { porMetodo[c.metodo] = (porMetodo[c.metodo] || 0) + c.importe; }));
+    return porMetodo;
+  }
+  function pendienteCobro(p) {
+    return Math.max(0, Math.round(((p.total || 0) - (p.pagado || 0)) * 100) / 100);
+  }
   function abrirCobroPedido(i) {
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = cobroPedidoFormHtml(i);
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function cobroPedidoFormHtml(i) {
     const acc = getCurrentAccount();
     const p = acc.data.pedidos[i];
-    document.getElementById('modalCard').classList.remove('modal-wide');
-    document.getElementById('modalBody').innerHTML = `
-      <h3 class="text-xl font-bold text-navy">Cobrar ${p.mesa}</h3>
-      <p class="mt-1 text-sm text-slate-500">${p.items}</p>
+    const pendiente = pendienteCobro(p);
+    const yaPagado = p.pagado || 0;
+    const cobrosHtml = (p.cobros || []).length
+      ? `<div class="mt-2 border border-slate-200 rounded-lg divide-y divide-slate-100">${p.cobros.map(c => `<div class="flex items-center justify-between px-3 py-2 text-xs"><span class="text-slate-500 truncate">${svgEsc(c.detalle || 'Cobro')} · ${svgEsc(c.metodo)}</span><span class="font-semibold text-navy shrink-0 ml-2">${c.importe.toFixed(2).replace('.', ',')}€</span></div>`).join('')}</div>`
+      : '';
+    return `
+      <h3 class="text-xl font-bold text-navy">Cobrar ${svgEsc(p.mesa)}</h3>
+      <p class="mt-1 text-sm text-slate-500">${svgEsc(p.items)}</p>
       <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
         <p class="text-sm font-semibold text-navy">Total</p>
-        <p class="text-xl font-bold text-navy">${p.total.toFixed(2).replace('.', ',')}€</p>
+        <p class="text-lg font-bold text-navy">${p.total.toFixed(2).replace('.', ',')}€</p>
       </div>
-      <p class="text-xs text-amber-600 font-medium mt-3">Modo prueba: no se procesa ningún cobro real.</p>
-      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Método de pago</label>
+      ${yaPagado > 0 ? `
+      <div class="flex items-center justify-between mt-1"><p class="text-xs font-medium text-emerald-600">Ya cobrado</p><p class="text-xs font-semibold text-emerald-600">${yaPagado.toFixed(2).replace('.', ',')}€</p></div>
+      <div class="flex items-center justify-between mt-1"><p class="text-sm font-semibold text-navy">Pendiente</p><p class="text-lg font-bold text-rose-600">${pendiente.toFixed(2).replace('.', ',')}€</p></div>
+      ${cobrosHtml}` : ''}
+      <p class="text-xs text-amber-600 font-medium mt-3">El cobro con tarjeta se registra manualmente: aún no hay datáfono conectado (falta enlazar Stripe/Redsys con una cuenta de comercio real).</p>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Cobrar el pendiente (${pendiente.toFixed(2).replace('.', ',')}€)</label>
       <div class="grid grid-cols-3 gap-2">
         <button type="button" onclick="confirmarCobro(${i}, 'Efectivo')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy">💶 Efectivo</button>
         <button type="button" onclick="confirmarCobro(${i}, 'Tarjeta')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy">💳 Tarjeta</button>
         <button type="button" onclick="confirmarCobro(${i}, 'Bizum')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy">📱 Bizum</button>
       </div>
+      <button type="button" onclick="abrirDividirCuenta(${i})" class="mt-3 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">➗ Dividir cuenta</button>
+      <button type="button" onclick="closeModal()" class="mt-2.5 w-full rounded-full bg-white border border-slate-200 hover:bg-slate-50 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>
     `;
-    document.getElementById('modalOverlay').classList.add('open');
   }
-  function confirmarCobro(i, metodo) {
+  async function confirmarCobro(i, metodo) {
     const acc = getCurrentAccount();
     const p = acc.data.pedidos[i];
-    p.estado = 'Pagado';
-    p.metodoPago = metodo;
-    p.fechaPago = new Date().toISOString();
-    const mMatch = /^Mesa (\d+)$/i.exec(p.mesa || '');
-    if (mMatch) {
-      const idx = parseInt(mMatch[1], 10) - 1;
-      const otrosPendientes = acc.data.pedidos.some((o, oi) => oi !== i && o.mesa === p.mesa && o.estado !== 'Pagado');
-      if (!otrosPendientes && acc.data.mesaEstados[idx] !== undefined) acc.data.mesaEstados[idx] = 'Libre';
+    if (!p) return;
+    await registrarCobroParcial(i, pendienteCobro(p), metodo, 'Pago completo');
+  }
+  async function registrarCobroParcial(i, importe, metodo, detalle) {
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[i];
+    if (!p || importe <= 0) return;
+    p.cobros = p.cobros || [];
+    p.cobros.push({ importe, metodo, fecha: new Date().toISOString(), detalle: detalle || 'Cobro' });
+    p.pagado = Math.round(((p.pagado || 0) + importe) * 100) / 100;
+    const completado = pendienteCobro(p) <= 0.005;
+    if (completado) {
+      p.estado = 'Pagado';
+      p.metodoPago = p.cobros.length > 1 ? 'Varios' : metodo;
+      p.fechaPago = new Date().toISOString();
+      await asignarNumeroTicket(p);
+      const mMatch = /^Mesa (\d+)$/i.exec(p.mesa || '');
+      if (mMatch) {
+        const idx = parseInt(mMatch[1], 10) - 1;
+        const otrosPendientes = acc.data.pedidos.some((o, oi) => oi !== i && o.mesa === p.mesa && o.estado !== 'Pagado');
+        if (!otrosPendientes && acc.data.mesaEstados[idx] !== undefined) acc.data.mesaEstados[idx] = 'Libre';
+      }
     }
     saveCurrentAccountData(acc.data);
-    closeModal();
     renderPedidos();
     renderDashboardStats();
     renderMesas();
     renderTPV();
-    mostrarTicket(p);
-    showToast('Cobrado con ' + metodo);
+    if (completado) {
+      closeModal();
+      mostrarTicket(p);
+      showToast('Cobrado con ' + metodo);
+    } else {
+      showToast('Cobrados ' + importe.toFixed(2).replace('.', ',') + '€ · quedan ' + pendienteCobro(p).toFixed(2).replace('.', ',') + '€');
+      if (document.getElementById('modalOverlay').classList.contains('open')) document.getElementById('modalBody').innerHTML = cobroPedidoFormHtml(i);
+    }
+  }
+  // Numeración correlativa + cadena de hashes (SHA-256) de cada ticket: cada ticket enlaza con el
+  // hash del anterior, así cualquier alteración posterior rompe la cadena. Es la base técnica de
+  // integridad para una futura facturación Verifactu, pero por sí sola NO es facturación certificada
+  // ante la AEAT (eso exige además la declaración responsable del software, que solo puede hacer el
+  // titular del negocio).
+  async function asignarNumeroTicket(p) {
+    const acc = getCurrentAccount();
+    acc.data.ultimoTicketNumero = (acc.data.ultimoTicketNumero || 0) + 1;
+    p.ticketNumero = acc.data.ultimoTicketNumero;
+    const base = (acc.data.ultimoTicketHash || '0') + '|' + p.id + '|' + p.total.toFixed(2) + '|' + p.fechaPago;
+    try {
+      const enc = new TextEncoder().encode(base);
+      const digest = await crypto.subtle.digest('SHA-256', enc);
+      const hash = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+      p.ticketHash = hash;
+      acc.data.ultimoTicketHash = hash;
+    } catch (e) {
+      p.ticketHash = '';
+    }
+  }
+  function abrirDividirCuenta(i) {
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[i];
+    const pendiente = pendienteCobro(p);
+    document.getElementById('modalBody').innerHTML = `
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="abrirCobroPedido(${i})" class="text-slate-400 hover:text-navy transition" title="Atrás">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <h3 class="text-xl font-bold text-navy">Dividir cuenta</h3>
+      </div>
+      <p class="mt-1.5 text-sm text-slate-500">Pendiente: <strong class="text-navy">${pendiente.toFixed(2).replace('.', ',')}€</strong></p>
+      <button type="button" onclick="iniciarDivisionPartesIguales(${i})" class="mt-4 w-full rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition p-4 text-left">
+        <p class="text-sm font-semibold text-navy">👥 Por partes iguales</p>
+        <p class="text-xs text-slate-400 mt-0.5">Reparte lo pendiente entre varios comensales.</p>
+      </button>
+      <button type="button" onclick="iniciarDivisionPorArticulos(${i})" class="mt-2.5 w-full rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition p-4 text-left">
+        <p class="text-sm font-semibold text-navy">🍽️ Por artículos</p>
+        <p class="text-xs text-slate-400 mt-0.5">Elige qué platos paga cada persona.</p>
+      </button>
+    `;
+  }
+  let divisionPartesEnCurso = null; // { idx, restantes }
+  function iniciarDivisionPartesIguales(i) {
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[i];
+    const n = parseInt(prompt('¿Entre cuántas personas se divide el pendiente (' + pendienteCobro(p).toFixed(2).replace('.', ',') + '€)?', '2'), 10);
+    if (!n || n < 1) return;
+    divisionPartesEnCurso = { idx: i, restantes: n };
+    mostrarSiguienteParteIgual();
+  }
+  function mostrarSiguienteParteIgual() {
+    if (!divisionPartesEnCurso) return;
+    const { idx, restantes } = divisionPartesEnCurso;
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[idx];
+    const pendiente = p ? pendienteCobro(p) : 0;
+    if (!p || pendiente <= 0.005 || restantes <= 0) { divisionPartesEnCurso = null; return; }
+    const importe = Math.round((pendiente / restantes) * 100) / 100;
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Dividir cuenta · ${svgEsc(p.mesa)}</h3>
+      <p class="mt-1.5 text-sm text-slate-500">Quedan ${restantes} parte${restantes === 1 ? '' : 's'} por cobrar</p>
+      <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
+        <p class="text-sm font-semibold text-navy">Importe de esta parte</p>
+        <p class="text-xl font-bold text-navy">${importe.toFixed(2).replace('.', ',')}€</p>
+      </div>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Método de pago</label>
+      <div class="grid grid-cols-3 gap-2">
+        <button type="button" onclick="cobrarParteIgual('Efectivo')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy">💶 Efectivo</button>
+        <button type="button" onclick="cobrarParteIgual('Tarjeta')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy">💳 Tarjeta</button>
+        <button type="button" onclick="cobrarParteIgual('Bizum')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy">📱 Bizum</button>
+      </div>
+      <button type="button" onclick="divisionPartesEnCurso = null; abrirCobroPedido(${idx})" class="mt-3 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cancelar división</button>
+    `;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  async function cobrarParteIgual(metodo) {
+    if (!divisionPartesEnCurso) return;
+    const { idx, restantes } = divisionPartesEnCurso;
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[idx];
+    const pendiente = pendienteCobro(p);
+    const importe = Math.round((pendiente / restantes) * 100) / 100;
+    divisionPartesEnCurso.restantes -= 1;
+    const enCurso = divisionPartesEnCurso;
+    await registrarCobroParcial(idx, importe, metodo, 'Parte igual (' + restantes + ' pendientes)');
+    const pAhora = getCurrentAccount().data.pedidos[idx];
+    if (enCurso.restantes > 0 && pAhora && pendienteCobro(pAhora) > 0.005) {
+      divisionPartesEnCurso = enCurso;
+      mostrarSiguienteParteIgual();
+    } else {
+      divisionPartesEnCurso = null;
+    }
+  }
+  let divisionArticulosEnCurso = null; // { idx, seleccion: { platoIdx: cantidad } }
+  function iniciarDivisionPorArticulos(i) {
+    divisionArticulosEnCurso = { idx: i, seleccion: {} };
+    renderDivisionPorArticulos();
+  }
+  function renderDivisionPorArticulos() {
+    const { idx, seleccion } = divisionArticulosEnCurso;
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[idx];
+    const pendiente = pendienteCobro(p);
+    const filas = (p.platos || []).map((pl, pi) => {
+      const restante = (pl.cantidad || 1) - (pl.pagadoCantidad || 0);
+      if (restante <= 0) return '';
+      const elegido = seleccion[pi] || 0;
+      return `<div class="flex items-center justify-between gap-2 py-2 border-b border-slate-100 last:border-0">
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-navy truncate">${svgEsc(pl.nombre)}</p>
+          <p class="text-xs text-slate-400">${svgEsc(pl.precio)} · quedan ${restante} por cobrar</p>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button type="button" onclick="cambiarSeleccionDivisionArticulo(${pi}, -1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">−</button>
+          <span class="text-sm font-semibold text-navy w-5 text-center">${elegido}</span>
+          <button type="button" onclick="cambiarSeleccionDivisionArticulo(${pi}, 1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">+</button>
+        </div>
+      </div>`;
+    }).join('');
+    const subtotal = Object.keys(seleccion).reduce((sum, pi) => sum + precioToNumero(p.platos[pi].precio) * seleccion[pi], 0);
+    document.getElementById('modalBody').innerHTML = `
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="divisionArticulosEnCurso = null; abrirCobroPedido(${idx})" class="text-slate-400 hover:text-navy transition" title="Atrás">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <h3 class="text-xl font-bold text-navy">Elige qué paga esta persona</h3>
+      </div>
+      <p class="mt-1.5 text-sm text-slate-500">Pendiente total: ${pendiente.toFixed(2).replace('.', ',')}€</p>
+      <div class="mt-3 border border-slate-200 rounded-lg px-3 max-h-64 overflow-y-auto">${filas || '<p class="text-sm text-slate-400 py-4 text-center">Nada pendiente de cobrar.</p>'}</div>
+      <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
+        <p class="text-sm font-semibold text-navy">Subtotal de esta parte</p>
+        <p class="text-lg font-bold text-navy">${subtotal.toFixed(2).replace('.', ',')}€</p>
+      </div>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Método de pago</label>
+      <div class="grid grid-cols-3 gap-2">
+        <button type="button" ${subtotal <= 0 ? 'disabled' : ''} onclick="confirmarSubCobroArticulos('Efectivo')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy disabled:opacity-40">💶 Efectivo</button>
+        <button type="button" ${subtotal <= 0 ? 'disabled' : ''} onclick="confirmarSubCobroArticulos('Tarjeta')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy disabled:opacity-40">💳 Tarjeta</button>
+        <button type="button" ${subtotal <= 0 ? 'disabled' : ''} onclick="confirmarSubCobroArticulos('Bizum')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy disabled:opacity-40">📱 Bizum</button>
+      </div>
+    `;
+  }
+  function cambiarSeleccionDivisionArticulo(pi, delta) {
+    const { idx, seleccion } = divisionArticulosEnCurso;
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[idx];
+    const pl = p.platos[pi];
+    const restante = (pl.cantidad || 1) - (pl.pagadoCantidad || 0);
+    const actual = seleccion[pi] || 0;
+    const nueva = Math.max(0, Math.min(restante, actual + delta));
+    if (nueva === 0) delete seleccion[pi]; else seleccion[pi] = nueva;
+    renderDivisionPorArticulos();
+  }
+  async function confirmarSubCobroArticulos(metodo) {
+    if (!divisionArticulosEnCurso) return;
+    const { idx, seleccion } = divisionArticulosEnCurso;
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[idx];
+    const entradas = Object.keys(seleccion);
+    if (!entradas.length) return;
+    const subtotal = entradas.reduce((sum, pi) => sum + precioToNumero(p.platos[pi].precio) * seleccion[pi], 0);
+    const detalle = entradas.map(pi => seleccion[pi] + 'x ' + p.platos[pi].nombre).join(', ');
+    entradas.forEach(pi => { p.platos[pi].pagadoCantidad = (p.platos[pi].pagadoCantidad || 0) + seleccion[pi]; });
+    divisionArticulosEnCurso = null;
+    await registrarCobroParcial(idx, subtotal, metodo, detalle);
   }
   function mostrarTicket(p) {
     const acc = getCurrentAccount();
     const fecha = new Date(p.fechaPago || p.fecha);
+    const logo = acc.data.cartaDigital && acc.data.cartaDigital.logo;
     const itemsHtml = (p.platos && p.platos.length)
-      ? p.platos.map(pl => `<div class="flex justify-between text-sm py-1"><span>${pl.cantidad}x ${pl.nombre}</span><span>${(precioToNumero(pl.precio) * pl.cantidad).toFixed(2).replace('.', ',')}€</span></div>`).join('')
-      : `<p class="text-sm">${p.items}</p>`;
+      ? p.platos.map(pl => `<div class="flex justify-between text-sm py-1"><span>${pl.cantidad}x ${svgEsc(pl.nombre)}</span><span>${(precioToNumero(pl.precio) * pl.cantidad).toFixed(2).replace('.', ',')}€</span></div>`).join('')
+      : `<p class="text-sm">${svgEsc(p.items)}</p>`;
+    const cobrosHtml = (p.cobros && p.cobros.length > 1)
+      ? p.cobros.map(c => `<div class="flex justify-between text-xs text-slate-500 py-0.5"><span>${svgEsc(c.detalle || 'Cobro')}</span><span>${c.importe.toFixed(2).replace('.', ',')}€ · ${svgEsc(c.metodo)}</span></div>`).join('')
+      : `<p class="text-xs text-slate-400 mt-2 text-center">Pagado con ${svgEsc(p.metodoPago || '')}</p>`;
     document.getElementById('ticketBody').innerHTML = `
       <div class="text-center">
-        <h1 class="text-lg font-bold text-navy">${acc.restaurantName || 'Restaurante'}</h1>
+        ${logo ? `<img src="${logo}" class="w-12 h-12 rounded-lg object-cover mx-auto mb-2">` : ''}
+        <h1 class="text-lg font-bold text-navy">${svgEsc(acc.restaurantName || 'Restaurante')}</h1>
         <p class="text-xs text-slate-400 mt-1">${fecha.toLocaleDateString('es-ES')} · ${fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</p>
-        <p class="text-xs text-slate-400">${p.mesa}</p>
+        <p class="text-xs text-slate-400">${svgEsc(p.mesa)}${p.ticketNumero ? ' · Ticket nº ' + p.ticketNumero : ''}</p>
       </div>
       <div class="mt-4 border-t border-b border-dashed border-slate-300 py-3">${itemsHtml}</div>
       <div class="flex justify-between mt-3 text-base font-bold text-navy">
         <span>Total</span><span>${p.total.toFixed(2).replace('.', ',')}€</span>
       </div>
-      <p class="text-xs text-slate-400 mt-2 text-center">Pagado con ${p.metodoPago}</p>
-      <p class="text-xs text-amber-600 font-medium mt-3 text-center ticket-no-print">Ticket de prueba — modo simulado, ningún cobro real procesado.</p>
+      ${cobrosHtml}
+      ${p.ticketHash ? `<p class="text-[9px] text-slate-300 mt-2 text-center break-all ticket-no-print" title="Cadena de integridad interna del ticket">#${p.ticketHash.slice(0, 24)}…</p>` : ''}
+      <p class="text-xs text-amber-600 font-medium mt-3 text-center ticket-no-print">Recibo simple — no es una factura fiscal certificada (Verifactu) hasta que se active la conexión con la Agencia Tributaria.</p>
+      <button type="button" onclick="enviarTicketPorEmail()" class="mt-4 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5 ticket-no-print">✉️ Enviar por email</button>
     `;
+    ticketActual = p;
     document.getElementById('appRoot').style.display = 'none';
     document.getElementById('ticketRoot').style.display = 'block';
+  }
+  let ticketActual = null;
+  function enviarTicketPorEmail() {
+    const p = ticketActual;
+    if (!p) return;
+    const acc = getCurrentAccount();
+    const destino = prompt('¿A qué email se lo enviamos?');
+    if (!destino) return;
+    const lineas = (p.platos || []).map(pl => pl.cantidad + 'x ' + pl.nombre + ' — ' + (precioToNumero(pl.precio) * pl.cantidad).toFixed(2).replace('.', ',') + '€').join('%0D%0A');
+    const asunto = encodeURIComponent('Recibo · ' + (acc.restaurantName || 'Restaurante') + (p.ticketNumero ? ' · Ticket nº ' + p.ticketNumero : ''));
+    const cuerpo = encodeURIComponent((acc.restaurantName || 'Restaurante') + '\n' + p.mesa + '\n\n') + lineas + encodeURIComponent('\n\nTotal: ' + p.total.toFixed(2).replace('.', ',') + '€\nPagado con ' + (p.metodoPago || '') + '\n\nEste recibo no es una factura fiscal certificada.');
+    window.location.href = 'mailto:' + encodeURIComponent(destino) + '?subject=' + asunto + '&body=' + cuerpo;
   }
   function cerrarTicket() {
     document.getElementById('ticketRoot').style.display = 'none';
@@ -4612,8 +4857,7 @@
     const caja = acc.data.caja;
     const hoy = new Date().toISOString().slice(0, 10);
     const cobradosHoy = acc.data.pedidos.filter(p => p.estado === 'Pagado' && (p.fechaPago || '').slice(0, 10) === hoy);
-    const porMetodo = { Efectivo: 0, Tarjeta: 0, Bizum: 0 };
-    cobradosHoy.forEach(p => { porMetodo[p.metodoPago] = (porMetodo[p.metodoPago] || 0) + p.total; });
+    const porMetodo = porMetodoDelDia(cobradosHoy);
     const totalHoy = cobradosHoy.reduce((s, p) => s + p.total, 0);
     document.getElementById('modalCard').classList.remove('modal-wide');
     document.getElementById('modalBody').innerHTML = `
@@ -4638,8 +4882,7 @@
     const caja = acc.data.caja;
     const hoy = new Date().toISOString().slice(0, 10);
     const cobradosHoy = acc.data.pedidos.filter(p => p.estado === 'Pagado' && (p.fechaPago || '').slice(0, 10) === hoy);
-    const porMetodo = { Efectivo: 0, Tarjeta: 0, Bizum: 0 };
-    cobradosHoy.forEach(p => { porMetodo[p.metodoPago] = (porMetodo[p.metodoPago] || 0) + p.total; });
+    const porMetodo = porMetodoDelDia(cobradosHoy);
     const totalHoy = cobradosHoy.reduce((s, p) => s + p.total, 0);
     caja.historico.push({
       fecha: hoy,
@@ -4740,7 +4983,7 @@
     const total = elegidos.reduce((sum, m) => sum + precioToNumero(m.precio) * ventaRapidaEnCurso.cantidades[m.idx], 0);
     const mesa = ventaRapidaEnCurso.mesaNumero ? 'Mesa ' + ventaRapidaEnCurso.mesaNumero : 'Venta directa';
     const acc = getCurrentAccount();
-    acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: null, total, estado: 'Servido', fecha: new Date().toISOString(), origen: 'tpv' });
+    acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: null, total, estado: 'Servido', fecha: new Date().toISOString(), origen: 'tpv', creadoPor: identidadChatActual().nombre });
     if (ventaRapidaEnCurso.mesaNumero) acc.data.mesaEstados[ventaRapidaEnCurso.mesaNumero - 1] = 'Ocupada';
     saveCurrentAccountData(acc.data);
     const nuevoIdx = acc.data.pedidos.length - 1;
@@ -4848,7 +5091,7 @@
     const total = elegidos.reduce((sum, m) => sum + precioToNumero(m.precio) * pedidoEnCurso.cantidades[m.idx], 0);
     const mesa = 'Mesa ' + pedidoEnCurso.numero;
     const acc = getCurrentAccount();
-    acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: pedidoEnCurso.personas, total, estado: 'En cocina', fecha: new Date().toISOString() });
+    acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: pedidoEnCurso.personas, total, estado: 'En cocina', fecha: new Date().toISOString(), creadoPor: identidadChatActual().nombre });
     acc.data.mesaEstados[pedidoEnCurso.numero - 1] = 'Ocupada';
     saveCurrentAccountData(acc.data);
     renderPedidos();
@@ -5086,7 +5329,7 @@
     return `<option value="" ${!seleccionada ? 'selected' : ''}>Sin sección</option>` + opts;
   }
   function platoFormFieldsHtml(acc, m) {
-    m = m || { nombre: '', precio: '', descripcion: '', categoria: '', estado: 'Disponible', foto: '' };
+    m = m || { nombre: '', precio: '', descripcion: '', categoria: '', estado: 'Disponible', foto: '', costo: '' };
     return `
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Nombre del plato</label>
       <input id="menuNombre" type="text" placeholder="Paella valenciana" value="${escAttr(m.nombre)}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
@@ -5094,6 +5337,9 @@
         <div><label class="block text-sm font-medium text-navy mb-1.5">Precio</label><input id="menuPrecio" type="text" placeholder="14,50€" value="${escAttr(m.precio)}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
         <div><label class="block text-sm font-medium text-navy mb-1.5">Estado</label><select id="menuEstado" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"><option value="Disponible" ${m.estado !== 'Agotado' ? 'selected' : ''}>Disponible</option><option value="Agotado" ${m.estado === 'Agotado' ? 'selected' : ''}>Agotado</option></select></div>
       </div>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Coste del plato (opcional)</label>
+      <input id="menuCosto" type="text" placeholder="Ej. 4,20€" value="${escAttr(m.costo || '')}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <p class="mt-1 text-xs text-slate-400">Lo que te cuesta prepararlo (ingredientes). Sirve para calcular el margen en los informes.</p>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Sección</label>
       <select id="menuCategoria" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${opcionesSeccionSelect(acc, m.categoria)}</select>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Descripción (opcional)</label>
@@ -5133,15 +5379,16 @@
     const estado = document.getElementById('menuEstado').value;
     const categoria = document.getElementById('menuCategoria').value;
     const descripcion = document.getElementById('menuDescripcion').value.trim();
+    const costo = document.getElementById('menuCosto').value.trim();
     const fileInput = document.getElementById('menuFoto');
     const quitarFoto = document.getElementById('menuQuitarFoto');
     if (!nombre || !precio) return modalFormError('Escribe al menos el nombre y el precio.');
     const finish = (foto) => {
       if (i === -1) {
-        acc.data.menu.push({ nombre, precio, estado, categoria, descripcion, foto: foto || '' });
+        acc.data.menu.push({ nombre, precio, estado, categoria, descripcion, costo, foto: foto || '' });
       } else {
         const m = acc.data.menu[i];
-        Object.assign(m, { nombre, precio, estado, categoria, descripcion, foto });
+        Object.assign(m, { nombre, precio, estado, categoria, descripcion, costo, foto });
       }
       saveCurrentAccountData(acc.data);
       renderMenu();
