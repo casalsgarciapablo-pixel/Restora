@@ -1490,7 +1490,7 @@
                 <p id="dashRevValue" class="text-[26px] font-bold text-navy tracking-tight tabular-nums leading-none">0€</p>
                 <span id="dashRevTrend" class="kpi-trend hidden"></span>
               </div>
-              <p id="dashRevSubtitle" class="text-xs text-slate-400 mt-1.5">Evolución diaria de tus ingresos</p>
+              <p id="dashRevSubtitle" class="text-xs text-slate-400 mt-1.5">Ingresos de hoy, hora a hora</p>
             </div>
             <div class="dash-seg" id="dashRevSeg">
               <button data-p="dia" class="active" onclick="setDashRevPeriodo('dia')">Día</button>
@@ -7323,10 +7323,22 @@
     return ref || new Date();
   }
   function ingresosPorPeriodo(pedidos, periodo) {
-    if (periodo === 'dia') {
-      return pedidosPorDia(pedidos).slice(-14).map(d => ({ label: fmtDia(d.date), value: d.ingresos }));
-    }
     const ref = fechaReferencia(pedidos);
+    if (periodo === 'dia') {
+      // Las 24 horas del día de referencia (medianoche a medianoche), igual que "semana" son los 7 días
+      const y = ref.getFullYear(), m = ref.getMonth(), d = ref.getDate();
+      const horas = [];
+      for (let h = 0; h < 24; h++) {
+        const ini = new Date(y, m, d, h).getTime();
+        horas.push({ ini, fin: ini + 3600000, label: h + 'h', value: 0 });
+      }
+      pedidos.forEach(p => {
+        const t = new Date(p.fecha).getTime();
+        const b = horas.find(x => t >= x.ini && t < x.fin);
+        if (b) b.value += p.total || 0;
+      });
+      return horas.map(x => ({ label: x.label, value: x.value }));
+    }
     if (periodo === 'semana') {
       // Los 7 días de la semana (lunes a domingo) que contiene la fecha de referencia
       const monday = new Date(ref); const wd = (monday.getDay() + 6) % 7;
@@ -7412,7 +7424,7 @@
   }
 
   const DASH_REV_SUB = {
-    dia: 'Evolución diaria de tus ingresos', semana: 'Ingresos de cada día de la semana',
+    dia: 'Ingresos de hoy, hora a hora', semana: 'Ingresos de cada día de la semana',
     mes: 'Ingresos de cada semana del mes', anio: 'Ingresos de cada mes del año',
   };
   let dashRevPeriodo = 'dia';
@@ -8665,6 +8677,7 @@
     // SaaS: dashboard grafico
     "Ingresos por día": ["Ingressos per dia", "Revenue by day"],
     "Evolución diaria de tus ingresos": ["Evolució diària dels teus ingressos", "Daily revenue trend"],
+    "Ingresos de hoy, hora a hora": ["Ingressos d'avui, hora a hora", "Today's revenue, hour by hour"],
     "Platos más vendidos": ["Plats més venuts", "Best-selling dishes"],
     "Ranking por unidades vendidas": ["Rànquing per unitats venudes", "Ranked by units sold"],
     "Pedidos por canal": ["Comandes per canal", "Orders by channel"],
