@@ -3568,10 +3568,82 @@
       mesas: d.mesaEstados.map((estado, i) => ({ numero: i + 1, nombre: d.mesaNombres[i] || null, capacidad: d.mesaCapacidades[i] || null, estado })),
       pedidos: d.pedidos,
       reservas: d.reservas,
-      menu: d.menu.map(m => ({ nombre: m.nombre, precio: m.precio, estado: m.estado })),
+      menu: d.menu.map(m => ({ nombre: m.nombre, precio: m.precio, estado: m.estado, seccion: m.categoria || '' })),
+      menuSecciones: d.menuSecciones,
       personal: d.personal.map(p => ({ nombre: p.nombre, rol: p.rol, turno: p.turno, estado: p.estado })),
       inventario: d.inventario,
     };
+  }
+
+  // ---- Ejecutor de acciones del asistente: la IA devuelve acciones estructuradas y aquí se aplican de verdad ----
+  function ejecutarAccionesIA(acciones) {
+    if (!Array.isArray(acciones) || !acciones.length) return 0;
+    const acc = getCurrentAccount();
+    if (!acc) return 0;
+    let hechas = 0;
+    const asegurarSeccion = (nombre) => {
+      const limpio = String(nombre || '').trim();
+      if (!limpio) return '';
+      const existente = acc.data.menuSecciones.find(s => s.toLowerCase() === limpio.toLowerCase());
+      if (existente) return existente;
+      acc.data.menuSecciones.push(limpio);
+      return limpio;
+    };
+    const buscarPlato = (nombre) => acc.data.menu.find(m => m.nombre.toLowerCase() === String(nombre || '').trim().toLowerCase());
+    const normPrecio = (p) => { let pr = String(p).trim().replace('.', ','); if (!pr.includes('€')) pr += '€'; return pr; };
+    acciones.slice(0, 60).forEach(a => {
+      if (!a || typeof a !== 'object') return;
+      try {
+        if (a.tipo === 'anadir_platos' && Array.isArray(a.platos)) {
+          a.platos.slice(0, 60).forEach(p => {
+            if (!p || !p.nombre || p.precio == null || buscarPlato(p.nombre)) return;
+            acc.data.menu.push({ nombre: String(p.nombre).trim(), precio: normPrecio(p.precio), estado: 'Disponible', categoria: asegurarSeccion(p.seccion), descripcion: String(p.descripcion || '').trim(), foto: '' });
+            hechas++;
+          });
+        } else if (a.tipo === 'editar_plato' && a.nombre && a.cambios && typeof a.cambios === 'object') {
+          const m = buscarPlato(a.nombre);
+          if (!m) return;
+          const c = a.cambios;
+          if (c.precio != null) m.precio = normPrecio(c.precio);
+          if (c.seccion != null) m.categoria = asegurarSeccion(c.seccion);
+          if (c.descripcion != null) m.descripcion = String(c.descripcion).trim();
+          if (c.estado === 'Disponible' || c.estado === 'Agotado') m.estado = c.estado;
+          if (c.nombre) m.nombre = String(c.nombre).trim();
+          hechas++;
+        } else if (a.tipo === 'eliminar_platos' && Array.isArray(a.nombres)) {
+          a.nombres.slice(0, 60).forEach(n => {
+            const i = acc.data.menu.findIndex(m => m.nombre.toLowerCase() === String(n || '').trim().toLowerCase());
+            if (i !== -1) { acc.data.menu.splice(i, 1); hechas++; }
+          });
+        } else if (a.tipo === 'anadir_seccion' && a.nombre) {
+          const antes = acc.data.menuSecciones.length;
+          asegurarSeccion(a.nombre);
+          if (acc.data.menuSecciones.length > antes) hechas++;
+        } else if (a.tipo === 'crear_reserva' && a.fecha && a.hora && a.cliente) {
+          let mesa = String(a.mesa || '').trim();
+          if (/^\d+$/.test(mesa)) mesa = 'Mesa ' + mesa;
+          if (!mesa) mesa = 'Mesa 1';
+          acc.data.reservas.push({ fecha: String(a.fecha), hora: String(a.hora), cliente: String(a.cliente).trim(), personas: String(a.personas || '2'), mesa, estado: 'Pendiente' });
+          hechas++;
+        } else if (a.tipo === 'actualizar_stock' && a.producto && a.stock != null) {
+          const ing = findIngrediente(acc, a.producto);
+          const nuevo = invNum(a.stock);
+          if (ing && nuevo != null) { ing.stock = nuevo; hechas++; }
+        } else if (a.tipo === 'anadir_ingredientes' && Array.isArray(a.ingredientes)) {
+          a.ingredientes.slice(0, 60).forEach(g => {
+            if (!g || !g.producto || findIngrediente(acc, g.producto)) return;
+            acc.data.inventario.push({ producto: String(g.producto).trim(), unidad: String(g.unidad || '').trim(), stock: invNum(g.stock) != null ? invNum(g.stock) : 0, minimo: invNum(g.minimo) != null ? invNum(g.minimo) : 0 });
+            hechas++;
+          });
+        }
+      } catch (e) {}
+    });
+    if (hechas) {
+      saveCurrentAccountData(acc.data);
+      renderAllSections();
+      actualizarMesasPorReservas();
+    }
+    return hechas;
   }
   async function askIA() {
     const input = document.getElementById('iaInput');
@@ -3601,6 +3673,8 @@
       });
       const respuesta = (!error && data && data.respuesta) ? data.respuesta : 'No he podido responder ahora mismo. Inténtalo de nuevo en un momento.';
       conv.mensajes.push({ role: 'assistant', content: respuesta });
+      const nAcciones = ejecutarAccionesIA(!error && data ? data.acciones : null);
+      if (nAcciones) showToast('🤖 ' + nAcciones + (nAcciones === 1 ? ' cambio aplicado' : ' cambios aplicados') + ' por el asistente');
     } catch (e) {
       conv.mensajes.push({ role: 'assistant', content: 'No he podido responder ahora mismo. Inténtalo de nuevo en un momento.' });
     }
@@ -3666,6 +3740,8 @@
       });
       const respuesta = (!error && data && data.respuesta) ? data.respuesta : 'No he podido responder ahora mismo. Inténtalo de nuevo en un momento.';
       iaQuickMensajes.push({ role: 'assistant', content: respuesta });
+      const nAcciones = ejecutarAccionesIA(!error && data ? data.acciones : null);
+      if (nAcciones) showToast('🤖 ' + nAcciones + (nAcciones === 1 ? ' cambio aplicado' : ' cambios aplicados') + ' por el asistente');
     } catch (e) {
       iaQuickMensajes.push({ role: 'assistant', content: 'No he podido responder ahora mismo. Inténtalo de nuevo en un momento.' });
     }
