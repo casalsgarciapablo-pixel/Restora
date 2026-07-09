@@ -3379,6 +3379,8 @@
     acc.data.mesaEstados[idx] = nuevoEstado;
     if (nuevoEstado === 'Ocupada') {
       if (antes !== 'Ocupada') acc.data.mesaOcupadaDesde[idx] = new Date().toISOString();
+      // La persona que había reservado ya ha llegado y se ha sentado: su reserva se da por cumplida.
+      if (antes === 'Reservada') eliminarReservaCumplidaDeMesa(acc, idx);
     } else {
       acc.data.mesaOcupadaDesde[idx] = null;
     }
@@ -3422,6 +3424,13 @@
       if (minParaReserva > -RESERVA_GRACIA_MIN && (!mejor || minParaReserva < mejor.minParaReserva)) mejor = { r, minParaReserva };
     });
     return mejor ? mejor.r : null;
+  }
+  // Al sentarse el cliente (mesa Reservada → Ocupada), su reserva de hoy se da por cumplida y se borra.
+  function eliminarReservaCumplidaDeMesa(acc, i) {
+    const r = reservaVigenteDeMesa(i);
+    if (!r) return;
+    const idx = acc.data.reservas.indexOf(r);
+    if (idx !== -1) acc.data.reservas.splice(idx, 1);
   }
   // Cuánto tiempo lleva ocupada una mesa: usa la marca guardada al ocuparla, y si no existe (mesas ya
   // ocupadas antes de esta función, o clientes que ocuparon vía QR) recurre a la fecha del pedido
@@ -3751,6 +3760,7 @@
     marcarEstadoMesa(acc, i, next);
     saveCurrentAccountData(acc.data);
     renderMesas();
+    renderReservas();
   }
 
   // ---- Auto-reservar mesas antes de la hora de la reserva (y liberarlas si no se presentan) ----
@@ -5199,6 +5209,7 @@
     renderPedidos();
     renderDashboardStats();
     renderMesas();
+    renderReservas();
     renderTPV();
     abrirCobroPedido(nuevoIdx);
   }
@@ -5436,6 +5447,7 @@
     renderPedidos();
     renderDashboardStats();
     renderMesas();
+    renderReservas();
     pedidoEnCurso = null;
     closeModal();
     showToast('Pedido enviado a cocina');
