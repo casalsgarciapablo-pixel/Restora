@@ -8924,8 +8924,12 @@
   }
   if ('speechSynthesis' in window) { try { speechSynthesis.getVoices(); } catch (e) {} }
 
-  // Hace clicable cada tarjeta de funcionalidades de la landing (por su etiqueta de sección)
+  // Hace clicable cada tarjeta de funcionalidades de la landing (por su etiqueta de sección).
+  // DESACTIVADO temporalmente a petición del usuario (hasta tener capturas reales de cada sección):
+  // pon FUNC_PAGES_ACTIVAS en true para reactivar las páginas de detalle.
+  const FUNC_PAGES_ACTIVAS = false;
   (function initFuncCards() {
+    if (!FUNC_PAGES_ACTIVAS) return;
     document.querySelectorAll('#landingRoot .card-shadow.p-7').forEach(card => {
       const labelEl = card.querySelector('p.text-accent.text-sm.font-semibold');
       if (!labelEl) return;
@@ -8941,7 +8945,7 @@
   (async function initAuth() {
     const params = new URLSearchParams(location.search);
     const funcionKey = params.get('funcion');
-    if (funcionKey && FUNCIONES_INFO[funcionKey]) {
+    if (FUNC_PAGES_ACTIVAS && funcionKey && FUNCIONES_INFO[funcionKey]) {
       abrirFuncionPage(funcionKey, true);
       return;
     }
