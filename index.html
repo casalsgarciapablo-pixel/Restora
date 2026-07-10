@@ -4571,7 +4571,32 @@
     }
     cargarInformeSemana(inicio, fin);
   }
+  // Navega a la semana anterior/siguiente a partir del lunes de la semana que se está viendo ahora.
+  function moverSemanaInforme(inicioActualISO, dir) {
+    const nuevaRef = new Date(new Date(inicioActualISO).getTime() + dir * 8 * 86400000);
+    const { inicio, fin } = getRangoSemanaDe(nuevaRef);
+    if (inicio > getUltimoDomingoCompleto()) { showToast('Esa semana todavía no ha terminado.'); return; }
+    cargarInformeSemana(inicio, fin);
+  }
+  let informeCargando = false;
+  function informeSkeletonHtml(mensaje) {
+    return `
+      <div class="text-center mt-6">
+        <svg class="animate-spin w-7 h-7 text-accent mx-auto" viewBox="0 0 24 24" fill="none"><circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path fill="currentColor" d="M12 2a10 10 0 0 1 10 10h-3a7 7 0 0 0-7-7V2z"></path></svg>
+        <p class="text-sm text-slate-400 mt-3">${mensaje}</p>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8">${'<div class="rounded-xl border border-slate-100 bg-slate-50 h-20 animate-pulse"></div>'.repeat(8)}</div>`;
+  }
+  function informeErrorHtml(inicio, fin) {
+    return `
+      <div class="text-center mt-10">
+        <p class="text-rose-500 font-semibold">No se ha podido generar el informe.</p>
+        <p class="text-sm text-slate-400 mt-1">Puede ser un problema de conexión momentáneo.</p>
+        <button type="button" onclick="cargarInformeSemana(new Date('${inicio.toISOString()}'), new Date('${fin.toISOString()}'), true)" class="mt-4 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Reintentar</button>
+      </div>`;
+  }
   async function cargarInformeSemana(inicio, fin, forzarRegenerar) {
+    if (informeCargando) { showToast('Ya se está generando un informe, espera un momento.'); return; }
     const acc = getCurrentAccount();
     const idSemana = inicio.toISOString().slice(0, 10) + '_' + fin.toISOString().slice(0, 10);
     const existente = acc.data.iaInformes.find(inf => inf.id === idSemana);
@@ -4579,7 +4604,8 @@
       renderInformeSemanal(existente, inicio, fin);
       return;
     }
-    document.getElementById('informeBody').innerHTML = '<p class="text-center text-slate-400 mt-10">' + (forzarRegenerar ? 'Regenerando informe…' : 'Generando informe de esa semana…') + '</p>';
+    informeCargando = true;
+    document.getElementById('informeBody').innerHTML = informeSkeletonHtml(forzarRegenerar ? 'Regenerando informe con los datos más recientes…' : 'Analizando la semana del ' + fmtFechaCorta(inicio) + ' al ' + fmtFechaCorta(fin) + '…');
     const pedidosSemana = acc.data.pedidos.filter(p => p.fecha && new Date(p.fecha) >= inicio && new Date(p.fecha) <= fin);
     const reservasSemana = acc.data.reservas.filter(r => r.fecha && new Date(r.fecha) >= inicio && new Date(r.fecha) <= fin);
     const rangoAnterior = getRangoSemanaDe(new Date(inicio.getTime() - 3 * 86400000));
@@ -4593,6 +4619,7 @@
       acc.data.iaInformes = acc.data.iaInformes.filter(inf => inf.id !== idSemana);
       acc.data.iaInformes.push(vacio);
       saveCurrentAccountData(acc.data);
+      informeCargando = false;
       renderInformeSemanal(vacio, inicio, fin);
       return;
     }
@@ -4613,14 +4640,19 @@
           personal: acc.data.personal.map(p => ({ nombre: p.nombre, rol: p.rol, turno: p.turno })),
         },
       });
-      const contenido = (!error && data && data.informe) ? data.informe : 'No se ha podido generar el informe ahora mismo. Inténtalo de nuevo más tarde.';
-      const informe = { id: idSemana, inicio: inicio.toISOString(), fin: fin.toISOString(), generadoEn: new Date().toISOString(), contenido, kpis };
+      informeCargando = false;
+      if (error || !data || !data.informe) {
+        document.getElementById('informeBody').innerHTML = informeErrorHtml(inicio, fin);
+        return;
+      }
+      const informe = { id: idSemana, inicio: inicio.toISOString(), fin: fin.toISOString(), generadoEn: new Date().toISOString(), contenido: data.informe, kpis };
       acc.data.iaInformes = acc.data.iaInformes.filter(inf => inf.id !== idSemana);
       acc.data.iaInformes.push(informe);
       saveCurrentAccountData(acc.data);
       renderInformeSemanal(informe, inicio, fin);
     } catch (e) {
-      document.getElementById('informeBody').innerHTML = '<p class="text-center text-rose-500 mt-10">No se ha podido generar el informe. Inténtalo de nuevo más tarde.</p>';
+      informeCargando = false;
+      document.getElementById('informeBody').innerHTML = informeErrorHtml(inicio, fin);
     }
   }
   function kpiPill(label, valor, sub, cls) {
@@ -4641,23 +4673,51 @@
         ${kpiPill('Mejor día', k.mejorDia ? new Date(k.mejorDia.fecha).toLocaleDateString('es-ES', { weekday: 'long' }) : '—', k.mejorDia ? eur(k.mejorDia.ingresos) : '')}
       </div>`;
   }
+  function informeTrendBadge(actual, previo) {
+    if (typeof actual !== 'number' || typeof previo !== 'number' || previo === 0) return '';
+    const d = ((actual - previo) / Math.abs(previo)) * 100;
+    const arriba = d >= 0;
+    return `<span class="text-[10px] font-semibold ${arriba ? 'text-emerald-600' : 'text-rose-500'}">${arriba ? '▲' : '▼'} ${Math.abs(d).toFixed(0)}%</span>`;
+  }
   function renderInformeSemanal(informe, inicio, fin) {
     const acc = getCurrentAccount();
-    const anteriores = acc.data.iaInformes.filter(inf => inf.id !== informe.id).slice().reverse();
+    const todos = acc.data.iaInformes.slice().sort((a, b) => new Date(a.inicio) - new Date(b.inicio));
+    const anteriores = todos.filter(inf => inf.id !== informe.id).slice().reverse();
+    const esUltimaSemana = fin >= getUltimoDomingoCompleto();
     const listaAnteriores = anteriores.length
-      ? `<div class="informe-no-print mt-8 pt-4 border-t border-slate-200">
-          <p class="text-xs font-semibold text-slate-400 mb-2">INFORMES ANTERIORES</p>
-          ${anteriores.map(inf => `<button onclick='verInformeGuardado("${inf.id}")' class="block w-full text-left text-sm text-accent hover:underline py-1">${fmtFechaCorta(new Date(inf.inicio))} - ${fmtFechaCorta(new Date(inf.fin))}</button>`).join('')}
+      ? `<div class="informe-no-print mt-10 pt-6 border-t border-slate-200">
+          <p class="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide">Informes anteriores (${anteriores.length})</p>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            ${anteriores.map((inf, idx) => {
+              const idxCronologico = todos.findIndex(t => t.id === inf.id);
+              const previo = idxCronologico > 0 ? todos[idxCronologico - 1] : null;
+              const ingresos = inf.kpis ? inf.kpis.ingresosTotales : null;
+              const trend = (ingresos != null && previo && previo.kpis) ? informeTrendBadge(ingresos, previo.kpis.ingresosTotales) : '';
+              return `<button onclick='verInformeGuardado("${inf.id}")' class="text-left rounded-xl border border-slate-200 bg-white hover:border-accent/40 hover:shadow-sm transition p-3.5">
+                <p class="text-xs font-semibold text-navy">${fmtFechaCorta(new Date(inf.inicio))} – ${fmtFechaCorta(new Date(inf.fin))}</p>
+                <div class="mt-1.5 flex items-center gap-2">
+                  <p class="text-lg font-bold text-navy">${ingresos != null ? ingresos.toFixed(2).replace('.', ',') + '€' : '—'}</p>
+                  ${trend}
+                </div>
+              </button>`;
+            }).join('')}
+          </div>
         </div>`
       : '';
     document.getElementById('informeBody').innerHTML = `
       <h1 class="text-2xl font-extrabold text-navy text-center">Informe semanal</h1>
-      <div class="mt-1 flex items-center justify-center gap-2 flex-wrap">
-        <p class="text-sm text-slate-500">${fmtFechaCorta(new Date(informe.inicio))} — ${fmtFechaCorta(new Date(informe.fin))} · ${acc.restaurantName || ''}</p>
-        <input type="date" class="informe-no-print text-xs border border-slate-200 rounded-md px-1.5 py-1" value="${fmtFechaInput(inicio)}" max="${fmtFechaInput(getUltimoDomingoCompleto())}" onchange="cambiarSemanaInforme(this.value)" title="Elegir otra semana">
-        <button type="button" onclick="cargarInformeSemana(new Date('${inicio.toISOString()}'), new Date('${fin.toISOString()}'), true)" class="informe-no-print text-xs font-semibold text-accent border border-accent/30 hover:bg-accent/5 transition rounded-full px-2.5 py-1" title="Volver a generar este informe con los datos más recientes">🔄 Regenerar</button>
+      <div class="informe-no-print mt-3 flex items-center justify-center gap-2">
+        <button type="button" onclick="moverSemanaInforme('${inicio.toISOString()}', -1)" class="w-8 h-8 rounded-full border border-slate-200 hover:bg-slate-50 transition flex items-center justify-center text-slate-500" title="Semana anterior">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <input type="date" class="text-xs border border-slate-200 rounded-md px-1.5 py-1.5" value="${fmtFechaInput(inicio)}" max="${fmtFechaInput(getUltimoDomingoCompleto())}" onchange="cambiarSemanaInforme(this.value)" title="Elegir otra semana">
+        <button type="button" onclick="moverSemanaInforme('${inicio.toISOString()}', 1)" ${esUltimaSemana ? 'disabled' : ''} class="w-8 h-8 rounded-full border border-slate-200 hover:bg-slate-50 transition flex items-center justify-center text-slate-500 disabled:opacity-30 disabled:pointer-events-none" title="Semana siguiente">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button type="button" onclick="cargarInformeSemana(new Date('${inicio.toISOString()}'), new Date('${fin.toISOString()}'), true)" class="ml-1 text-xs font-semibold text-accent border border-accent/30 hover:bg-accent/5 transition rounded-full px-3 py-1.5" title="Volver a generar este informe con los datos más recientes">🔄 Regenerar</button>
       </div>
-      ${informe.generadoEn ? `<p class="informe-no-print text-center text-[11px] text-slate-300 mt-1">Generado el ${new Date(informe.generadoEn).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>` : ''}
+      <p class="text-center text-sm text-slate-500 mt-2">${fmtFechaCorta(new Date(informe.inicio))} — ${fmtFechaCorta(new Date(informe.fin))} · ${acc.restaurantName || ''}</p>
+      ${informe.generadoEn ? `<p class="informe-no-print text-center text-[11px] text-slate-300 mt-0.5">Generado el ${new Date(informe.generadoEn).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>` : ''}
       <div class="mt-6">${kpiCardsHtml(informe.kpis)}</div>
       <div class="mt-8 text-sm text-slate-600 text-left">${markdownSimpleHtml(informe.contenido)}</div>
       ${listaAnteriores}
