@@ -3522,7 +3522,7 @@
   }
   function mesaVisualHtml(capacidad, etiqueta, st, forma) {
     const n = Math.max(1, Math.min(12, capacidad));
-    const base = Math.max(64, Math.min(140, 64 + n * 6));
+    const base = Math.max(72, Math.min(152, 72 + n * 7));
     const w = forma === 'rectangular' ? Math.round(base * 1.35) : base;
     const h = forma === 'rectangular' ? Math.round(base * 0.8) : base;
     const radius = forma === 'redonda' ? '50%' : '12px';
