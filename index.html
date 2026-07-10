@@ -2841,6 +2841,7 @@
     data.personal.forEach(p => {
       p.fichajes = Array.isArray(p.fichajes) ? p.fichajes.filter(f => f && f.entrada) : [];
       p.email = p.email || '';
+      p.costeHora = typeof p.costeHora === 'number' ? p.costeHora : 0;
     });
     data.inventario = Array.isArray(data.inventario) ? data.inventario : [];
     data.inventario = data.inventario.map(p => {
@@ -4468,6 +4469,90 @@
   function fmtFechaInput(d) {
     return d.toISOString().slice(0, 10);
   }
+  function round2(n) { return Math.round(n * 100) / 100; }
+  // Calcula los KPIs profesionales de la semana con cifras exactas (nada de pedirle a la IA que
+  // sume/reste sobre datos en bruto: los números se calculan aquí y se le pasan ya hechos).
+  function calcularKpisSemana(pedidosSemana, reservasSemana, acc, inicio, fin) {
+    const dias = Math.max(1, Math.round((fin - inicio) / 86400000) + 1);
+    const pagados = pedidosSemana.filter(p => p.estado === 'Pagado');
+    const ingresosTotales = pagados.reduce((s, p) => s + (p.total || 0), 0);
+    const numPedidos = pagados.length;
+    const ticketMedio = numPedidos ? ingresosTotales / numPedidos : 0;
+    const comensales = pagados.reduce((s, p) => s + (p.personas || 0), 0);
+
+    const canal = { sala: 0, tpv: 0, qr: 0, glovo: 0, uber: 0, justeat: 0 };
+    pagados.forEach(p => {
+      const o = p.origen;
+      if (o === 'tpv') canal.tpv += p.total || 0;
+      else if (o === 'qr') canal.qr += p.total || 0;
+      else if (o === 'glovo') canal.glovo += p.total || 0;
+      else if (o === 'uber') canal.uber += p.total || 0;
+      else if (o === 'justeat') canal.justeat += p.total || 0;
+      else canal.sala += p.total || 0;
+    });
+    const deliveryTotal = canal.glovo + canal.uber + canal.justeat;
+
+    // Food cost %: solo sobre los platos cuyo coste has rellenado en el Menú (no se inventa nada).
+    const costosPorNombre = {};
+    (acc.data.menu || []).forEach(m => { if (m.costo) costosPorNombre[(m.nombre || '').toLowerCase()] = precioToNumero(m.costo); });
+    let costeComidaTotal = 0, ingresosConCoste = 0;
+    const platoStats = new Map();
+    pagados.forEach(p => (p.platos || []).forEach(pl => {
+      const ingresoLinea = precioLineaConPromo(pl.nombre, pl.precio, pl.cantidad).total;
+      const entry = platoStats.get(pl.nombre) || { nombre: pl.nombre, unidades: 0, ingresos: 0 };
+      entry.unidades += pl.cantidad || 0;
+      entry.ingresos += ingresoLinea;
+      platoStats.set(pl.nombre, entry);
+      const costoUnit = costosPorNombre[(pl.nombre || '').toLowerCase()];
+      if (typeof costoUnit === 'number') { costeComidaTotal += costoUnit * (pl.cantidad || 0); ingresosConCoste += ingresoLinea; }
+    }));
+    const foodCostPct = ingresosConCoste > 0 ? (costeComidaTotal / ingresosConCoste * 100) : null;
+    const coberturaCosteMenu = ingresosTotales > 0 ? Math.round(ingresosConCoste / ingresosTotales * 100) : 0;
+
+    const platosTop = Array.from(platoStats.values()).sort((a, b) => b.unidades - a.unidades).slice(0, 8).map(pl => {
+      const costoUnit = costosPorNombre[(pl.nombre || '').toLowerCase()];
+      const margenPct = (typeof costoUnit === 'number' && pl.ingresos > 0) ? ((pl.ingresos - costoUnit * pl.unidades) / pl.ingresos * 100) : null;
+      return { nombre: pl.nombre, unidades: pl.unidades, ingresos: round2(pl.ingresos), margenPct: margenPct != null ? Math.round(margenPct * 10) / 10 : null };
+    });
+
+    // Labor cost %: solo si hay algún empleado con "Coste/hora" relleno (dato opcional del ficha de Personal).
+    let costePersonalTotal = 0, horasTrabajadas = 0, hayCosteHora = false;
+    (acc.data.personal || []).forEach(p => {
+      const horasMs = (p.fichajes || []).filter(f => f.entrada && new Date(f.entrada) >= inicio && new Date(f.entrada) <= fin).reduce((s, f) => s + duracionFichaje(f), 0);
+      const horas = horasMs / 3600000;
+      horasTrabajadas += horas;
+      if (p.costeHora > 0) { costePersonalTotal += horas * p.costeHora; hayCosteHora = true; }
+    });
+    const laborCostPct = (hayCosteHora && ingresosTotales > 0) ? (costePersonalTotal / ingresosTotales * 100) : null;
+    const ingresoPorHoraTrabajada = horasTrabajadas > 0 ? ingresosTotales / horasTrabajadas : null;
+    const primeCostPct = (foodCostPct != null && laborCostPct != null) ? foodCostPct + laborCostPct : null;
+
+    // Rotación de mesas: pedidos servidos en mesa física (sala + QR) por mesa y por día.
+    const numMesas = (acc.data.mesaEstados || []).length;
+    const pedidosMesaFisica = pagados.filter(p => !p.origen || p.origen === 'qr').length;
+    const rotacionMesas = numMesas > 0 ? round2(pedidosMesaFisica / numMesas / dias) : null;
+
+    const porDia = {};
+    pagados.forEach(p => {
+      const key = new Date(fechaEfectivaPedido(p)).toISOString().slice(0, 10);
+      porDia[key] = (porDia[key] || 0) + (p.total || 0);
+    });
+    const diasOrdenados = Object.entries(porDia).sort((a, b) => b[1] - a[1]);
+
+    return {
+      dias, ingresosTotales: round2(ingresosTotales), numPedidos, ticketMedio: round2(ticketMedio), comensales,
+      canal: { sala: round2(canal.sala), tpv: round2(canal.tpv), qr: round2(canal.qr), delivery: round2(deliveryTotal) },
+      foodCostPct: foodCostPct != null ? Math.round(foodCostPct * 10) / 10 : null, coberturaCosteMenu,
+      laborCostPct: laborCostPct != null ? Math.round(laborCostPct * 10) / 10 : null, costePersonalTotal: round2(costePersonalTotal), horasTrabajadas: Math.round(horasTrabajadas * 10) / 10,
+      primeCostPct: primeCostPct != null ? Math.round(primeCostPct * 10) / 10 : null,
+      ingresoPorHoraTrabajada: ingresoPorHoraTrabajada != null ? round2(ingresoPorHoraTrabajada) : null,
+      rotacionMesas, numMesas,
+      platosTop,
+      mejorDia: diasOrdenados[0] ? { fecha: diasOrdenados[0][0], ingresos: round2(diasOrdenados[0][1]) } : null,
+      peorDia: diasOrdenados.length ? { fecha: diasOrdenados[diasOrdenados.length - 1][0], ingresos: round2(diasOrdenados[diasOrdenados.length - 1][1]) } : null,
+      reservasTotal: reservasSemana.length,
+    };
+  }
   async function abrirInformeSemanal() {
     document.getElementById('appRoot').style.display = 'none';
     document.getElementById('informeRoot').style.display = 'block';
@@ -4497,6 +4582,9 @@
     document.getElementById('informeBody').innerHTML = '<p class="text-center text-slate-400 mt-10">Generando informe de esa semana…</p>';
     const pedidosSemana = acc.data.pedidos.filter(p => p.fecha && new Date(p.fecha) >= inicio && new Date(p.fecha) <= fin);
     const reservasSemana = acc.data.reservas.filter(r => r.fecha && new Date(r.fecha) >= inicio && new Date(r.fecha) <= fin);
+    const rangoAnterior = getRangoSemanaDe(new Date(inicio.getTime() - 3 * 86400000));
+    const pedidosSemanaAnterior = acc.data.pedidos.filter(p => p.fecha && new Date(p.fecha) >= rangoAnterior.inicio && new Date(p.fecha) <= rangoAnterior.fin);
+    const reservasSemanaAnterior = acc.data.reservas.filter(r => r.fecha && new Date(r.fecha) >= rangoAnterior.inicio && new Date(r.fecha) <= rangoAnterior.fin);
     if (!pedidosSemana.length && !reservasSemana.length) {
       const vacio = {
         id: idSemana, inicio: inicio.toISOString(), fin: fin.toISOString(), generadoEn: new Date().toISOString(),
@@ -4507,12 +4595,17 @@
       renderInformeSemanal(vacio, inicio, fin);
       return;
     }
+    const kpis = calcularKpisSemana(pedidosSemana, reservasSemana, acc, inicio, fin);
+    const kpisAnterior = (pedidosSemanaAnterior.length || reservasSemanaAnterior.length)
+      ? calcularKpisSemana(pedidosSemanaAnterior, reservasSemanaAnterior, acc, rangoAnterior.inicio, rangoAnterior.fin)
+      : null;
     try {
       const { data, error } = await supabaseClient.functions.invoke('dynamic-task', {
         body: {
           restaurantName: acc.restaurantName,
           inicio: fmtFechaCorta(inicio),
           fin: fmtFechaCorta(fin),
+          kpis, kpisAnterior,
           pedidos: pedidosSemana,
           reservas: reservasSemana,
           menu: acc.data.menu.map(m => ({ nombre: m.nombre, precio: m.precio, estado: m.estado })),
@@ -4520,13 +4613,31 @@
         },
       });
       const contenido = (!error && data && data.informe) ? data.informe : 'No se ha podido generar el informe ahora mismo. Inténtalo de nuevo más tarde.';
-      const informe = { id: idSemana, inicio: inicio.toISOString(), fin: fin.toISOString(), generadoEn: new Date().toISOString(), contenido };
+      const informe = { id: idSemana, inicio: inicio.toISOString(), fin: fin.toISOString(), generadoEn: new Date().toISOString(), contenido, kpis };
       acc.data.iaInformes.push(informe);
       saveCurrentAccountData(acc.data);
       renderInformeSemanal(informe, inicio, fin);
     } catch (e) {
       document.getElementById('informeBody').innerHTML = '<p class="text-center text-rose-500 mt-10">No se ha podido generar el informe. Inténtalo de nuevo más tarde.</p>';
     }
+  }
+  function kpiPill(label, valor, sub, cls) {
+    return `<div class="rounded-xl border border-slate-200 bg-white p-4"><p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">${label}</p><p class="mt-1 text-xl font-extrabold text-navy">${valor}</p>${sub ? `<p class="mt-0.5 text-[11px] font-medium ${cls || 'text-slate-400'}">${sub}</p>` : ''}</div>`;
+  }
+  function kpiCardsHtml(k) {
+    if (!k) return '';
+    const eur = n => n.toFixed(2).replace('.', ',') + '€';
+    return `
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
+        ${kpiPill('Ingresos cobrados', eur(k.ingresosTotales), k.numPedidos + ' pedidos')}
+        ${kpiPill('Ticket medio', eur(k.ticketMedio), k.comensales + ' comensales')}
+        ${kpiPill('Food cost', k.foodCostPct != null ? k.foodCostPct + '%' : '—', k.foodCostPct != null ? (k.coberturaCosteMenu + '% del menú con coste' + (k.foodCostPct > 35 ? ' · alto' : k.foodCostPct < 25 ? ' · muy sano' : ' · sano')) : 'Añade el coste de tus platos en Menú', k.foodCostPct != null ? (k.foodCostPct > 35 ? 'text-rose-500' : 'text-emerald-600') : '')}
+        ${kpiPill('Prime cost', k.primeCostPct != null ? k.primeCostPct + '%' : '—', k.primeCostPct != null ? (k.primeCostPct > 65 ? 'por encima del rango sano' : 'dentro del rango sano') : 'Añade coste/hora en Personal', k.primeCostPct != null ? (k.primeCostPct > 65 ? 'text-rose-500' : 'text-emerald-600') : '')}
+        ${kpiPill('Rotación de mesas', k.rotacionMesas != null ? k.rotacionMesas + 'x/día' : '—', k.numMesas ? k.numMesas + ' mesas' : '')}
+        ${kpiPill('Coste de personal', k.laborCostPct != null ? k.laborCostPct + '%' : '—', k.horasTrabajadas ? k.horasTrabajadas + ' h trabajadas' : '')}
+        ${kpiPill('Ingreso / hora trabajada', k.ingresoPorHoraTrabajada != null ? eur(k.ingresoPorHoraTrabajada) : '—', '')}
+        ${kpiPill('Mejor día', k.mejorDia ? new Date(k.mejorDia.fecha).toLocaleDateString('es-ES', { weekday: 'long' }) : '—', k.mejorDia ? eur(k.mejorDia.ingresos) : '')}
+      </div>`;
   }
   function renderInformeSemanal(informe, inicio, fin) {
     const acc = getCurrentAccount();
@@ -4538,12 +4649,13 @@
         </div>`
       : '';
     document.getElementById('informeBody').innerHTML = `
-      <h1 class="text-2xl font-extrabold text-navy">Informe semanal</h1>
+      <h1 class="text-2xl font-extrabold text-navy text-center">Informe semanal</h1>
       <div class="mt-1 flex items-center justify-center gap-2">
         <p class="text-sm text-slate-500">${fmtFechaCorta(new Date(informe.inicio))} — ${fmtFechaCorta(new Date(informe.fin))} · ${acc.restaurantName || ''}</p>
         <input type="date" class="informe-no-print text-xs border border-slate-200 rounded-md px-1.5 py-1" value="${fmtFechaInput(inicio)}" max="${fmtFechaInput(getUltimoDomingoCompleto())}" onchange="cambiarSemanaInforme(this.value)" title="Elegir otra semana">
       </div>
-      <div class="mt-6 text-sm text-slate-600 text-left">${markdownSimpleHtml(informe.contenido)}</div>
+      <div class="mt-6">${kpiCardsHtml(informe.kpis)}</div>
+      <div class="mt-8 text-sm text-slate-600 text-left">${markdownSimpleHtml(informe.contenido)}</div>
       ${listaAnteriores}
     `;
   }
@@ -6544,6 +6656,9 @@
       <div id="perEditRolOtroWrap" class="${esRolFijo ? 'hidden' : ''} mt-2">
         <input id="perEditRolOtro" type="text" value="${!esRolFijo ? p.rol : ''}" placeholder="Especifica el rol" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
       </div>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Coste por hora (opcional)</label>
+      <input id="perEditCosteHora" type="number" min="0" step="0.01" value="${p.costeHora || ''}" placeholder="Ej. 9,50" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <p class="text-[11px] text-slate-400 mt-1">Solo se usa para calcular el coste de personal en el informe semanal. No se comparte con el empleado.</p>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Acceso al panel</label>
       <p class="text-xs text-slate-400 mb-1.5">Elige a qué apartados podrá entrar este empleado.</p>
       <div class="border border-slate-200 rounded-lg px-3 py-2 max-h-40 overflow-y-auto">${seccionesHtml}</div>
@@ -6556,11 +6671,13 @@
     const rolOtro = document.getElementById('perEditRolOtro').value.trim();
     const rol = rolSel === 'Otro' ? rolOtro : rolSel;
     const secciones = Array.from(document.querySelectorAll('.per-edit-seccion-check:checked')).map(el => el.value);
+    const costeHoraVal = parseFloat(document.getElementById('perEditCosteHora').value);
     if (!rol) return modalFormError('Escribe el rol.');
     if (!secciones.length) return modalFormError('Elige al menos un apartado al que tendrá acceso.');
     const acc = getCurrentAccount();
     acc.data.personal[i].rol = rol;
     acc.data.personal[i].secciones = secciones;
+    acc.data.personal[i].costeHora = (!isNaN(costeHoraVal) && costeHoraVal >= 0) ? costeHoraVal : 0;
     saveCurrentAccountData(acc.data);
     renderPersonal();
     closeModal();
