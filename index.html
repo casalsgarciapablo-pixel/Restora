@@ -6975,10 +6975,16 @@
     if (dashRango === '12m') { d.setMonth(d.getMonth() - 12); return d; }
     return null;
   }
+  // Fecha "real" del dinero de un pedido: la de cobro si ya está pagado (puede ser distinta del día
+  // en que se creó el pedido), o la de creación como respaldo. Todo el Dashboard/Informes se basa en
+  // esta fecha para que "ingresos de hoy" coincida siempre con lo que Caja/TPV dice que se ha cobrado hoy.
+  function fechaEfectivaPedido(p) {
+    return (p.estado === 'Pagado' && p.fechaPago) ? p.fechaPago : p.fecha;
+  }
   function pedidosEnRango(pedidos) {
     const desde = dashRangoDesde();
     if (!desde) return pedidos;
-    return pedidos.filter(p => { const d = new Date(p.fecha); return !isNaN(d) && d >= desde; });
+    return pedidos.filter(p => { const d = new Date(fechaEfectivaPedido(p)); return !isNaN(d) && d >= desde; });
   }
   function dashRangeLabelText() {
     if (dashRango === 'all') return 'Desde el principio';
@@ -7016,7 +7022,9 @@
     const wl = document.getElementById('dashWelcome');
     if (wl) wl.textContent = '¡Bienvenido' + (acc.restaurantName ? ', ' + acc.restaurantName : '') + '!';
     renderDashRangeMenu();
-    const pedidos = pedidosEnRango(acc.data.pedidos.filter(p => p.estado !== 'Anulado'));
+    // Solo pedidos ya COBRADOS: así "Ingresos" (y el resto de gráficos derivados de esta lista) coincide
+    // siempre con lo que Caja/TPV dice que se ha cobrado, en vez de incluir pedidos aún en cocina/sin pagar.
+    const pedidos = pedidosEnRango(acc.data.pedidos.filter(p => p.estado === 'Pagado'));
     const ingresos = pedidos.reduce((sum, p) => sum + (p.total || 0), 0);
     const comensales = pedidos.reduce((sum, p) => sum + (p.personas || 0), 0);
     const ticket = pedidos.length ? ingresos / pedidos.length : 0;
@@ -7116,7 +7124,7 @@
   function pedidosPorDia(pedidos) {
     const map = new Map();
     pedidos.forEach(p => {
-      let d = new Date(p.fecha);
+      let d = new Date(fechaEfectivaPedido(p));
       if (isNaN(d)) d = new Date();
       const key = d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
       if (!map.has(key)) map.set(key, { date: d, ingresos: 0, count: 0, comensales: 0 });
@@ -7342,7 +7350,7 @@
   // Fecha de referencia para "esta semana / este mes / este año": el pedido más reciente, o hoy si no hay
   function fechaReferencia(pedidos) {
     let ref = null;
-    pedidos.forEach(p => { const d = new Date(p.fecha); if (!isNaN(d) && (!ref || d > ref)) ref = d; });
+    pedidos.forEach(p => { const d = new Date(fechaEfectivaPedido(p)); if (!isNaN(d) && (!ref || d > ref)) ref = d; });
     return ref || new Date();
   }
   function ingresosPorPeriodo(pedidos, periodo) {
@@ -7356,7 +7364,7 @@
         horas.push({ ini, fin: ini + 3600000, label: h + 'h', value: 0 });
       }
       pedidos.forEach(p => {
-        const t = new Date(p.fecha).getTime();
+        const t = new Date(fechaEfectivaPedido(p)).getTime();
         const b = horas.find(x => t >= x.ini && t < x.fin);
         if (b) b.value += p.total || 0;
       });
@@ -7372,7 +7380,7 @@
         dias.push({ ini: d.getTime(), fin: d.getTime() + 86400000, label: DASH_DIAS_CORTOS[i] + ' ' + d.getDate(), value: 0 });
       }
       pedidos.forEach(p => {
-        const t = new Date(p.fecha).getTime();
+        const t = new Date(fechaEfectivaPedido(p)).getTime();
         const b = dias.find(x => t >= x.ini && t < x.fin);
         if (b) b.value += p.total || 0;
       });
@@ -7389,7 +7397,7 @@
       }
       semanas.forEach((s, i) => { s.label = 'Sem ' + (i + 1); });
       pedidos.forEach(p => {
-        const d = new Date(p.fecha);
+        const d = new Date(fechaEfectivaPedido(p));
         if (d.getFullYear() !== y || d.getMonth() !== m) return;
         const t = d.getTime();
         const b = semanas.find(x => t >= x.ini && t < x.fin);
@@ -7401,7 +7409,7 @@
     const y = ref.getFullYear();
     const meses = DASH_MESES.map((nombre, i) => ({ mes: i, label: nombre, value: 0 }));
     pedidos.forEach(p => {
-      const d = new Date(p.fecha);
+      const d = new Date(fechaEfectivaPedido(p));
       if (d.getFullYear() !== y) return;
       meses[d.getMonth()].value += p.total || 0;
     });
@@ -7461,7 +7469,7 @@
     if (!pedidos) {
       const acc = getCurrentAccount();
       if (!acc) return;
-      pedidos = pedidosEnRango(acc.data.pedidos);
+      pedidos = pedidosEnRango(acc.data.pedidos.filter(p => p.estado === 'Pagado'));
     }
     const data = ingresosPorPeriodo(pedidos, dashRevPeriodo);
     const total = data.reduce((a, b) => a + b.value, 0);
@@ -7475,7 +7483,7 @@
     if (!pedidos) {
       const acc = getCurrentAccount();
       if (!acc) return;
-      pedidos = pedidosEnRango(acc.data.pedidos);
+      pedidos = pedidosEnRango(acc.data.pedidos.filter(p => p.estado === 'Pagado'));
     }
     renderRevenueCard(pedidos);
     mountChart('dashChartPlatos', chartPlatosTop(pedidos));
