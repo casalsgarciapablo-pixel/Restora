@@ -4571,15 +4571,15 @@
     }
     cargarInformeSemana(inicio, fin);
   }
-  async function cargarInformeSemana(inicio, fin) {
+  async function cargarInformeSemana(inicio, fin, forzarRegenerar) {
     const acc = getCurrentAccount();
     const idSemana = inicio.toISOString().slice(0, 10) + '_' + fin.toISOString().slice(0, 10);
     const existente = acc.data.iaInformes.find(inf => inf.id === idSemana);
-    if (existente) {
+    if (existente && !forzarRegenerar) {
       renderInformeSemanal(existente, inicio, fin);
       return;
     }
-    document.getElementById('informeBody').innerHTML = '<p class="text-center text-slate-400 mt-10">Generando informe de esa semana…</p>';
+    document.getElementById('informeBody').innerHTML = '<p class="text-center text-slate-400 mt-10">' + (forzarRegenerar ? 'Regenerando informe…' : 'Generando informe de esa semana…') + '</p>';
     const pedidosSemana = acc.data.pedidos.filter(p => p.fecha && new Date(p.fecha) >= inicio && new Date(p.fecha) <= fin);
     const reservasSemana = acc.data.reservas.filter(r => r.fecha && new Date(r.fecha) >= inicio && new Date(r.fecha) <= fin);
     const rangoAnterior = getRangoSemanaDe(new Date(inicio.getTime() - 3 * 86400000));
@@ -4590,6 +4590,7 @@
         id: idSemana, inicio: inicio.toISOString(), fin: fin.toISOString(), generadoEn: new Date().toISOString(),
         contenido: 'No hay pedidos ni reservas con fecha registrada entre el ' + fmtFechaCorta(inicio) + ' y el ' + fmtFechaCorta(fin) + ', así que no puedo generar un informe real de esa semana.',
       };
+      acc.data.iaInformes = acc.data.iaInformes.filter(inf => inf.id !== idSemana);
       acc.data.iaInformes.push(vacio);
       saveCurrentAccountData(acc.data);
       renderInformeSemanal(vacio, inicio, fin);
@@ -4614,6 +4615,7 @@
       });
       const contenido = (!error && data && data.informe) ? data.informe : 'No se ha podido generar el informe ahora mismo. Inténtalo de nuevo más tarde.';
       const informe = { id: idSemana, inicio: inicio.toISOString(), fin: fin.toISOString(), generadoEn: new Date().toISOString(), contenido, kpis };
+      acc.data.iaInformes = acc.data.iaInformes.filter(inf => inf.id !== idSemana);
       acc.data.iaInformes.push(informe);
       saveCurrentAccountData(acc.data);
       renderInformeSemanal(informe, inicio, fin);
@@ -4650,10 +4652,12 @@
       : '';
     document.getElementById('informeBody').innerHTML = `
       <h1 class="text-2xl font-extrabold text-navy text-center">Informe semanal</h1>
-      <div class="mt-1 flex items-center justify-center gap-2">
+      <div class="mt-1 flex items-center justify-center gap-2 flex-wrap">
         <p class="text-sm text-slate-500">${fmtFechaCorta(new Date(informe.inicio))} — ${fmtFechaCorta(new Date(informe.fin))} · ${acc.restaurantName || ''}</p>
         <input type="date" class="informe-no-print text-xs border border-slate-200 rounded-md px-1.5 py-1" value="${fmtFechaInput(inicio)}" max="${fmtFechaInput(getUltimoDomingoCompleto())}" onchange="cambiarSemanaInforme(this.value)" title="Elegir otra semana">
+        <button type="button" onclick="cargarInformeSemana(new Date('${inicio.toISOString()}'), new Date('${fin.toISOString()}'), true)" class="informe-no-print text-xs font-semibold text-accent border border-accent/30 hover:bg-accent/5 transition rounded-full px-2.5 py-1" title="Volver a generar este informe con los datos más recientes">🔄 Regenerar</button>
       </div>
+      ${informe.generadoEn ? `<p class="informe-no-print text-center text-[11px] text-slate-300 mt-1">Generado el ${new Date(informe.generadoEn).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>` : ''}
       <div class="mt-6">${kpiCardsHtml(informe.kpis)}</div>
       <div class="mt-8 text-sm text-slate-600 text-left">${markdownSimpleHtml(informe.contenido)}</div>
       ${listaAnteriores}
