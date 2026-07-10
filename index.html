@@ -51,6 +51,42 @@
   .negocio-arrow:hover { transform: translateY(-50%) scale(1.1); box-shadow: 0 8px 20px -6px rgba(11,33,66,0.3); }
   .negocio-arrow:active { transform: translateY(-50%) scale(0.94); }
   .negocio-arrow[disabled] { opacity: 0; pointer-events: none; }
+  /* ---- Tarjetas de funcionalidades clicables + página de detalle por sección ---- */
+  .func-card { cursor: pointer; }
+  .func-card .func-cta { opacity: 0; transform: translateX(-4px); transition: opacity .25s ease, transform .25s ease; }
+  .func-card:hover .func-cta { opacity: 1; transform: translateX(0); }
+  /* Reproductor de demo narrada (aspecto de vídeo) */
+  .demo-player { border-radius: 18px; overflow: hidden; background: #0d1526; box-shadow: 0 30px 60px -20px rgba(11,33,66,0.45); position: relative; }
+  .demo-screen { position: relative; aspect-ratio: 16 / 9.6; background: #F4F6FB; overflow: hidden; }
+  .demo-frame { position: absolute; inset: 0; opacity: 0; transition: opacity .5s ease; padding: 14px; }
+  .demo-frame.on { opacity: 1; }
+  .demo-shell { width: 100%; height: 100%; background: #fff; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 18px rgba(11,33,66,0.08); }
+  .demo-topbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #E8EBF2; flex-shrink: 0; }
+  .demo-brand { width: 20px; height: 20px; border-radius: 6px; background: linear-gradient(135deg, #4F3FFF, #7C6BFF); color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .demo-restname { font-size: 11px; font-weight: 600; color: #16161D; }
+  .demo-body { display: flex; flex: 1; min-height: 0; }
+  .demo-sidebar { width: 92px; border-right: 1px solid #E8EBF2; padding: 6px 5px; display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; overflow: hidden; }
+  .demo-nav { font-size: 8.5px; font-weight: 500; color: #64748B; padding: 3.5px 7px; border-radius: 6px; white-space: nowrap; }
+  .demo-nav.on { background: #EEF2FF; color: #4F3FFF; font-weight: 700; }
+  .demo-main { flex: 1; padding: 10px 12px; overflow: hidden; font-size: 10px; color: #334155; }
+  .demo-cursor { position: absolute; width: 18px; height: 18px; z-index: 30; pointer-events: none; transition: left 1.1s cubic-bezier(.45,.05,.35,1), top 1.1s cubic-bezier(.45,.05,.35,1); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35)); }
+  .demo-cursor svg { width: 100%; height: 100%; }
+  .demo-cursor .demo-click-ring { position: absolute; inset: -10px; border: 2.5px solid #4F3FFF; border-radius: 9999px; opacity: 0; }
+  .demo-cursor.clicking .demo-click-ring { animation: demoClick .55s ease-out; }
+  @keyframes demoClick { 0% { opacity: .9; transform: scale(.35); } 100% { opacity: 0; transform: scale(1.25); } }
+  .demo-sub { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 18px 14px; background: linear-gradient(transparent, rgba(9,14,28,0.72)); color: #fff; font-size: 13.5px; font-weight: 600; text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,0.5); z-index: 25; line-height: 1.4; }
+  .demo-controls { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #0d1526; }
+  .demo-ctrl-btn { width: 34px; height: 34px; border-radius: 9999px; background: rgba(255,255,255,0.1); color: #fff; display: flex; align-items: center; justify-content: center; transition: background .15s ease, transform .15s ease; flex-shrink: 0; }
+  .demo-ctrl-btn:hover { background: rgba(255,255,255,0.22); transform: scale(1.06); }
+  .demo-progress { flex: 1; height: 5px; background: rgba(255,255,255,0.15); border-radius: 999px; overflow: hidden; }
+  .demo-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #4F3FFF, #8B7BFF); border-radius: 999px; transition: width .45s ease; }
+  .demo-overlay-play { position: absolute; inset: 0; z-index: 40; background: rgba(9,14,28,0.45); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: opacity .3s ease; }
+  .demo-overlay-play .demo-big-play { width: 74px; height: 74px; border-radius: 9999px; background: #fff; color: #4F3FFF; display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 32px rgba(0,0,0,0.35); transition: transform .2s cubic-bezier(.34,1.56,.64,1); }
+  .demo-overlay-play:hover .demo-big-play { transform: scale(1.1); }
+  .demo-hl { animation: demoHl 1.6s ease-in-out infinite; border-radius: 10px; }
+  @keyframes demoHl { 0%, 100% { box-shadow: 0 0 0 0 rgba(79,63,255,0); } 50% { box-shadow: 0 0 0 4px rgba(79,63,255,0.35); } }
+  .func-feature { transition: transform .25s ease, box-shadow .25s ease; }
+  .func-feature:hover { transform: translateY(-3px); box-shadow: 0 14px 30px -14px rgba(11,33,66,0.18); }
   .marquee-track { display: flex; align-items: center; gap: 3rem; width: max-content; animation: marquee-right 32s linear infinite; }
   .marquee-wrap:hover .marquee-track { animation-play-state: paused; }
   @keyframes marquee-right { from { transform: translateX(-50%); } to { transform: translateX(0%); } }
@@ -1082,6 +1118,83 @@
         <h3 class="text-xl font-bold text-navy">Nunca te quedes sin stock.</h3>
         <p class="mt-2 text-slate-500 text-sm">Alertas automáticas cuando un producto está por debajo del mínimo, antes de que afecte al servicio.</p>
       </div>
+      <div class="rounded-2xl bg-white border border-slate-200/70 card-shadow p-7">
+        <div class="rounded-xl bg-slate-50 border border-slate-100 h-36 mb-6 p-3 text-[10px] overflow-hidden">
+          <div class="flex items-center gap-1.5 mb-2 text-[9px] font-semibold">
+            <span class="rounded-full bg-amber-50 text-amber-600 px-2 py-0.5">● En cocina · 2</span>
+            <span class="rounded-full text-slate-400 px-2 py-0.5">Listo · 1</span>
+            <span class="rounded-full text-slate-400 px-2 py-0.5">Servido · 3</span>
+          </div>
+          <div class="bg-white rounded-lg border border-slate-200 p-2 mb-1.5">
+            <div class="flex justify-between text-[9px]"><span class="font-bold text-navy">Mesa 4</span><span class="text-slate-400">21:14 · 6 min</span></div>
+            <p class="text-slate-600 mt-0.5">2× Salmón a la parrilla</p>
+            <p class="text-rose-600 font-semibold text-[9px]">⚠️ Sin gluten</p>
+          </div>
+          <div class="bg-white rounded-lg border border-slate-200 p-2">
+            <div class="flex justify-between text-[9px]"><span class="font-bold text-navy">Glovo #A82F</span><span class="text-slate-400">🛵 21:16</span></div>
+            <p class="text-slate-600 mt-0.5">1× Risotto de setas</p>
+          </div>
+        </div>
+        <p class="text-accent text-sm font-semibold mb-1">Pedidos</p>
+        <h3 class="text-xl font-bold text-navy">Tu cocina, organizada plato a plato.</h3>
+        <p class="mt-2 text-slate-500 text-sm">Tablero de cocina en tiempo real: cada plato pasa de "en cocina" a "listo" y a "servido" con un toque.</p>
+      </div>
+      <div class="rounded-2xl bg-white border border-slate-200/70 card-shadow p-7">
+        <div class="rounded-xl bg-slate-50 border border-slate-100 h-36 mb-6 p-3 text-[10px] overflow-hidden">
+          <div class="flex justify-between items-center bg-white rounded-lg px-2.5 py-1.5 mb-2">
+            <span class="text-slate-500">Cobrado hoy</span><span class="font-bold text-navy text-sm">1.284,50€</span>
+          </div>
+          <div class="flex justify-between items-center bg-white rounded-lg px-2.5 py-1.5 mb-2">
+            <span class="text-slate-600 font-semibold">Mesa 2 · 46,80€</span>
+            <span class="text-[9px] text-amber-600 bg-amber-50 rounded-full px-1.5 py-0.5">Pendiente</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5 text-center text-[9px] font-semibold">
+            <span class="border border-slate-200 bg-white rounded-md py-1.5">💶 Efectivo</span>
+            <span class="border border-accent bg-accent/5 text-accent rounded-md py-1.5">💳 Tarjeta</span>
+            <span class="border border-slate-200 bg-white rounded-md py-1.5">📱 Bizum</span>
+          </div>
+        </div>
+        <p class="text-accent text-sm font-semibold mb-1">TPV</p>
+        <h3 class="text-xl font-bold text-navy">Cobra y cierra caja sin dolores de cabeza.</h3>
+        <p class="mt-2 text-slate-500 text-sm">Cobros por mesa, cuentas divididas, recibos y arqueo del día por método de pago.</p>
+      </div>
+      <div class="rounded-2xl bg-white border border-slate-200/70 card-shadow p-7">
+        <div class="rounded-xl bg-slate-50 border border-slate-100 h-36 mb-6 p-3 text-[10px] overflow-hidden">
+          <div class="flex items-start gap-1.5 mb-2">
+            <span class="w-5 h-5 rounded-full bg-slate-300 text-white text-[8px] font-bold flex items-center justify-center shrink-0">LP</span>
+            <div class="bg-white border border-slate-200 rounded-xl rounded-bl-sm px-2 py-1.5 text-slate-600">Se acaba el salmón, quedan 2 raciones</div>
+          </div>
+          <div class="flex items-start gap-1.5 justify-end">
+            <div class="bg-navydeep text-white rounded-xl rounded-br-sm px-2 py-1.5">Ok, lo marco agotado en el menú 👍</div>
+            <span class="w-5 h-5 rounded-full bg-navydeep text-white text-[8px] font-bold flex items-center justify-center shrink-0">MR</span>
+          </div>
+        </div>
+        <p class="text-accent text-sm font-semibold mb-1">Chat de equipo</p>
+        <h3 class="text-xl font-bold text-navy">Sala y cocina, siempre coordinadas.</h3>
+        <p class="mt-2 text-slate-500 text-sm">Chat interno en tiempo real entre todos los dispositivos del restaurante, sin grupos de WhatsApp.</p>
+      </div>
+      <div class="rounded-2xl bg-white border border-slate-200/70 card-shadow p-7">
+        <div class="rounded-xl bg-slate-50 border border-slate-100 h-36 mb-6 p-3 flex items-center justify-center gap-3 overflow-hidden">
+          <div class="w-20 rounded-xl bg-white border border-slate-200 p-1.5 text-center shrink-0">
+            <div class="rounded-lg py-1.5 text-white text-[8px] font-bold" style="background:linear-gradient(135deg,#b91c1c,#78350f)">La Brasería</div>
+            <p class="text-[8px] text-slate-600 mt-1 flex justify-between px-0.5"><span>Salmón</span><b>16,50€</b></p>
+            <p class="text-[8px] text-slate-600 flex justify-between px-0.5"><span>Risotto</span><b>13,90€</b></p>
+            <div class="mt-1 rounded-full bg-navydeep text-white text-[7px] font-bold py-1">Enviar pedido</div>
+          </div>
+          <div class="text-center shrink-0">
+            <div class="w-14 h-14 bg-white border border-slate-200 rounded-lg p-1 mx-auto grid grid-cols-4 gap-px">
+              <span class="bg-navy"></span><span></span><span class="bg-navy"></span><span class="bg-navy"></span>
+              <span></span><span class="bg-navy"></span><span></span><span class="bg-navy"></span>
+              <span class="bg-navy"></span><span></span><span class="bg-navy"></span><span></span>
+              <span class="bg-navy"></span><span class="bg-navy"></span><span></span><span class="bg-navy"></span>
+            </div>
+            <p class="text-[8px] text-slate-400 mt-1">QR Mesa 4</p>
+          </div>
+        </div>
+        <p class="text-accent text-sm font-semibold mb-1">Carta digital</p>
+        <h3 class="text-xl font-bold text-navy">Tu carta online y pedidos por QR.</h3>
+        <p class="mt-2 text-slate-500 text-sm">Una página pública con tu carta y tu marca: el cliente escanea el QR de su mesa y pide desde el móvil.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -2050,6 +2163,18 @@
       <p class="text-center text-xs text-slate-400 mt-5">Powered by <span class="font-semibold text-slate-500">Restora</span></p>
     </div>
   </div>
+</div>
+
+<!-- Página de detalle de una sección del SaaS (se abre desde las tarjetas de la landing) -->
+<div id="funcionRoot" class="min-h-screen font-sans text-navy antialiased" style="display:none; background:linear-gradient(180deg,#F1F4FB 0%,#F7F8FC 30%)">
+  <header class="max-w-5xl mx-auto px-6 pt-6 flex items-center justify-between">
+    <button onclick="cerrarFuncionPage()" class="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-navy transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+      Volver a Restora
+    </button>
+    <span class="flex items-center gap-2"><span class="app-brand-mark">R</span><span class="text-sm font-bold text-navy">Restora</span></span>
+  </header>
+  <div id="funcionBody" class="max-w-5xl mx-auto px-6 py-10"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -8177,8 +8302,554 @@
     document.getElementById('modalOverlay').classList.add('open');
   }
 
+  // ==================== Páginas de detalle por sección del SaaS ====================
+  // Cada tarjeta de funcionalidades de la landing abre una "pestaña" (?funcion=<clave>) con la
+  // explicación completa de esa sección y una demo narrada tipo vídeo (animación de la interfaz
+  // real + voz en off del navegador + subtítulos), sin depender de ningún archivo de vídeo.
+  function demoShell(secLabel, contenido) {
+    const navs = ['Dashboard', 'Reservas', 'Pedidos', 'Mesas', 'Menú', 'Delivery', 'Inventario', 'TPV', 'Ayudante IA', 'Personal', 'Chat', 'Apps'];
+    return `<div class="demo-shell">
+      <div class="demo-topbar"><span class="demo-brand">R</span><span class="demo-restname">La Brasería</span></div>
+      <div class="demo-body">
+        <div class="demo-sidebar">${navs.map(n => `<div class="demo-nav ${n === secLabel ? 'on' : ''}">${n}</div>`).join('')}</div>
+        <div class="demo-main">${contenido}</div>
+      </div>
+    </div>`;
+  }
+  const _dKpi = (lbl, val) => `<div class="bg-white border border-slate-200 rounded-lg p-2 flex-1"><p class="text-[8px] text-slate-400">${lbl}</p><p class="text-[13px] font-bold text-navy">${val}</p></div>`;
+  const _dMesa = (n, color, bg, txt, extra) => `<div style="text-align:center;${extra || ''}"><div style="width:34px;height:34px;border-radius:50%;border:3px solid ${color};background:${bg};color:${txt};font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;margin:0 auto;">${n}</div></div>`;
+  const _dPill = (t, cls) => `<span class="rounded-full px-1.5 py-0.5 text-[8px] font-semibold ${cls}">${t}</span>`;
+  const _dRow = (c1, c2, c3) => `<div class="flex justify-between items-center bg-white border border-slate-200 rounded-lg px-2 py-1.5 mb-1"><span class="font-semibold text-navy text-[9px]">${c1}</span><span class="text-[9px] text-slate-500">${c2}</span>${c3}</div>`;
+
+  const FUNCIONES_INFO = {
+    dashboard: {
+      label: 'Dashboard', pill: 'Dashboard', titulo: 'Todo tu negocio en una sola pantalla',
+      sub: 'El Dashboard reúne, en tiempo real y sin configurar nada, todo lo que necesitas saber para tomar decisiones: cuánto has cobrado, qué se vende, quién vende y por dónde entran tus pedidos.',
+      features: [
+        ['💶', 'Ingresos reales, no estimados', 'El KPI de ingresos solo cuenta pedidos ya cobrados, fechados el día del cobro — siempre cuadra con tu caja.'],
+        ['📊', 'Gráfico por horas, días, semanas o meses', 'La misma tarjeta de ingresos cambia de vista: las 24 horas de hoy, los 7 días de la semana, las semanas del mes o los 12 meses del año.'],
+        ['🍽️', 'Platos más vendidos y rentabilidad', 'Ranking de platos por unidades e ingresos, y si añades el coste de cada plato, su margen real.'],
+        ['🧑‍🍳', 'Ventas por camarero y por mesa', 'Descubre qué mesas generan más y cómo rinde cada persona del equipo.'],
+        ['📱', 'Canal de venta', 'Cuántos pedidos entran por sala, por TPV o por el QR de mesa, en un donut comparativo.'],
+        ['🤖', 'Informe semanal con IA', 'Un botón genera un informe semanal redactado, listo para leer o imprimir.'],
+      ],
+      pasos: [
+        'Entra en el panel: el Dashboard es la primera pantalla que ves al iniciar sesión.',
+        'Elige el rango de fechas (hoy, últimos 7 días, 30 días…) con el selector superior.',
+        'Cambia la vista del gráfico de ingresos entre Día / Semana / Mes / Año.',
+        'Pasa el cursor por cualquier gráfico para ver el dato exacto de cada punto.',
+        'Baja hasta "Rentabilidad" para ver el margen de cada plato (requiere haber puesto costes en el Menú).',
+      ],
+      demo: [
+        { voz: 'Este es el Dashboard de Restora. Nada más entrar ves tus ingresos cobrados, el número de pedidos, el ticket medio y los comensales de hoy.', cursor: { x: 30, y: 22 }, html: `<p class="font-bold text-navy text-[12px] mb-2">¡Bienvenido, La Brasería!</p><div class="flex gap-2 mb-2">${_dKpi('Ingresos', '1.284,50€')}${_dKpi('Pedidos', '42')}${_dKpi('Ticket medio', '30,58€')}${_dKpi('Comensales', '96')}</div><div class="bg-white border border-slate-200 rounded-lg p-2 h-24"><p class="text-[8px] text-slate-400 mb-1">Ingresos · hoy por horas</p><svg viewBox="0 0 200 44" class="w-full h-16"><path d="M0,40 L30,38 L60,30 L90,34 L120,18 L150,24 L180,8 L200,12 L200,44 L0,44 Z" fill="rgba(79,63,255,0.15)"/><polyline points="0,40 30,38 60,30 90,34 120,18 150,24 180,8 200,12" fill="none" stroke="#4F3FFF" stroke-width="2"/></svg></div>` },
+        { voz: 'El gráfico de ingresos se adapta a ti: puedes verlo hora a hora, por días de la semana, por semanas del mes o por meses del año, con un solo clic.', cursor: { x: 82, y: 30 }, click: true, html: `<div class="flex justify-between items-center mb-2"><p class="font-bold text-navy text-[12px]">Ingresos</p><div class="flex gap-1 text-[8px] font-bold"><span class="demo-hl rounded-full bg-navydeep text-white px-2 py-0.5">Día</span><span class="text-slate-400 px-1.5 py-0.5">Semana</span><span class="text-slate-400 px-1.5 py-0.5">Mes</span><span class="text-slate-400 px-1.5 py-0.5">Año</span></div></div><div class="bg-white border border-slate-200 rounded-lg p-2 h-28"><p class="text-[9px] text-slate-500 mb-1">Ingresos de hoy, hora a hora</p><svg viewBox="0 0 200 52" class="w-full h-20"><path d="M0,48 L25,47 L50,40 L75,44 L100,26 L125,32 L150,12 L175,20 L200,6 L200,52 L0,52 Z" fill="rgba(79,63,255,0.15)"/><polyline points="0,48 25,47 50,40 75,44 100,26 125,32 150,12 175,20 200,6" fill="none" stroke="#4F3FFF" stroke-width="2.5"/></svg></div>` },
+        { voz: 'Más abajo tienes tus platos más vendidos, los ingresos por mesa y por camarero, y por qué canal entra cada pedido: sala, TPV o el código QR de la mesa.', cursor: { x: 40, y: 62 }, html: `<div class="grid grid-cols-2 gap-2"><div class="bg-white border border-slate-200 rounded-lg p-2"><p class="text-[8px] text-slate-400 mb-1.5">Platos más vendidos</p><div class="space-y-1"><div class="flex items-center gap-1"><div class="h-2.5 rounded bg-accent" style="width:85%"></div><span class="text-[8px]">Salmón</span></div><div class="flex items-center gap-1"><div class="h-2.5 rounded bg-accent/70" style="width:60%"></div><span class="text-[8px]">Risotto</span></div><div class="flex items-center gap-1"><div class="h-2.5 rounded bg-accent/50" style="width:42%"></div><span class="text-[8px]">Tarta</span></div></div></div><div class="bg-white border border-slate-200 rounded-lg p-2"><p class="text-[8px] text-slate-400 mb-1.5">Canal de venta</p><div class="flex items-center gap-2"><svg viewBox="0 0 36 36" class="w-14 h-14"><circle cx="18" cy="18" r="14" fill="none" stroke="#E8EBF2" stroke-width="6"/><circle cx="18" cy="18" r="14" fill="none" stroke="#4F3FFF" stroke-width="6" stroke-dasharray="52 36" transform="rotate(-90 18 18)"/><circle cx="18" cy="18" r="14" fill="none" stroke="#10B981" stroke-width="6" stroke-dasharray="18 70" stroke-dashoffset="-52" transform="rotate(-90 18 18)"/></svg><div class="text-[8px] space-y-0.5"><p><span class="inline-block w-2 h-2 rounded-full bg-accent mr-1"></span>Sala 59%</p><p><span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>QR 21%</p><p><span class="inline-block w-2 h-2 rounded-full bg-slate-300 mr-1"></span>TPV 20%</p></div></div></div></div>` },
+        { voz: 'Y si añades el coste de tus platos en el menú, la tabla de rentabilidad te dice el margen exacto que te deja cada uno. Deja de intuir, y decide con datos.', cursor: { x: 50, y: 55 }, html: `<p class="font-bold text-navy text-[12px] mb-2">Rentabilidad por plato</p><div class="bg-white border border-slate-200 rounded-lg p-2"><div class="grid grid-cols-4 text-[8px] font-semibold text-slate-400 border-b border-slate-100 pb-1 mb-1"><span>Plato</span><span class="text-right">Uds.</span><span class="text-right">Ingresos</span><span class="text-right">Margen</span></div><div class="grid grid-cols-4 text-[9px] py-1"><span class="font-semibold text-navy">Salmón</span><span class="text-right">38</span><span class="text-right">627€</span><span class="text-right text-emerald-600 font-bold">68%</span></div><div class="grid grid-cols-4 text-[9px] py-1 demo-hl"><span class="font-semibold text-navy">Risotto</span><span class="text-right">24</span><span class="text-right">333€</span><span class="text-right text-emerald-600 font-bold">74%</span></div><div class="grid grid-cols-4 text-[9px] py-1"><span class="font-semibold text-navy">Tarta queso</span><span class="text-right">19</span><span class="text-right">114€</span><span class="text-right text-amber-600 font-bold">41%</span></div></div>` },
+      ],
+    },
+    mesas: {
+      label: 'Mesas', pill: 'Mesas', titulo: 'Tu sala, dibujada tal cual es',
+      sub: 'Un plano visual de tu restaurante donde cada mesa se ve, se mueve y se toca. Estado en tiempo real, códigos QR por mesa y sincronización automática con reservas y pedidos.',
+      features: [
+        ['🗺️', 'Plano visual y editable', 'Mesas redondas, cuadradas o rectangulares que arrastras hasta reproducir tu sala real. Varios espacios (terraza, comedor, barra…).'],
+        ['🚦', 'Estados por color', 'Verde libre, rojo ocupada, ámbar reservada. Cambias el estado con un toque y todo el equipo lo ve al instante.'],
+        ['📱', 'QR por mesa', 'Cada mesa tiene su código QR real e imprimible: el cliente lo escanea y ve tu carta (y puede pedir) desde su móvil.'],
+        ['⏱️', 'Tiempo de ocupación', 'Cada mesa ocupada muestra cuánto tiempo lleva así, para controlar la rotación.'],
+        ['📅', 'Sincronizada con Reservas', 'Cuando se acerca la hora de una reserva, su mesa se marca reservada sola; al sentar al cliente, la reserva se archiva.'],
+        ['🧾', 'El pedido, a un toque', 'Toca una mesa ocupada y ves su pedido actual, el total y su estado en cocina.'],
+      ],
+      pasos: [
+        'Configura cuántas mesas tienes desde "Mi restaurante" o añádelas directamente en Mesas.',
+        'Activa "Editar posición" y arrastra cada mesa hasta reproducir tu sala; elige forma y capacidad.',
+        'Toca cualquier mesa para ver su detalle: estado, pedido en curso y su código QR.',
+        'Imprime el QR y ponlo en la mesa física: los clientes ya pueden ver la carta al escanearlo.',
+        'Durante el servicio, cambia estados con un toque; las reservas marcarán sus mesas solas.',
+      ],
+      demo: [
+        { voz: 'Esta es la sección de Mesas. Cada círculo o rectángulo es una mesa de tu sala real, con su color según esté libre, ocupada o reservada.', cursor: { x: 45, y: 45 }, html: `<p class="font-bold text-navy text-[12px] mb-3">Sala principal</p><div class="relative h-32">${_dMesa(1, '#34d399', '#ecfdf5', '#059669', 'position:absolute;left:8%;top:6%')}${_dMesa(2, '#fb7185', '#fff1f2', '#e11d48', 'position:absolute;left:38%;top:2%')}${_dMesa(3, '#fbbf24', '#fffbeb', '#d97706', 'position:absolute;left:68%;top:10%')}${_dMesa(4, '#34d399', '#ecfdf5', '#059669', 'position:absolute;left:18%;top:55%')}${_dMesa(5, '#fb7185', '#fff1f2', '#e11d48', 'position:absolute;left:52%;top:52%')}</div>` },
+        { voz: 'Tocas una mesa y ves todo lo que pasa en ella: su estado, cuánto tiempo lleva ocupada, y el pedido que tiene en cocina con su total.', cursor: { x: 60, y: 55 }, click: true, html: `<div class="bg-white border border-slate-200 rounded-xl p-3 max-w-[240px] mx-auto mt-2"><div class="flex items-center justify-between mb-2"><p class="font-bold text-navy text-[11px]">Mesa 5</p>${_dPill('Ocupada · 38 min', 'bg-rose-50 text-rose-600')}</div><div class="border border-slate-100 rounded-lg p-2 text-[9px] text-slate-600"><p class="font-semibold text-navy mb-0.5">Pedido en curso · 46,80€</p><p>2× Salmón a la parrilla</p><p>1× Risotto de setas</p><p class="mt-1">${_dPill('En cocina', 'bg-amber-50 text-amber-600')}</p></div></div>` },
+        { voz: 'Cada mesa tiene su código QR real. Lo imprimes, lo pones en la mesa, y cuando el cliente lo escanea ve tu carta en su móvil y puede pedir sin esperar al camarero.', cursor: { x: 50, y: 60 }, html: `<div class="bg-white border border-slate-200 rounded-xl p-3 max-w-[220px] mx-auto mt-1 text-center"><p class="font-bold text-navy text-[11px] mb-2">QR de la Mesa 4</p><div class="w-20 h-20 mx-auto border border-slate-200 rounded-lg p-1.5 grid grid-cols-5 gap-px demo-hl"><span class="bg-navy"></span><span></span><span class="bg-navy"></span><span class="bg-navy"></span><span></span><span></span><span class="bg-navy"></span><span></span><span class="bg-navy"></span><span class="bg-navy"></span><span class="bg-navy"></span><span></span><span class="bg-navy"></span><span></span><span></span><span></span><span class="bg-navy"></span><span class="bg-navy"></span><span></span><span class="bg-navy"></span><span class="bg-navy"></span><span></span><span></span><span class="bg-navy"></span><span class="bg-navy"></span></div><p class="text-[8px] text-slate-400 mt-2">El cliente escanea → ve tu carta → pide desde el móvil</p></div>` },
+        { voz: 'Y en modo edición, arrastras las mesas hasta dejar el plano idéntico a tu local: formas redondas, cuadradas o rectangulares, en tantas salas o terrazas como tengas.', cursor: { x: 35, y: 40 }, html: `<div class="flex items-center gap-2 mb-2"><span class="rounded-full bg-navydeep text-white text-[8px] font-bold px-2 py-1 demo-hl">✏️ Editando posición</span><span class="text-[8px] text-slate-400">Arrastra las mesas</span></div><div class="relative h-28"><div style="position:absolute;left:30%;top:22%;text-align:center;"><div style="width:48px;height:32px;border-radius:9px;border:3px dashed #4F3FFF;background:#EEF2FF;color:#4F3FFF;font-weight:700;font-size:10px;display:flex;align-items:center;justify-content:center;">7</div></div>${_dMesa(1, '#34d399', '#ecfdf5', '#059669', 'position:absolute;left:6%;top:10%')}${_dMesa(4, '#34d399', '#ecfdf5', '#059669', 'position:absolute;left:65%;top:40%')}</div><div class="flex gap-1 text-[8px] mt-1"><span class="rounded-full bg-slate-100 px-2 py-0.5">Sala principal</span><span class="rounded-full bg-slate-100 px-2 py-0.5">Terraza</span><span class="rounded-full bg-slate-100 px-2 py-0.5">+ Añadir espacio</span></div>` },
+      ],
+    },
+    reservas: {
+      label: 'Reservas', pill: 'Reservas', titulo: 'Reservas sin libreta y sin llamadas cruzadas',
+      sub: 'Gestiona las reservas de tu restaurante en una tabla clara, deja que tus clientes reserven solos desde un enlace público, y olvídate de marcar mesas a mano: Restora lo hace por ti.',
+      features: [
+        ['🌐', 'Reservas online con tu enlace', 'Un enlace público (para tu web, Instagram o Google) donde el cliente elige día, hora y personas. Entra directo en tu tabla.'],
+        ['🕐', 'Respeta tu horario', 'El formulario público solo ofrece horas dentro de tu horario de apertura, día por día.'],
+        ['✅', 'Confirmación a un toque', 'Cada reserva se marca Pendiente o Confirmada tocando su estado.'],
+        ['🪑', 'Mesa asignable', 'Asigna o cambia la mesa de cada reserva con un desplegable.'],
+        ['🔄', 'Sincronización con el plano', 'Al acercarse la hora, la mesa se pone en Reservada sola; al sentar al cliente, la reserva se archiva automáticamente.'],
+        ['📆', 'Google Calendar', 'Conecta tu calendario y cada reserva aparece también ahí.'],
+      ],
+      pasos: [
+        'Comparte tu enlace de reservas (botón "Enlace para reservar online") en tu web o redes.',
+        'Las reservas del enlace entran solas; las telefónicas las añades con "+ Nueva reserva".',
+        'Confirma cada reserva tocando su estado y asígnale mesa si quieres.',
+        'El día del servicio, la mesa se marcará Reservada sola al acercarse la hora.',
+        'Cuando el cliente llegue, marca la mesa como Ocupada: la reserva se da por cumplida.',
+      ],
+      demo: [
+        { voz: 'Esta es la sección de Reservas: una tabla limpia con fecha, hora, cliente, personas, mesa y estado. Nada de libretas ni papeles.', cursor: { x: 50, y: 40 }, html: `<p class="font-bold text-navy text-[12px] mb-2">Reservas</p>${_dRow('21:00 · Elena Ríos', '4 pers · Mesa 4', _dPill('Confirmada', 'bg-emerald-50 text-emerald-600'))}${_dRow('21:30 · Marc Puig', '2 pers · Mesa 7', _dPill('Pendiente', 'bg-amber-50 text-amber-600'))}${_dRow('22:00 · Laia Serra', '6 pers · Mesa 2', _dPill('Confirmada', 'bg-emerald-50 text-emerald-600'))}` },
+        { voz: 'Tus clientes pueden reservar solos: compartes tu enlace público y eligen día, hora y personas. Solo se les ofrecen horas en las que de verdad estás abierto.', cursor: { x: 50, y: 55 }, click: true, html: `<div class="bg-white border border-slate-200 rounded-xl p-3 max-w-[220px] mx-auto text-center"><p class="font-bold text-navy text-[11px]">Reservar en La Brasería</p><div class="mt-2 space-y-1.5 text-left text-[9px]"><div class="border border-slate-200 rounded-md px-2 py-1">📅 Viernes 12 de julio</div><div class="border border-accent bg-accent/5 rounded-md px-2 py-1 demo-hl">🕐 21:00</div><div class="border border-slate-200 rounded-md px-2 py-1">👥 4 personas</div></div><div class="mt-2 rounded-full bg-navydeep text-white text-[9px] font-bold py-1.5">Reservar</div></div>` },
+        { voz: 'Cada reserva se confirma con un toque, y puedes asignarle mesa con un desplegable. Todo el equipo ve los cambios al momento, en cualquier dispositivo.', cursor: { x: 78, y: 35 }, click: true, html: `<p class="font-bold text-navy text-[12px] mb-2">Reservas</p>${_dRow('21:30 · Marc Puig', '2 pers · Mesa 7', '<span class="demo-hl">' + _dPill('Confirmada ✓', 'bg-emerald-50 text-emerald-600') + '</span>')}<div class="bg-white border border-slate-200 rounded-lg px-2 py-1.5 flex justify-between items-center text-[9px]"><span class="font-semibold text-navy">Mesa asignada</span><span class="border border-slate-200 rounded px-1.5 py-0.5 text-slate-600">Mesa 7 ▾</span></div>` },
+        { voz: 'Y lo mejor: el plano de mesas trabaja solo. Al acercarse la hora, la mesa se marca como reservada, y cuando sientas al cliente, la reserva se archiva automáticamente.', cursor: { x: 42, y: 55 }, html: `<div class="flex items-center justify-center gap-5 mt-3">${_dMesa(7, '#fbbf24', '#fffbeb', '#d97706', '')}<span class="text-slate-300 text-lg">→</span>${_dMesa(7, '#fb7185', '#fff1f2', '#e11d48', '')}</div><p class="text-center text-[9px] text-slate-500 mt-2">Reservada a las 21:15 → Ocupada al sentarse<br><span class="text-emerald-600 font-semibold">✓ Reserva de Marc archivada automáticamente</span></p>` },
+      ],
+    },
+    pedidos: {
+      label: 'Pedidos', pill: 'Pedidos · Cocina', titulo: 'Un tablero de cocina que marca el ritmo',
+      sub: 'Cada plato de cada pedido pasa por tres etapas — en cocina, listo para servir, servido — y todo el equipo ve lo mismo en tiempo real. Con alergias visibles, avisos sonoros y urgencias marcadas.',
+      features: [
+        ['🍳', 'Tablero por platos (KDS)', 'La cocina no ve "pedidos", ve platos concretos que preparar, con su mesa, cantidad y hora de entrada.'],
+        ['⚠️', 'Alergias y observaciones visibles', 'Las notas de cada plato ("sin gluten", "sin cebolla") y del pedido salen en rojo y ámbar, imposibles de pasar por alto.'],
+        ['🔔', 'Aviso al camarero, no al cocinero', 'Cuando cocina marca un plato como listo, suena el aviso en los dispositivos de sala para que alguien lo recoja.'],
+        ['⏱️', 'Urgencias automáticas', 'Los platos que llevan más de 15 minutos en cocina se resaltan solos.'],
+        ['🛵', 'Todos los orígenes juntos', 'Pedidos de sala, del QR de mesa 📱 y de delivery 🛵 entran al mismo tablero, identificados.'],
+        ['📦', 'Stock que se descuenta solo', 'Al cocinarse un pedido, los ingredientes de sus recetas se descuentan del inventario.'],
+      ],
+      pasos: [
+        'Los pedidos entran solos (QR, delivery) o los crea el camarero con "+ Nuevo pedido".',
+        'Cocina ve cada plato en la columna "En cocina" y lo marca ✓ Listo al terminarlo.',
+        'Sala recibe el aviso sonoro y lleva el plato: lo marca "Servido →".',
+        'Si hay que corregir algo, el lápiz ✏️ abre la edición del pedido completo.',
+        'Al final, el pedido se cobra desde el TPV y desaparece del tablero.',
+      ],
+      demo: [
+        { voz: 'Este es el tablero de Pedidos, el corazón de la cocina. Tres columnas: en cocina, listo para servir, y servido. Cada tarjeta es un plato concreto.', cursor: { x: 30, y: 30 }, html: `<div class="flex gap-1.5 mb-2 text-[8px] font-bold"><span class="rounded-full bg-amber-50 text-amber-600 px-2 py-0.5 demo-hl">● En cocina · 3</span><span class="rounded-full text-slate-400 px-2 py-0.5">Listo · 1</span><span class="rounded-full text-slate-400 px-2 py-0.5">Servido · 4</span></div><div class="grid grid-cols-2 gap-1.5"><div class="bg-white border border-slate-200 rounded-lg p-2"><div class="flex justify-between text-[8px]"><b class="text-navy">Mesa 4</b><span class="text-slate-400">21:14 · 6 min</span></div><p class="text-[9px] mt-0.5"><b>2×</b> Salmón parrilla</p></div><div class="bg-white border border-slate-200 rounded-lg p-2"><div class="flex justify-between text-[8px]"><b class="text-navy">Glovo #A82F</b><span class="text-slate-400">🛵 21:16</span></div><p class="text-[9px] mt-0.5"><b>1×</b> Risotto setas</p></div></div>` },
+        { voz: 'Las alergias y peticiones del cliente se ven en el plato, en rojo, imposibles de ignorar: sin gluten, sin cebolla, alergia a los frutos secos… escritas por el camarero o por el propio cliente desde el QR.', cursor: { x: 35, y: 52 }, html: `<div class="bg-white border border-slate-200 rounded-lg p-2.5 max-w-[230px] mx-auto mt-3"><div class="flex justify-between text-[9px]"><b class="text-navy">Mesa 4</b><span class="text-slate-400">21:14 · 6 min</span></div><p class="text-[11px] mt-1"><b>2×</b> Salmón a la parrilla</p><p class="text-[9px] font-bold text-rose-600 mt-1 demo-hl">⚠️ Sin gluten</p><p class="text-[9px] font-bold text-amber-600 mt-0.5">📝 Pedido: alergia a frutos secos en la mesa</p><div class="mt-1.5 flex gap-1"><span class="rounded-md bg-emerald-50 text-emerald-700 text-[8px] font-bold px-2 py-1">✓ Listo</span><span class="rounded-md bg-slate-100 text-[8px] px-2 py-1">✏️</span></div></div>` },
+        { voz: 'Cuando el cocinero marca un plato como listo, el aviso suena en los dispositivos de sala, no en la cocina. El camarero sabe al instante que hay un plato esperando.', cursor: { x: 52, y: 62 }, click: true, html: `<div class="text-center mt-4"><div class="inline-block bg-navydeep text-white rounded-full px-3 py-1.5 text-[10px] font-semibold demo-hl">🔔 Mesa 4 · 2× Salmón listo para servir</div><p class="text-[9px] text-slate-400 mt-2">Suena en los móviles y tablets de sala</p><div class="flex justify-center gap-2 mt-2 text-[8px]"><span class="rounded-full bg-emerald-50 text-emerald-600 px-2 py-0.5 font-semibold">📱 Tablet camarero ✓</span><span class="rounded-full bg-slate-100 text-slate-400 px-2 py-0.5">🍳 Pantalla cocina (en silencio)</span></div></div>` },
+        { voz: 'Si un plato lleva demasiado tiempo esperando, se resalta solo. Y cuando la cocina termina un pedido, sus ingredientes se descuentan automáticamente del inventario. Todo conectado.', cursor: { x: 50, y: 40 }, html: `<div class="bg-white rounded-lg p-2.5 max-w-[230px] mx-auto mt-2" style="border:2px solid #fb7185"><div class="flex justify-between text-[9px]"><b class="text-navy">Mesa 9</b><b class="text-rose-600">21:02 · 18 min ⏱️</b></div><p class="text-[11px] mt-1"><b>1×</b> Tarta de queso</p></div><p class="text-center text-[9px] text-slate-500 mt-3">Al marcarse listo → <span class="font-semibold text-navy">Inventario: −180 g queso crema, −1 huevo</span> 📦</p>` },
+      ],
+    },
+    menu: {
+      label: 'Menú', pill: 'Menú', titulo: 'Tu carta, viva y siempre al día',
+      sub: 'Crea tu menú en minutos — incluso fotografiando tu carta de papel — y gestiónalo por secciones con fotos, precios, costes, disponibilidad y recetas conectadas al inventario.',
+      features: [
+        ['📸', 'Sube una foto y la IA la transcribe', 'Fotografía tu carta de papel: la inteligencia artificial lee los platos y precios y te los deja listos para revisar e importar.'],
+        ['📑', 'Secciones ordenables', 'Entrantes, principales, postres, bebidas… crea las secciones que quieras y ordénalas como en tu carta física.'],
+        ['🖼️', 'Ficha completa por plato', 'Foto, descripción, precio, coste (para calcular margen) y disponibilidad.'],
+        ['🚫', '"Agotado" en un toque', 'Marca un plato como agotado y desaparece de las opciones de pedido — también de la carta QR del cliente, al momento.'],
+        ['🧾', 'Recetas por plato', 'Define los ingredientes y cantidades de cada plato: son los que el inventario descuenta al cocinar.'],
+        ['⚡', 'Cambios instantáneos', 'Cualquier edición se refleja al momento en todos los dispositivos y en la carta pública.'],
+      ],
+      pasos: [
+        'Sube una foto de tu carta ("Subir foto del menú") o pégala como texto: la IA la convierte en platos.',
+        'Revisa la transcripción, corrige lo que quieras e importa.',
+        'Organiza las secciones y completa cada plato con foto, descripción y coste.',
+        'Añade la receta de cada plato para conectar con el inventario.',
+        'Durante el servicio, marca agotados al vuelo desde cualquier dispositivo.',
+      ],
+      demo: [
+        { voz: 'Esta es la sección de Menú. Tu carta organizada en secciones, con cada plato, su foto, su precio y su disponibilidad.', cursor: { x: 40, y: 35 }, html: `<p class="font-bold text-navy text-[12px] mb-1.5">Menú</p><p class="text-[8px] font-bold text-accent uppercase mb-1">Principales · 3</p>${_dRow('🐟 Salmón a la parrilla', 'Con verduras de temporada', '<b class="text-navy text-[9px]">16,50€</b>')}${_dRow('🍚 Risotto de setas', 'Boletus y parmesano', '<b class="text-navy text-[9px]">13,90€</b>')}<p class="text-[8px] font-bold text-accent uppercase mb-1 mt-2">Postres · 2</p>${_dRow('🍰 Tarta de queso', 'Casera, al horno', '<b class="text-navy text-[9px]">6,00€</b>')}` },
+        { voz: 'La parte mágica: haz una foto a tu carta de papel y la inteligencia artificial la transcribe entera. Platos y precios, listos para revisar e importar en segundos.', cursor: { x: 50, y: 30 }, click: true, html: `<div class="text-center"><div class="flex justify-center gap-2 mb-2"><span class="rounded-full bg-navydeep text-white text-[8px] font-bold px-2.5 py-1 demo-hl">📸 Subir foto del menú</span><span class="rounded-full bg-slate-100 text-slate-500 text-[8px] font-semibold px-2.5 py-1">Pegar menú</span></div><div class="bg-white border border-slate-200 rounded-lg p-2 max-w-[230px] mx-auto text-left text-[9px]"><p class="text-[8px] text-slate-400 mb-1">✨ La IA ha leído 29 platos:</p><p>Croquetas caseras — 8,50€</p><p>Ensalada burrata — 11,00€</p><p>Salmón a la parrilla — 16,50€</p><p class="text-slate-300">…</p><div class="mt-1.5 rounded-full bg-navydeep text-white text-center text-[8px] font-bold py-1">Importar al menú</div></div></div>` },
+        { voz: 'Cada plato tiene su ficha: foto, descripción, precio y también su coste, que alimenta el análisis de rentabilidad del Dashboard.', cursor: { x: 50, y: 50 }, html: `<div class="bg-white border border-slate-200 rounded-xl p-3 max-w-[230px] mx-auto"><div class="flex gap-2"><div class="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-lg">🐟</div><div class="text-[9px]"><p class="font-bold text-navy text-[10px]">Salmón a la parrilla</p><p class="text-slate-500">Con verduras de temporada</p></div></div><div class="grid grid-cols-3 gap-1.5 mt-2 text-center text-[8px]"><div class="border border-slate-200 rounded-md py-1"><p class="text-slate-400">Precio</p><b class="text-navy">16,50€</b></div><div class="border border-slate-200 rounded-md py-1 demo-hl"><p class="text-slate-400">Coste</p><b class="text-navy">5,20€</b></div><div class="border border-slate-200 rounded-md py-1"><p class="text-slate-400">Margen</p><b class="text-emerald-600">68%</b></div></div></div>` },
+        { voz: 'Y si se te acaba un plato a media noche, lo marcas agotado con un toque: deja de poderse pedir en sala y desaparece de la carta del QR al instante.', cursor: { x: 72, y: 40 }, click: true, html: `${_dRow('🍰 Tarta de queso', 'Casera, al horno', '<span class="demo-hl">' + _dPill('Agotado', 'bg-rose-50 text-rose-500') + '</span>')}<p class="text-center text-[9px] text-slate-500 mt-3">📱 En la carta QR del cliente:</p><div class="bg-white border border-slate-200 rounded-lg px-2 py-1.5 max-w-[180px] mx-auto mt-1 opacity-50 flex justify-between text-[9px]"><span>Tarta de queso</span><span class="text-slate-400">Agotado</span></div>` },
+      ],
+    },
+    delivery: {
+      label: 'Delivery', pill: 'Delivery', titulo: 'Glovo, Uber Eats y JustEat en una sola pantalla',
+      sub: 'Conecta tus cuentas de las plataformas de reparto y sus pedidos entran solos al mismo tablero de cocina que el resto, con estadísticas por plataforma y sin cambiar de tablet a cada rato.',
+      features: [
+        ['🔌', 'Conexión real por plataforma', 'Introduce el ID de tienda y la clave de API de tu cuenta de partner (o de un agregador) y Restora genera tu URL de webhook.'],
+        ['📥', 'Los pedidos entran solos', 'Cada pedido de Glovo, Uber Eats o JustEat aparece en cocina automáticamente, identificado con 🛵 y su código.'],
+        ['📊', 'Estadísticas por plataforma', 'Pedidos e ingresos de hoy por cada plataforma, para saber cuál te funciona mejor.'],
+        ['🍳', 'Mismo flujo que sala', 'La cocina los prepara igual que cualquier pedido: en cocina → listo → recogido.'],
+        ['🧪', 'Simulador de pedidos', 'Un botón crea un pedido de prueba para que valides todo el flujo antes de conectar la cuenta real.'],
+        ['📈', 'Ingresos integrados', 'Lo cobrado por delivery cuenta en el Dashboard como cualquier otra venta.'],
+      ],
+      pasos: [
+        'Ve a Apps y toca "Conectar" en Glovo, Uber Eats o JustEat.',
+        'Pega el ID de tienda y la API key de tu cuenta de partner (o agregador como Deliverect/Otter).',
+        'Copia la URL de webhook que genera Restora y pégala en el panel de la plataforma.',
+        'Prueba el flujo con "Simular pedido de prueba" desde la sección Delivery.',
+        'Los pedidos reales entrarán solos a cocina a partir de ese momento.',
+      ],
+      demo: [
+        { voz: 'Esta es la sección de Delivery. Cuando conectas tus plataformas, ves cuántos pedidos y cuántos ingresos te ha traído cada una hoy.', cursor: { x: 45, y: 30 }, html: `<p class="font-bold text-navy text-[12px] mb-2">Delivery</p><div class="grid grid-cols-3 gap-1.5 mb-2"><div class="bg-white border border-slate-200 rounded-lg p-1.5 text-center"><span class="inline-flex w-5 h-5 rounded bg-rose-50 text-rose-600 text-[8px] font-bold items-center justify-center">GL</span><p class="font-bold text-navy text-[12px]">12</p><p class="text-[7px] text-slate-400">148€ hoy</p></div><div class="bg-white border border-slate-200 rounded-lg p-1.5 text-center"><span class="inline-flex w-5 h-5 rounded bg-emerald-50 text-emerald-600 text-[8px] font-bold items-center justify-center">UB</span><p class="font-bold text-navy text-[12px]">9</p><p class="text-[7px] text-slate-400">112€ hoy</p></div><div class="bg-white border border-slate-200 rounded-lg p-1.5 text-center"><span class="inline-flex w-5 h-5 rounded bg-amber-50 text-amber-600 text-[8px] font-bold items-center justify-center">JE</span><p class="font-bold text-navy text-[12px]">5</p><p class="text-[7px] text-slate-400">61€ hoy</p></div></div>${_dRow('Glovo #A82F', '1× Risotto · 13,90€', _dPill('Preparando', 'bg-amber-50 text-amber-600'))}${_dRow('Uber Eats #3C1', '2× Salmón · 33€', _dPill('Listo para recoger', 'bg-indigo-50 text-indigo-600'))}` },
+        { voz: 'Conectar una plataforma es un formulario: pegas el identificador de tu tienda y tu clave de API, y Restora te genera una URL de webhook para pegar en el panel de la plataforma.', cursor: { x: 50, y: 55 }, click: true, html: `<div class="bg-white border border-slate-200 rounded-xl p-3 max-w-[240px] mx-auto"><p class="font-bold text-navy text-[11px] mb-1.5">Conectar Glovo</p><div class="space-y-1 text-[8px]"><div class="border border-slate-200 rounded-md px-2 py-1 text-slate-500">Store ID: <b class="text-navy">83921</b></div><div class="border border-slate-200 rounded-md px-2 py-1 text-slate-500">API Key: <b class="text-navy">••••••••</b></div><div class="border border-accent bg-accent/5 rounded-md px-2 py-1 text-[7px] text-slate-600 demo-hl">Webhook: …supabase.co/functions/v1/delivery-webhook?platform=glovo&token=a1b2…</div></div><div class="mt-2 rounded-full bg-navydeep text-white text-center text-[8px] font-bold py-1">Conectar</div></div>` },
+        { voz: 'A partir de ahí, cada pedido de delivery entra solo al tablero de cocina, marcado con su plataforma, y se prepara exactamente igual que un pedido de sala.', cursor: { x: 40, y: 45 }, html: `<div class="bg-white border border-slate-200 rounded-lg p-2.5 max-w-[230px] mx-auto mt-2 demo-hl"><div class="flex justify-between text-[9px]"><b class="text-navy">🛵 Glovo #A82F</b><span class="text-slate-400">21:16</span></div><p class="text-[11px] mt-1"><b>1×</b> Risotto de setas</p><div class="mt-1.5"><span class="rounded-md bg-emerald-50 text-emerald-700 text-[8px] font-bold px-2 py-1">✓ Listo</span></div></div><p class="text-center text-[9px] text-slate-400 mt-2">Entró automáticamente por el webhook, sin tocar nada</p>` },
+        { voz: 'Y antes de conectar tu cuenta real, puedes simular pedidos de prueba para validar todo el circuito. El delivery deja de ser una tablet más en la barra: es una parte más de tu restaurante.', cursor: { x: 50, y: 33 }, click: true, html: `<div class="text-center mt-2"><span class="rounded-full bg-slate-100 text-navy text-[9px] font-bold px-3 py-1.5 demo-hl">Simular pedido de prueba</span><p class="text-[9px] text-slate-500 mt-2">🛵 Pedido de prueba de Glovo recibido</p><div class="bg-white border border-slate-200 rounded-lg p-2 max-w-[200px] mx-auto mt-1.5 text-left"><div class="flex justify-between text-[8px]"><b class="text-navy">Glovo #TEST</b><span class="text-slate-400">ahora</span></div><p class="text-[9px]">1× Salmón a la parrilla</p></div></div>` },
+      ],
+    },
+    inventario: {
+      label: 'Inventario', pill: 'Inventario', titulo: 'El stock se controla solo',
+      sub: 'Cada ingrediente con su stock, su mínimo y su unidad. Restora avisa antes de que te quedes sin nada y descuenta las cantidades automáticamente cada vez que la cocina prepara un plato.',
+      features: [
+        ['📦', 'Ingredientes con mínimo', 'Define stock actual, mínimo de seguridad y unidad (kg, L, uds…) para cada producto.'],
+        ['🚨', 'Avisos de stock bajo', 'Cuando un ingrediente cae por debajo del mínimo, aparece un aviso destacado con la lista de lo que hay que pedir.'],
+        ['🔄', 'Descuento automático', 'Al cocinarse un pedido, los ingredientes de las recetas de sus platos se descuentan solos.'],
+        ['🍽️', 'Vista por platos', 'Además de la lista de ingredientes, una vista por plato te dice cuántas raciones puedes hacer con el stock actual.'],
+        ['➕', 'Ajustes rápidos', 'Botones +/− para ajustar el stock al recibir mercancía o corregir recuentos.'],
+        ['📄', 'Importación desde Excel', 'Trae tu inventario existente pegándolo desde una hoja de cálculo.'],
+      ],
+      pasos: [
+        'Añade tus ingredientes (o impórtalos desde Excel) con stock, mínimo y unidad.',
+        'En Menú, define la receta de cada plato: qué ingredientes usa y cuánto.',
+        'Trabaja normal: cada plato cocinado descuenta sus ingredientes solo.',
+        'Cuando algo baje del mínimo, verás el aviso rojo con la lista de compras.',
+        'Al recibir mercancía, ajusta el stock con los botones +/−.',
+      ],
+      demo: [
+        { voz: 'Este es el Inventario. Cada ingrediente con su stock actual, su mínimo y su estado: verde si vas bien, ámbar si vas justo, rojo si hay que comprar.', cursor: { x: 45, y: 42 }, html: `<p class="font-bold text-navy text-[12px] mb-2">Inventario · Ingredientes</p>${_dRow('Salmón fresco', '2 kg · mín. 4 kg', _dPill('Bajo', 'bg-rose-50 text-rose-500'))}${_dRow('Arroz arborio', '18 kg · mín. 5 kg', _dPill('OK', 'bg-emerald-50 text-emerald-600'))}${_dRow('Queso crema', '3,2 kg · mín. 2,5 kg', _dPill('Justo', 'bg-amber-50 text-amber-600'))}` },
+        { voz: 'Si algo cae por debajo del mínimo, Restora te lo canta: un aviso claro con los ingredientes que necesitas pedir antes del próximo servicio.', cursor: { x: 50, y: 28 }, html: `<div class="rounded-lg bg-rose-50 border border-rose-200 px-2.5 py-2 text-[9px] text-rose-600 font-semibold demo-hl">⚠️ 2 ingredientes están por debajo del mínimo: Salmón fresco, Nata. Pide más antes del próximo servicio.</div>${_dRow('Salmón fresco', '2 kg · mín. 4 kg', _dPill('Bajo', 'bg-rose-50 text-rose-500'))}${_dRow('Nata 35%', '0,8 L · mín. 2 L', _dPill('Bajo', 'bg-rose-50 text-rose-500'))}` },
+        { voz: 'La clave está en las recetas: cada plato del menú sabe qué ingredientes usa. Cuando la cocina termina un salmón a la parrilla, sus doscientos gramos se descuentan solos.', cursor: { x: 50, y: 52 }, html: `<div class="bg-white border border-slate-200 rounded-xl p-3 max-w-[240px] mx-auto"><p class="font-bold text-navy text-[10px] mb-1.5">Receta · Salmón a la parrilla</p><div class="text-[9px] space-y-1"><div class="flex justify-between"><span>Salmón fresco</span><b>200 g</b></div><div class="flex justify-between"><span>Verduras temporada</span><b>150 g</b></div><div class="flex justify-between"><span>Aceite de oliva</span><b>15 ml</b></div></div><p class="text-[8px] text-emerald-600 font-semibold mt-2 demo-hl">✓ Pedido cocinado → stock descontado automáticamente</p></div>` },
+        { voz: 'Y en la vista por platos, sabes cuántas raciones puedes servir con el stock que tienes ahora mismo. Se acabó descubrir a las diez de la noche que no queda salmón.', cursor: { x: 42, y: 45 }, html: `<div class="flex gap-1.5 mb-2 text-[8px] font-bold"><span class="rounded-full bg-navydeep text-white px-2 py-0.5">Por platos</span><span class="rounded-full bg-slate-100 text-slate-500 px-2 py-0.5">Ingredientes</span></div>${_dRow('🐟 Salmón a la parrilla', 'Con el stock actual', '<b class="text-rose-500 text-[9px]">10 raciones</b>')}${_dRow('🍚 Risotto de setas', 'Con el stock actual', '<b class="text-emerald-600 text-[9px]">45 raciones</b>')}` },
+      ],
+    },
+    tpv: {
+      label: 'TPV', pill: 'TPV y caja', titulo: 'Cobra, divide, descuenta y cierra caja',
+      sub: 'Un terminal punto de venta pensado para restaurantes: cobros por mesa en efectivo, tarjeta o Bizum, cuentas divididas, promociones, recibos y arqueo de caja al final del día.',
+      features: [
+        ['🔓', 'Apertura y cierre de caja', 'Abre el día con tu efectivo inicial y ciérralo con el arqueo: cuánto entró por cada método y cuánto debería haber en caja.'],
+        ['💳', 'Cobro por mesa', 'Cada pedido pendiente se cobra en dos toques: efectivo, tarjeta o Bizum.'],
+        ['➗', 'Dividir cuenta', 'A partes iguales o por platos concretos: cada comensal paga lo suyo, con cobros parciales registrados.'],
+        ['🏷️', 'Promociones y descuentos', '2x1, descuentos por artículo y descuentos de cliente (VIP) que se aplican solos.'],
+        ['🧾', 'Recibos y envío por email', 'Ticket numerado con detalle de cobros; imprimible o enviable por correo.'],
+        ['↩️', 'Anulaciones y devoluciones', 'Con motivo registrado y trazabilidad completa.'],
+      ],
+      pasos: [
+        'Al empezar el día, abre caja indicando el efectivo inicial.',
+        'Cuando una mesa pide la cuenta, tócala en el TPV y elige el método de pago.',
+        'Si quieren pagar por separado, usa "Dividir cuenta" (a partes iguales o por platos).',
+        'Aplica promociones o descuentos de cliente si toca — los de artículo van solos.',
+        'Al cerrar, revisa el arqueo: ventas por método y efectivo esperado en caja.',
+      ],
+      demo: [
+        { voz: 'Este es el TPV. El día empieza abriendo caja con tu efectivo inicial, y a partir de ahí, cada mesa pendiente de cobro aparece aquí con su total.', cursor: { x: 40, y: 35 }, html: `<div class="flex justify-between items-center mb-2"><p class="font-bold text-navy text-[12px]">TPV · Caja abierta</p><span class="text-[8px] text-slate-400">Efectivo inicial: 150€</span></div>${_dRow('Mesa 2', '3 platos · pendiente', '<b class="text-navy text-[10px]">46,80€</b>')}${_dRow('Mesa 5', '5 platos · pendiente', '<b class="text-navy text-[10px]">83,50€</b>')}${_dRow('Glovo #A82F', 'delivery · pendiente', '<b class="text-navy text-[10px]">13,90€</b>')}` },
+        { voz: 'Cobrar es cuestión de dos toques: eliges la mesa, eliges el método — efectivo, tarjeta o Bizum — y listo. El ticket se numera y se guarda solo.', cursor: { x: 50, y: 55 }, click: true, html: `<div class="bg-white border border-slate-200 rounded-xl p-3 max-w-[220px] mx-auto"><p class="font-bold text-navy text-[11px]">Cobrar Mesa 2 · 46,80€</p><div class="grid grid-cols-3 gap-1.5 mt-2 text-center text-[8px] font-semibold"><span class="border border-slate-200 rounded-md py-2">💶 Efectivo</span><span class="border border-accent bg-accent/5 text-accent rounded-md py-2 demo-hl">💳 Tarjeta</span><span class="border border-slate-200 rounded-md py-2">📱 Bizum</span></div><div class="mt-2 rounded-full bg-slate-100 text-navy text-center text-[8px] font-bold py-1.5">➗ Dividir cuenta</div></div>` },
+        { voz: '¿Que cada uno paga lo suyo? Divide la cuenta a partes iguales o por platos concretos. Cada cobro parcial queda registrado hasta completar el total.', cursor: { x: 50, y: 50 }, html: `<div class="bg-white border border-slate-200 rounded-xl p-3 max-w-[230px] mx-auto"><p class="font-bold text-navy text-[10px] mb-1.5">Dividir cuenta · Mesa 5</p><div class="text-[9px] space-y-1"><div class="flex justify-between"><span>Pago 1 · Tarjeta</span><b class="text-emerald-600">27,80€ ✓</b></div><div class="flex justify-between"><span>Pago 2 · Efectivo</span><b class="text-emerald-600">27,80€ ✓</b></div><div class="flex justify-between demo-hl"><span>Pago 3 · Bizum</span><b class="text-navy">27,90€ …</b></div></div><div class="flex justify-between border-t border-slate-100 mt-1.5 pt-1 text-[9px]"><span class="text-slate-400">Restante</span><b class="text-navy">27,90€</b></div></div>` },
+        { voz: 'Y al final del día, el cierre de caja te da el arqueo completo: cuánto entró por efectivo, por tarjeta y por Bizum, y cuánto efectivo debería haber exactamente en el cajón.', cursor: { x: 50, y: 45 }, html: `<div class="bg-white border border-slate-200 rounded-xl p-3 max-w-[230px] mx-auto"><p class="font-bold text-navy text-[10px] mb-1.5">Cierre de caja · hoy</p><div class="text-[9px] space-y-1"><div class="flex justify-between"><span>Ventas en efectivo</span><b>412,30€</b></div><div class="flex justify-between"><span>Ventas con tarjeta</span><b>731,20€</b></div><div class="flex justify-between"><span>Ventas con Bizum</span><b>141,00€</b></div><div class="flex justify-between border-t border-slate-100 pt-1"><span class="font-semibold text-navy">Total vendido</span><b class="text-navy">1.284,50€</b></div><div class="flex justify-between demo-hl"><span class="font-semibold text-navy">Efectivo esperado en caja</span><b class="text-navy">562,30€</b></div></div></div>` },
+      ],
+    },
+    ia: {
+      label: 'Ayudante IA', pill: 'Ayudante IA', titulo: 'Un asistente que conoce tu restaurante',
+      sub: 'No es un chatbot genérico: el Ayudante IA ve tus ventas, tus mesas, tu menú, tu personal y tu stock reales, responde cualquier pregunta sobre tu negocio y puede ejecutar acciones por ti.',
+      features: [
+        ['🧠', 'Conoce tus datos reales', 'Responde con tus números: "¿cuánto vendí el viernes?", "¿qué plato me deja más margen?", "¿qué mesa rinde menos?".'],
+        ['⚡', 'Ejecuta acciones', 'Pídele "marca la tarta como agotada" o "crea un pedido para la mesa 3" y lo hace de verdad en el panel.'],
+        ['📄', 'Informes semanales', 'Genera informes redactados de tu semana: ventas, comparativas y recomendaciones.'],
+        ['💬', 'Conversaciones guardadas', 'Cada conversación queda archivada para volver a consultarla.'],
+        ['💡', 'Sugerencias proactivas', 'Preguntas sugeridas para empezar: qué destacar hoy, cómo va el stock, análisis del día.'],
+      ],
+      pasos: [
+        'Abre el Ayudante IA desde el menú lateral.',
+        'Pregunta en lenguaje natural, como a un compañero: sin comandos ni sintaxis.',
+        'Pídele acciones concretas ("sube el precio del risotto a 14,50") y confírmalas.',
+        'Genera el informe semanal cuando quieras revisar la semana en dos minutos.',
+      ],
+      demo: [
+        { voz: 'Este es el Ayudante IA. Le preguntas en tu idioma, como a un encargado que se supiera todos los números de memoria.', cursor: { x: 55, y: 35 }, html: `<p class="font-bold text-navy text-[12px] mb-2">Ayudante IA</p><div class="flex justify-end mb-1.5"><span class="bg-accent text-white rounded-xl rounded-br-sm px-2 py-1.5 text-[9px]" style="max-width:75%">¿Qué plato debería destacar hoy?</span></div><div class="flex items-start gap-1.5"><span class="w-4 h-4 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[8px] shrink-0">✦</span><span class="bg-white border border-slate-200 rounded-xl rounded-bl-sm px-2 py-1.5 text-[9px] text-slate-600" style="max-width:80%">El salmón: te queda poco stock (2 kg) y los viernes se vende un 20% más. Véndelo hoy antes de que caduque.</span></div>` },
+        { voz: 'La diferencia con un chatbot cualquiera: este ve tus datos reales. Ventas, stock, mesas, personal… sus respuestas son sobre tu restaurante, no genéricas.', cursor: { x: 50, y: 50 }, html: `<div class="flex justify-end mb-1.5"><span class="bg-accent text-white rounded-xl rounded-br-sm px-2 py-1.5 text-[9px]" style="max-width:75%">¿Cómo fue la semana pasada comparada con la anterior?</span></div><div class="flex items-start gap-1.5"><span class="w-4 h-4 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[8px] shrink-0">✦</span><span class="bg-white border border-slate-200 rounded-xl rounded-bl-sm px-2 py-1.5 text-[9px] text-slate-600 demo-hl" style="max-width:80%">Facturaste 6.412€, un 12% más. El sábado fue tu mejor día (1.489€). El ticket medio subió de 29,10€ a 31,40€. Ojo: los postres cayeron un 18%.</span></div>` },
+        { voz: 'Y no solo responde: actúa. Pídele que marque un plato como agotado, que cree un pedido o que cambie un precio, y lo hace de verdad en tu panel.', cursor: { x: 50, y: 55 }, click: true, html: `<div class="flex justify-end mb-1.5"><span class="bg-accent text-white rounded-xl rounded-br-sm px-2 py-1.5 text-[9px]" style="max-width:75%">Marca la tarta de queso como agotada</span></div><div class="flex items-start gap-1.5"><span class="w-4 h-4 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[8px] shrink-0">✦</span><span class="bg-white border border-slate-200 rounded-xl rounded-bl-sm px-2 py-1.5 text-[9px] text-slate-600" style="max-width:80%">Hecho ✓ He marcado "Tarta de queso" como agotada. Ha desaparecido de la carta QR y del TPV.</span></div><p class="text-center mt-2"><span class="demo-hl">${_dPill('🍰 Tarta de queso → Agotado', 'bg-rose-50 text-rose-500')}</span></p>` },
+        { voz: 'Cuando quieras parar a pensar, pídele el informe semanal: un resumen redactado con tus ventas, comparativas y recomendaciones, listo en segundos.', cursor: { x: 45, y: 42 }, html: `<div class="bg-white border border-slate-200 rounded-xl p-3 max-w-[240px] mx-auto"><p class="font-bold text-navy text-[10px]">📄 Informe semanal · 1–7 julio</p><div class="text-[8.5px] text-slate-600 mt-1.5 space-y-1"><p>✅ Facturación: <b>6.412€</b> (+12% vs semana anterior)</p><p>🏆 Mejor día: sábado (1.489€)</p><p>🍽️ Plato estrella: salmón (38 uds)</p><p>💡 Recomendación: el risotto tiene tu mejor margen (74%) — dale visibilidad en la carta.</p></div></div>` },
+      ],
+    },
+    personal: {
+      label: 'Personal', pill: 'Personal', titulo: 'Tu equipo, con acceso propio y fichajes',
+      sub: 'Cada empleado con su ficha, su rol y su código de acceso. Ellos fichan su entrada y salida, tú ves quién está en turno y quién está conectado — y los avisos llegan a quien tienen que llegar.',
+      features: [
+        ['👤', 'Fichas de empleado', 'Nombre, rol, turno, email y estado de cada persona del equipo.'],
+        ['🔑', 'Acceso para el staff', 'Cada empleado entra con su código en cualquier dispositivo del restaurante, sin usar tu cuenta de dueño.'],
+        ['🕐', 'Fichaje de entrada y salida', 'Cada empleado ficha al llegar e irse; el historial de horas queda guardado.'],
+        ['🟢', 'Presencia en tiempo real', 'Un punto verde muestra quién tiene la app abierta en este momento.'],
+        ['🔔', 'Avisos según el rol', 'Los dispositivos de cocina reciben avisos de cocina; los de sala, los de sala. Nadie se satura con ruido ajeno.'],
+        ['📊', 'Ventas por camarero', 'El Dashboard desglosa lo vendido por cada persona.'],
+      ],
+      pasos: [
+        'Añade a cada empleado con "+ Añadir empleado": nombre, rol y turno.',
+        'Restora genera su código de acceso; se lo pasas y ya puede entrar como staff.',
+        'Cada empleado ficha entrada/salida desde su acceso.',
+        'Tú ves en la tabla quién está en turno (🕐) y quién está conectado (punto verde).',
+        'Revisa el historial de fichajes desde la ficha de cada empleado.',
+      ],
+      demo: [
+        { voz: 'Esta es la sección de Personal: tu equipo completo, con el rol, el turno, el código de acceso y el estado de cada uno.', cursor: { x: 45, y: 40 }, html: `<p class="font-bold text-navy text-[12px] mb-2">Personal</p>${_dRow('🟢 Marcos Ruiz <span class="text-[7px] text-emerald-600 font-bold">🕐 En turno</span>', 'Jefe de sala · Noche', _dPill('Activo', 'bg-emerald-50 text-emerald-600'))}${_dRow('🟢 Laia Puig', 'Cocina · Noche', _dPill('Activo', 'bg-emerald-50 text-emerald-600'))}${_dRow('⚪ Nil Costa', 'Camarero · Mediodía', _dPill('Descanso', 'bg-slate-100 text-slate-500'))}` },
+        { voz: 'Cada empleado tiene su propio código de acceso. Entra con él desde cualquier tablet o móvil del restaurante, sin tocar tu cuenta de dueño.', cursor: { x: 50, y: 52 }, click: true, html: `<div class="bg-white border border-slate-200 rounded-xl p-3 max-w-[200px] mx-auto text-center"><p class="font-bold text-navy text-[11px]">Acceso del equipo</p><p class="text-[8px] text-slate-400 mt-0.5">Introduce tu código</p><div class="mt-2 border border-slate-200 rounded-lg py-2 font-mono text-[13px] font-bold text-navy tracking-widest demo-hl">B4K7</div><div class="mt-2 rounded-full bg-navydeep text-white text-[8px] font-bold py-1.5">Entrar</div></div>` },
+        { voz: 'Al llegar, cada uno ficha su entrada; al irse, su salida. Las horas de cada jornada quedan registradas en su ficha, sin hojas de cálculo aparte.', cursor: { x: 50, y: 48 }, html: `<div class="bg-white border border-slate-200 rounded-xl p-3 max-w-[230px] mx-auto"><p class="font-bold text-navy text-[10px] mb-1.5">Fichajes · Laia Puig</p><div class="text-[9px] space-y-1"><div class="flex justify-between"><span>Hoy</span><b class="text-emerald-600">19:02 → en turno 🕐</b></div><div class="flex justify-between"><span>Ayer</span><b>19:00 – 00:15 · 5h 15m</b></div><div class="flex justify-between"><span>Martes</span><b>18:55 – 23:40 · 4h 45m</b></div></div></div>` },
+        { voz: 'Y los avisos son inteligentes: el rol de cada dispositivo decide qué suena dónde. La cocina no oye los avisos de sala, y la sala no oye los de cocina.', cursor: { x: 48, y: 42 }, html: `<div class="grid grid-cols-2 gap-2 mt-2 max-w-[260px] mx-auto"><div class="bg-white border border-slate-200 rounded-lg p-2 text-center"><p class="text-[9px] font-bold text-navy">🍳 Tablet cocina</p><p class="text-[8px] text-slate-500 mt-1">🔔 "Nuevo pedido en cocina"</p><p class="text-[8px] text-slate-300 line-through">Plato listo para servir</p></div><div class="bg-white border border-slate-200 rounded-lg p-2 text-center demo-hl"><p class="text-[9px] font-bold text-navy">🤵 Móvil camarero</p><p class="text-[8px] text-slate-500 mt-1">🔔 "Plato listo · Mesa 4"</p><p class="text-[8px] text-slate-300 line-through">Nuevo pedido en cocina</p></div></div>` },
+      ],
+    },
+    chat: {
+      label: 'Chat', pill: 'Chat de equipo', titulo: 'Sala y cocina hablando en el mismo sitio',
+      sub: 'Un chat interno en tiempo real entre todos los dispositivos del restaurante. Sin grupos de WhatsApp con números personales, sin gritos entre la barra y la cocina.',
+      features: [
+        ['⚡', 'Tiempo real de verdad', 'Los mensajes llegan al instante a todos los dispositivos conectados, con notificación.'],
+        ['👤', 'Cada mensaje con su autor', 'Nombre, iniciales y hora en cada mensaje; los tuyos a la derecha, los del resto a la izquierda.'],
+        ['🔔', 'Aviso sin abrir el chat', 'Si llega un mensaje mientras estás en otra sección, verás el aviso y el contador de no leídos.'],
+        ['🗑️', 'Mensajes eliminables', 'Cualquier mensaje se puede borrar con su ✕ (con confirmación).'],
+        ['📱', 'En todos los dispositivos', 'El mismo chat en la tablet de cocina, el móvil del camarero y el ordenador de la oficina.'],
+      ],
+      pasos: [
+        'Abre Chat en el menú lateral desde cualquier dispositivo.',
+        'Escribe y envía: cocina, sala y oficina lo ven al instante.',
+        'Si estás en otra sección, el aviso te avisa de mensajes nuevos.',
+        'Mantén el historial limpio borrando mensajes que ya no aporten.',
+      ],
+      demo: [
+        { voz: 'Este es el chat interno del equipo. Cocina avisa de que se acaba un ingrediente, sala pregunta por una mesa, y todo queda en el mismo hilo.', cursor: { x: 50, y: 45 }, html: `<p class="font-bold text-navy text-[12px] mb-2">Chat del equipo</p><div class="flex items-start gap-1.5 mb-1.5"><span class="w-4 h-4 rounded-full bg-slate-300 text-white text-[7px] font-bold flex items-center justify-center shrink-0">LP</span><div class="bg-white border border-slate-200 rounded-xl rounded-bl-sm px-2 py-1 text-[9px] text-slate-600"><b class="text-accent text-[7px] block">Laia (cocina)</b>Quedan 2 raciones de salmón</div></div><div class="flex justify-end"><div class="bg-navydeep text-white rounded-xl rounded-br-sm px-2 py-1 text-[9px]"><b class="text-white/70 text-[7px] block">Tú</b>Ok, lo marco agotado 👍</div></div>` },
+        { voz: 'Los mensajes llegan al momento a todos los dispositivos, con su autor y su hora. Si estás trabajando en otra sección, un aviso te lo notifica sin interrumpirte.', cursor: { x: 80, y: 15 }, html: `<div class="flex justify-between items-center mb-2"><p class="font-bold text-navy text-[12px]">Pedidos</p><span class="relative"><span class="text-[10px]">🔔</span><span class="absolute -top-1 -right-2 bg-rose-500 text-white text-[6px] font-bold rounded-full w-3 h-3 flex items-center justify-center demo-hl">2</span></span></div><div class="bg-navydeep text-white rounded-full px-3 py-1.5 text-[9px] font-semibold text-center mx-auto max-w-[210px]">💬 Laia: Quedan 2 raciones de salmón</div><p class="text-center text-[8px] text-slate-400 mt-1.5">Aparece aunque estés en otra sección</p>` },
+        { voz: 'Nada de grupos de WhatsApp con teléfonos personales: el chat vive dentro de Restora, en la tablet de cocina, el móvil del camarero y el ordenador de la oficina a la vez.', cursor: { x: 50, y: 55 }, html: `<div class="flex justify-center gap-2 mt-4 text-center"><div class="bg-white border border-slate-200 rounded-lg p-2 w-20"><p class="text-lg">🍳</p><p class="text-[8px] font-semibold text-navy">Cocina</p><p class="text-[7px] text-emerald-600">● conectado</p></div><div class="bg-white border border-slate-200 rounded-lg p-2 w-20 demo-hl"><p class="text-lg">🤵</p><p class="text-[8px] font-semibold text-navy">Sala</p><p class="text-[7px] text-emerald-600">● conectado</p></div><div class="bg-white border border-slate-200 rounded-lg p-2 w-20"><p class="text-lg">💼</p><p class="text-[8px] font-semibold text-navy">Oficina</p><p class="text-[7px] text-emerald-600">● conectado</p></div></div>` },
+      ],
+    },
+    apps: {
+      label: 'Apps', pill: 'Integraciones', titulo: 'Conecta las herramientas que ya usas',
+      sub: 'Restora no te obliga a cambiarlo todo: conecta tu TPV, tus plataformas de delivery, tu calendario y tus notificaciones desde un solo panel de integraciones.',
+      features: [
+        ['🛵', 'Delivery: Glovo, Uber Eats y JustEat', 'Conexión con credenciales reales y webhook propio; los pedidos entran solos a cocina.'],
+        ['💳', 'TPV Square', 'Sincroniza las ventas de tu terminal Square.'],
+        ['📆', 'Google Calendar', 'Tus reservas, también en tu calendario de Google.'],
+        ['🔔', 'Notificaciones', 'Activa o desactiva los avisos del panel por dispositivo.'],
+        ['🎛️', 'Estado siempre visible', 'Cada integración muestra Conectado/Conectar de un vistazo, y se desconecta igual de fácil.'],
+      ],
+      pasos: [
+        'Entra en Apps desde el menú lateral.',
+        'Toca "Conectar" en la herramienta que quieras enlazar.',
+        'Sigue el formulario de esa integración (credenciales, permisos…).',
+        'El botón pasará a "Conectado" — y a funcionar desde ese momento.',
+      ],
+      demo: [
+        { voz: 'Esta es la sección de Apps: todas tus integraciones en un panel, cada una con su estado. Verde conectado, gris pendiente de conectar.', cursor: { x: 45, y: 40 }, html: `<p class="font-bold text-navy text-[12px] mb-2">Apps</p>${_dRow('🛵 Glovo', 'Recibe tus pedidos de delivery', _dPill('Conectado', 'bg-emerald-50 text-emerald-600'))}${_dRow('🛵 Uber Eats', 'Recibe tus pedidos de delivery', _dPill('Conectar', 'bg-slate-100 text-slate-500'))}${_dRow('💳 TPV Square', 'Sincroniza ventas del terminal', _dPill('Conectado', 'bg-emerald-50 text-emerald-600'))}${_dRow('📆 Google Calendar', 'Reservas en tu calendario', _dPill('Conectar', 'bg-slate-100 text-slate-500'))}` },
+        { voz: 'Conectar algo nuevo es tocar su botón y rellenar un formulario corto. Sin técnicos, sin instalaciones: credenciales, guardar, y en marcha.', cursor: { x: 76, y: 33 }, click: true, html: `${_dRow('🛵 Uber Eats', 'Recibe tus pedidos de delivery', '<span class="demo-hl">' + _dPill('Conectar', 'bg-slate-100 text-slate-500') + '</span>')}<div class="bg-white border border-slate-200 rounded-xl p-2.5 max-w-[220px] mx-auto mt-2"><p class="font-bold text-navy text-[10px] mb-1">Conectar Uber Eats</p><div class="space-y-1 text-[8px]"><div class="border border-slate-200 rounded-md px-2 py-1 text-slate-400">Store ID</div><div class="border border-slate-200 rounded-md px-2 py-1 text-slate-400">API Key</div></div><div class="mt-1.5 rounded-full bg-navydeep text-white text-center text-[8px] font-bold py-1">Conectar</div></div>` },
+        { voz: 'Y cada integración trabaja para ti desde el primer minuto: los pedidos de delivery van a cocina, las reservas a tu calendario, las ventas del TPV a tus estadísticas. Todo en su sitio, sin cambiar de pantalla.', cursor: { x: 50, y: 45 }, html: `<div class="text-center mt-3"><div class="flex justify-center items-center gap-2 text-[9px] font-semibold text-slate-600"><span class="bg-white border border-slate-200 rounded-lg px-2 py-1.5">🛵 Pedido Glovo</span><span class="text-accent">→</span><span class="bg-white border border-slate-200 rounded-lg px-2 py-1.5 demo-hl">🍳 Cocina</span></div><div class="flex justify-center items-center gap-2 text-[9px] font-semibold text-slate-600 mt-1.5"><span class="bg-white border border-slate-200 rounded-lg px-2 py-1.5">📅 Reserva online</span><span class="text-accent">→</span><span class="bg-white border border-slate-200 rounded-lg px-2 py-1.5">📆 Tu calendario</span></div></div>` },
+      ],
+    },
+    carta: {
+      label: 'Menú', pill: 'Carta digital y web', titulo: 'Tu carta online, con tu marca, y pedidos por QR',
+      sub: 'Restora te genera una página pública preciosa con tu carta — o una web completa con tu historia, fotos, horario y reservas — y un QR por mesa desde el que tus clientes piden solos.',
+      features: [
+        ['🎨', 'Con tu identidad', 'Elige paleta de colores, logo, foto de portada y eslogan: la carta se genera con tu marca, no con la nuestra.'],
+        ['🌐', 'Modo web completa', 'Actívalo y tendrás una web con historia, galería, horario, contacto y botón de reservas — sin pagar un diseñador.'],
+        ['📱', 'Pedidos desde el móvil', 'El cliente escanea el QR de su mesa, elige platos y envía el pedido directo a tu cocina.'],
+        ['⚠️', 'Observaciones del cliente', 'Alergias y peticiones por plato o por pedido, escritas por el propio cliente.'],
+        ['✏️', 'Pedido editable', 'El cliente puede corregir su pedido mientras cocina no lo haya empezado.'],
+        ['🔄', 'Siempre sincronizada', 'Cambias un precio o marcas un agotado y la carta pública se actualiza al momento.'],
+      ],
+      pasos: [
+        'En "Mi restaurante", activa la Carta digital y elige tu paleta, logo y fotos.',
+        'Activa el "modo web" si quieres la página completa con historia, galería y reservas.',
+        'Imprime los QR de cada mesa desde la sección Mesas.',
+        'El cliente escanea, pide y su pedido aparece en tu cocina con la mesa correcta.',
+        'Comparte la URL pública en Google, Instagram o donde quieras.',
+      ],
+      demo: [
+        { voz: 'Esta es tu carta digital pública: la ve el cliente al escanear el QR de su mesa. Con tus colores, tu logo y tu carta real, siempre actualizada.', cursor: { x: 50, y: 40 }, html: `<div class="max-w-[210px] mx-auto"><div class="rounded-t-xl px-3 py-2.5 text-white" style="background:linear-gradient(135deg,#b91c1c,#78350f)"><p class="text-[7px] opacity-80">Mesa 4</p><p class="font-bold text-[12px]">La Brasería</p><p class="text-[7px] italic opacity-80">"Brasa de la buena desde 1987"</p></div><div class="bg-white border border-slate-200 rounded-b-xl p-2 space-y-1 text-[9px]"><div class="flex justify-between"><span>🐟 Salmón a la parrilla</span><b>16,50€</b></div><div class="flex justify-between"><span>🍚 Risotto de setas</span><b>13,90€</b></div></div></div>` },
+        { voz: 'El cliente no solo mira: pide. Elige platos, indica alergias u observaciones — por plato o del pedido entero — y envía. Su pedido entra directo a tu cocina.', cursor: { x: 50, y: 58 }, click: true, html: `<div class="max-w-[210px] mx-auto bg-white border border-slate-200 rounded-xl p-2.5 text-[9px]"><div class="flex justify-between items-center"><span>🐟 Salmón parrilla</span><span class="flex items-center gap-1"><span class="w-4 h-4 rounded-full bg-slate-100 text-center leading-4">−</span><b>2</b><span class="w-4 h-4 rounded-full bg-slate-100 text-center leading-4">+</span></span></div><div class="border border-slate-200 rounded-md px-1.5 py-1 mt-1 text-[8px] text-slate-500 demo-hl">Observación: sin gluten por favor</div><div class="flex justify-between items-center mt-2 pt-1.5 border-t border-slate-100"><span class="text-slate-400 text-[8px]">2 platos · 33,00€</span><span class="rounded-full bg-navydeep text-white text-[8px] font-bold px-2.5 py-1">Enviar pedido</span></div></div>` },
+        { voz: 'Si se arrepiente de algo, puede editar su pedido desde la pantalla de confirmación, siempre que la cocina no lo haya empezado a preparar. Sin llamar al camarero.', cursor: { x: 50, y: 55 }, html: `<div class="max-w-[210px] mx-auto bg-white border border-slate-200 rounded-xl p-3 text-center"><p class="text-emerald-500 text-lg">✓</p><p class="font-bold text-navy text-[11px]">¡Pedido enviado!</p><p class="text-[8px] text-slate-400 mt-0.5">Tu pedido va camino de la cocina</p><div class="mt-2 rounded-full bg-slate-100 text-navy text-[8px] font-bold py-1.5 demo-hl">✏️ Editar pedido</div><p class="text-[7px] text-slate-400 mt-1">Editable mientras cocina no lo empiece</p></div>` },
+        { voz: 'Y si activas el modo web, tu carta se convierte en una página completa: tu historia, tu galería de fotos, tu horario y tus reservas online. Tu presencia en internet, resuelta desde el mismo panel que tu día a día.', cursor: { x: 48, y: 45 }, html: `<div class="max-w-[230px] mx-auto rounded-xl overflow-hidden border border-slate-200"><div class="px-3 py-3 text-white text-center" style="background:linear-gradient(140deg,#b91c1c,#78350f)"><p class="font-bold text-[12px]">La Brasería</p><p class="text-[7px] opacity-80 italic">"Brasa de la buena desde 1987"</p><div class="flex justify-center gap-1 mt-1.5"><span class="bg-white text-[7px] font-bold rounded-full px-2 py-0.5" style="color:#b91c1c">Ver la carta</span><span class="border border-white/60 text-white text-[7px] font-bold rounded-full px-2 py-0.5">Reservar mesa</span></div></div><div class="bg-white p-2 grid grid-cols-4 gap-1 text-center text-[6.5px] font-semibold text-slate-500"><span>Historia</span><span>Galería</span><span>Horario</span><span class="text-accent demo-hl">Reservas</span></div></div>` },
+      ],
+    },
+  };
+
+  const FUNC_CARD_MAP = { 'Dashboard': 'dashboard', 'Mesas': 'mesas', 'Integraciones': 'apps', 'Reservas': 'reservas', 'Delivery': 'delivery', 'Personal': 'personal', 'Ayudante IA': 'ia', 'Menú': 'menu', 'Inventario': 'inventario', 'Pedidos': 'pedidos', 'TPV': 'tpv', 'Chat de equipo': 'chat', 'Carta digital': 'carta' };
+
+  function abrirFuncionPage(key, sinHistorial) {
+    const info = FUNCIONES_INFO[key];
+    if (!info) return;
+    detenerDemo();
+    if (!sinHistorial) history.pushState({ funcion: key }, '', location.pathname + '?funcion=' + key);
+    document.getElementById('landingRoot').style.display = 'none';
+    document.getElementById('funcionRoot').style.display = 'block';
+    window.scrollTo(0, 0);
+    renderFuncionPage(key);
+  }
+  function cerrarFuncionPage() {
+    detenerDemo();
+    history.pushState({}, '', location.pathname);
+    document.getElementById('funcionRoot').style.display = 'none';
+    document.getElementById('landingRoot').style.display = 'block';
+    const anchor = document.getElementById('plantillas');
+    if (anchor) anchor.scrollIntoView({ block: 'center' });
+  }
+  window.addEventListener('popstate', () => {
+    const key = new URLSearchParams(location.search).get('funcion');
+    if (key && FUNCIONES_INFO[key]) abrirFuncionPage(key, true);
+    else if (document.getElementById('funcionRoot').style.display === 'block') {
+      detenerDemo();
+      document.getElementById('funcionRoot').style.display = 'none';
+      document.getElementById('landingRoot').style.display = 'block';
+    }
+  });
+  function renderFuncionPage(key) {
+    const info = FUNCIONES_INFO[key];
+    const featsHtml = info.features.map(f => `
+      <div class="func-feature rounded-2xl bg-white border border-slate-200/70 p-5">
+        <span class="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-lg">${f[0]}</span>
+        <p class="mt-3 font-bold text-navy">${f[1]}</p>
+        <p class="mt-1.5 text-sm text-slate-500">${f[2]}</p>
+      </div>`).join('');
+    const pasosHtml = info.pasos.map((p, i) => `
+      <div class="flex items-start gap-3.5">
+        <span class="w-7 h-7 rounded-full bg-navydeep text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">${i + 1}</span>
+        <p class="text-slate-600 pt-1">${p}</p>
+      </div>`).join('');
+    document.getElementById('funcionBody').innerHTML = `
+      <div class="text-center max-w-2xl mx-auto">
+        <span class="inline-block rounded-full bg-accent/10 text-accent text-xs font-bold px-3.5 py-1.5 uppercase tracking-wide">${info.pill}</span>
+        <h1 class="mt-4 text-4xl sm:text-5xl font-extrabold tracking-tight text-navy leading-[1.12]">${info.titulo}</h1>
+        <p class="mt-4 text-lg text-slate-500">${info.sub}</p>
+      </div>
+      <div class="mt-10">${demoPlayerHtml(key)}</div>
+      <h2 class="mt-16 text-2xl font-extrabold text-navy text-center">Todo lo que incluye</h2>
+      <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">${featsHtml}</div>
+      <h2 class="mt-16 text-2xl font-extrabold text-navy text-center">Cómo se usa, paso a paso</h2>
+      <div class="mt-6 max-w-xl mx-auto space-y-4">${pasosHtml}</div>
+      <div class="mt-16 rounded-3xl bg-navydeep text-center px-6 py-12">
+        <h2 class="text-2xl font-extrabold text-white">Pruébalo con tu restaurante</h2>
+        <p class="mt-2 text-white/70 text-sm max-w-md mx-auto">Crea tu cuenta gratis y ten ${info.pill.toLowerCase()} funcionando hoy mismo.</p>
+        <button onclick="cerrarFuncionPage(); setTimeout(() => openModal('signup'), 80);" class="mt-6 rounded-full bg-white text-navy text-sm font-bold px-7 py-3 hover:bg-slate-100 transition">Empezar gratis</button>
+      </div>
+    `;
+  }
+
+  // ---- Motor del reproductor de demo narrada ----
+  let demoState = null;
+  function demoPlayerHtml(key) {
+    const frames = FUNCIONES_INFO[key].demo;
+    return `
+      <div class="demo-player" id="demoPlayer">
+        <div class="demo-screen" id="demoScreen">
+          ${frames.map((f, i) => `<div class="demo-frame" data-frame="${i}">${demoShell(FUNCIONES_INFO[key].label, f.html)}</div>`).join('')}
+          <div class="demo-cursor" id="demoCursor" style="left:50%;top:80%;display:none;">
+            <svg viewBox="0 0 24 24" fill="#fff" stroke="#16161D" stroke-width="1.5"><path d="M5 3l14 8-6.5 1.5L9 19 5 3z"/></svg>
+            <span class="demo-click-ring"></span>
+          </div>
+          <div class="demo-sub" id="demoSub" style="display:none;"></div>
+          <div class="demo-overlay-play" id="demoOverlay" onclick="demoIniciar('${key}')">
+            <span class="demo-big-play"><svg class="w-8 h-8 ml-1" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5z"/></svg></span>
+            <p class="text-white font-bold text-sm">Ver la demo narrada</p>
+            <p class="text-white/70 text-xs">${frames.length} escenas · con voz y subtítulos</p>
+          </div>
+        </div>
+        <div class="demo-controls">
+          <button class="demo-ctrl-btn" id="demoPlayBtn" onclick="demoTogglePlay('${key}')" title="Reproducir / pausar"><svg class="w-4 h-4 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5z"/></svg></button>
+          <button class="demo-ctrl-btn" onclick="demoReiniciar('${key}')" title="Volver a empezar"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M4 10a8 8 0 1 1-2 5"/></svg></button>
+          <div class="demo-progress"><div class="demo-progress-fill" id="demoProgress"></div></div>
+          <button class="demo-ctrl-btn" id="demoVozBtn" onclick="demoToggleVoz()" title="Activar / silenciar la voz">🔊</button>
+        </div>
+      </div>`;
+  }
+  function demoIniciar(key) {
+    detenerDemo();
+    const overlay = document.getElementById('demoOverlay');
+    if (overlay) overlay.style.display = 'none';
+    const sub = document.getElementById('demoSub');
+    if (sub) sub.style.display = 'block';
+    const cursor = document.getElementById('demoCursor');
+    if (cursor) cursor.style.display = 'block';
+    demoState = { key, idx: -1, playing: true, vozOn: !demoVozMuted, tok: 0, timer: null };
+    demoSetPlayIcon(true);
+    demoAvanzar();
+  }
+  let demoVozMuted = false;
+  function demoDurEstimada(texto) {
+    return Math.max(4200, 900 + texto.split(/\s+/).length * 340);
+  }
+  function demoAvanzar() {
+    if (!demoState || !demoState.playing) return;
+    const frames = FUNCIONES_INFO[demoState.key].demo;
+    demoState.idx += 1;
+    if (demoState.idx >= frames.length) return demoTerminar();
+    const f = frames[demoState.idx];
+    const tok = ++demoState.tok;
+    document.querySelectorAll('#demoScreen .demo-frame').forEach((el, i) => el.classList.toggle('on', i === demoState.idx));
+    const prog = document.getElementById('demoProgress');
+    if (prog) prog.style.width = ((demoState.idx + 1) / frames.length * 100) + '%';
+    const sub = document.getElementById('demoSub');
+    if (sub) sub.textContent = f.voz;
+    const cursor = document.getElementById('demoCursor');
+    if (cursor && f.cursor) {
+      cursor.style.left = f.cursor.x + '%';
+      cursor.style.top = f.cursor.y + '%';
+      cursor.classList.remove('clicking');
+      if (f.click) setTimeout(() => { if (demoState && demoState.tok === tok) cursor.classList.add('clicking'); }, 1250);
+    }
+    const siguiente = () => { if (demoState && demoState.tok === tok && demoState.playing) demoAvanzar(); };
+    if (demoState.vozOn && 'speechSynthesis' in window) {
+      try {
+        const u = new SpeechSynthesisUtterance(f.voz);
+        u.lang = 'es-ES'; u.rate = 1.02;
+        const voz = speechSynthesis.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith('es'));
+        if (voz) u.voice = voz;
+        u.onend = () => setTimeout(siguiente, 500);
+        u.onerror = () => setTimeout(siguiente, 500);
+        speechSynthesis.speak(u);
+        // Respaldo por si el navegador nunca dispara onend (pasa en algunos móviles)
+        demoState.timer = setTimeout(siguiente, demoDurEstimada(f.voz) + 8000);
+        return;
+      } catch (e) {}
+    }
+    demoState.timer = setTimeout(siguiente, demoDurEstimada(f.voz));
+  }
+  function demoTerminar() {
+    demoSetPlayIcon(false);
+    if (demoState) demoState.playing = false;
+    const overlay = document.getElementById('demoOverlay');
+    if (overlay) {
+      overlay.style.display = 'flex';
+      overlay.querySelector('p.text-white.font-bold').textContent = 'Volver a ver la demo';
+    }
+  }
+  function demoTogglePlay(key) {
+    if (!demoState) return demoIniciar(key);
+    if (demoState.playing) {
+      demoState.playing = false;
+      demoState.tok += 1;
+      clearTimeout(demoState.timer);
+      try { speechSynthesis.cancel(); } catch (e) {}
+      demoSetPlayIcon(false);
+    } else {
+      demoState.playing = true;
+      demoState.idx -= 1;
+      demoSetPlayIcon(true);
+      demoAvanzar();
+    }
+  }
+  function demoReiniciar(key) {
+    demoIniciar(key);
+  }
+  function demoToggleVoz() {
+    demoVozMuted = !demoVozMuted;
+    if (demoState) demoState.vozOn = !demoVozMuted;
+    const btn = document.getElementById('demoVozBtn');
+    if (btn) btn.textContent = demoVozMuted ? '🔇' : '🔊';
+    if (demoVozMuted) { try { speechSynthesis.cancel(); } catch (e) {} }
+  }
+  function demoSetPlayIcon(playing) {
+    const btn = document.getElementById('demoPlayBtn');
+    if (!btn) return;
+    btn.innerHTML = playing
+      ? '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>'
+      : '<svg class="w-4 h-4 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5z"/></svg>';
+  }
+  function detenerDemo() {
+    if (demoState) { demoState.tok += 1; clearTimeout(demoState.timer); }
+    demoState = null;
+    try { speechSynthesis.cancel(); } catch (e) {}
+  }
+  if ('speechSynthesis' in window) { try { speechSynthesis.getVoices(); } catch (e) {} }
+
+  // Hace clicable cada tarjeta de funcionalidades de la landing (por su etiqueta de sección)
+  (function initFuncCards() {
+    document.querySelectorAll('#landingRoot .card-shadow.p-7').forEach(card => {
+      const labelEl = card.querySelector('p.text-accent.text-sm.font-semibold');
+      if (!labelEl) return;
+      const key = FUNC_CARD_MAP[labelEl.textContent.trim()];
+      if (!key) return;
+      card.classList.add('func-card', 'lift-card');
+      card.addEventListener('click', () => abrirFuncionPage(key));
+      const desc = card.querySelector('h3 ~ p');
+      if (desc) desc.insertAdjacentHTML('afterend', '<p class="func-cta mt-3 text-sm font-semibold text-accent">Ver esta sección en detalle →</p>');
+    });
+  })();
+
   (async function initAuth() {
     const params = new URLSearchParams(location.search);
+    const funcionKey = params.get('funcion');
+    if (funcionKey && FUNCIONES_INFO[funcionKey]) {
+      abrirFuncionPage(funcionKey, true);
+      return;
+    }
     const cuentaId = params.get('cuenta');
     const mesaNumero = params.get('mesa');
     const reservarId = params.get('reservar');
