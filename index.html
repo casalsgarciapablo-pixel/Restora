@@ -915,17 +915,23 @@
     <div id="plantillas" class="mt-10 grid md:grid-cols-3 gap-6 reveal">
       <div class="rounded-2xl bg-white border border-slate-200/70 card-shadow p-7">
         <div class="rounded-xl bg-slate-50 border border-slate-100 h-44 mb-6 p-4">
-          <p class="text-[11px] font-semibold text-slate-500">Ingresos totales (mes)</p>
-          <p class="text-2xl font-bold text-navy mt-0.5">18.640€</p>
-          <div class="mt-2.5 flex items-end gap-1 h-12">
-            <div class="flex-1 bg-indigo-200 rounded-sm" style="height:45%"></div>
-            <div class="flex-1 bg-indigo-200 rounded-sm" style="height:55%"></div>
-            <div class="flex-1 bg-indigo-300 rounded-sm" style="height:65%"></div>
-            <div class="flex-1 bg-indigo-300 rounded-sm" style="height:60%"></div>
-            <div class="flex-1 bg-indigo-400 rounded-sm" style="height:78%"></div>
-            <div class="flex-1 bg-indigo-500 rounded-sm" style="height:95%"></div>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-semibold text-slate-500">Ingresos</p>
+              <p class="text-2xl font-bold text-navy mt-0.5">18.640€</p>
+            </div>
+            <div class="flex items-center gap-1 text-[10px] font-semibold">
+              <span class="rounded-full bg-navydeep text-white px-2 py-1">Día</span>
+              <span class="rounded-full text-slate-400 px-2 py-1">Semana</span>
+              <span class="rounded-full text-slate-400 px-2 py-1">Mes</span>
+            </div>
           </div>
-          <div class="mt-3 flex gap-4 text-[11px] text-slate-500">
+          <svg viewBox="0 0 220 60" class="w-full h-14 mt-3">
+            <defs><linearGradient id="heroRevGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4F3FFF" stop-opacity="0.22"/><stop offset="100%" stop-color="#4F3FFF" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,48 L20,44 L40,46 L60,34 L80,38 L100,22 L120,28 L140,16 L160,20 L180,8 L200,14 L220,4 L220,60 L0,60 Z" fill="url(#heroRevGrad)"/>
+            <polyline points="0,48 20,44 40,46 60,34 80,38 100,22 120,28 140,16 160,20 180,8 200,14 220,4" fill="none" stroke="#4F3FFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="mt-2.5 flex gap-4 text-[11px] text-slate-500">
             <span><b class="text-navy">612</b> pedidos</span>
             <span><b class="text-navy">30,50€</b> ticket medio</span>
           </div>
@@ -935,28 +941,22 @@
         <p class="mt-2 text-slate-500">Ingresos totales, pedidos, ticket medio y tus platos más vendidos, actualizados cada día.</p>
       </div>
       <div class="rounded-2xl bg-white border border-slate-200/70 card-shadow p-7">
-        <div class="rounded-xl bg-slate-50 border border-slate-100 p-5 grid grid-cols-3 gap-3 h-44 mb-6">
-          <div>
-            <p class="text-[11px] font-semibold text-slate-500 mb-2">Ventas del día</p>
-            <div class="flex items-end gap-1 h-20">
-              <div class="flex-1 bg-navy/80 rounded-sm" style="height:40%"></div>
-              <div class="flex-1 bg-navy/80 rounded-sm" style="height:55%"></div>
-              <div class="flex-1 bg-navy/80 rounded-sm" style="height:65%"></div>
-              <div class="flex-1 bg-amber-300 rounded-sm" style="height:80%"></div>
-              <div class="flex-1 bg-navy/80 rounded-sm" style="height:90%"></div>
-            </div>
+        <div class="rounded-xl bg-slate-50 border border-slate-100 h-44 mb-6 p-4 flex items-center justify-center gap-4">
+          <div class="flex flex-col items-center gap-1">
+            <span class="w-11 h-11 rounded-full flex items-center justify-center text-xs font-bold bg-white" style="border:3px solid #34d399; color:#059669;">1</span>
+            <span class="text-[9px] text-slate-400">Libre</span>
           </div>
-          <div>
-            <p class="text-[11px] font-semibold text-slate-500 mb-2">Ticket medio</p>
-            <svg viewBox="0 0 100 60" class="w-full h-20"><polyline points="0,50 20,42 40,38 55,20 70,28 100,10" fill="none" stroke="#4f3fff" stroke-width="3"/></svg>
+          <div class="flex flex-col items-center gap-1 -mt-5">
+            <span class="w-11 h-11 rounded-full flex items-center justify-center text-xs font-bold" style="border:3px solid #fb7185; background:#fff1f2; color:#e11d48;">2</span>
+            <span class="text-[9px] text-slate-400">Ocupada</span>
           </div>
-          <div>
-            <p class="text-[11px] font-semibold text-slate-500 mb-2">Ocupación</p>
-            <div class="flex items-end gap-1 h-20">
-              <div class="flex-1 bg-slate-300 rounded-sm" style="height:30%"></div>
-              <div class="flex-1 bg-slate-300 rounded-sm" style="height:45%"></div>
-              <div class="flex-1 bg-slate-300 rounded-sm" style="height:60%"></div>
-            </div>
+          <div class="flex flex-col items-center gap-1">
+            <span class="w-11 h-11 rounded-full flex items-center justify-center text-xs font-bold" style="border:3px solid #fbbf24; background:#fffbeb; color:#d97706;">3</span>
+            <span class="text-[9px] text-slate-400">Reservada</span>
+          </div>
+          <div class="flex flex-col items-center gap-1 -mt-4">
+            <span class="w-11 h-11 rounded-full flex items-center justify-center text-xs font-bold bg-white" style="border:3px solid #34d399; color:#059669;">4</span>
+            <span class="text-[9px] text-slate-400">Libre</span>
           </div>
         </div>
         <p class="text-accent text-sm font-semibold mb-2">Mesas</p>
@@ -964,12 +964,22 @@
         <p class="mt-2 text-slate-500">Ventas, ticket medio y ocupación al momento, para saber cómo va tu turno de un vistazo.</p>
       </div>
       <div class="rounded-2xl bg-white border border-slate-200/70 card-shadow p-7">
-        <div class="rounded-xl bg-slate-50 border border-slate-100 h-44 mb-6 relative flex items-center justify-center gap-4">
-          <span class="w-11 h-11 rounded-full bg-white shadow flex items-center justify-center text-accent"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="2" width="10" height="20" rx="2"/><path stroke-linecap="round" d="M11 18h2"/></svg></span>
-          <span class="w-11 h-11 rounded-full bg-white shadow flex items-center justify-center text-accent -mt-6"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" d="M2 9h3M2 13h2M2 17h2"/><rect x="8" y="6" width="13" height="12" rx="2"/><path stroke-linecap="round" d="M8 10h13"/></svg></span>
-          <span class="w-11 h-11 rounded-full bg-white shadow flex items-center justify-center text-accent"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 9h20"/></svg></span>
-          <span class="w-11 h-11 rounded-full bg-white shadow flex items-center justify-center text-accent -mt-4"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></span>
-          <span class="w-11 h-11 rounded-full bg-white shadow flex items-center justify-center text-accent"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8L12 3 3 8l9 5 9-5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 8v8l9 5 9-5V8M12 13v8"/></svg></span>
+        <div class="rounded-xl bg-slate-50 border border-slate-100 h-44 mb-6 p-3.5 flex flex-col justify-center gap-2.5">
+          <div class="flex items-center gap-2.5 bg-white rounded-lg px-3 py-2">
+            <span class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" d="M2 9h3M2 13h2M2 17h2"/><rect x="8" y="6" width="13" height="12" rx="2"/><path stroke-linecap="round" d="M8 10h13"/></svg></span>
+            <span class="text-xs font-semibold text-navy flex-1">Glovo</span>
+            <span class="text-[10px] font-semibold text-emerald-600 bg-emerald-50 rounded-full px-2 py-1">Conectado</span>
+          </div>
+          <div class="flex items-center gap-2.5 bg-white rounded-lg px-3 py-2">
+            <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 016.5 3H12v18H6.5A2.5 2.5 0 014 18.5v-13zM20 5.5A2.5 2.5 0 0017.5 3H12v18h5.5a2.5 2.5 0 002.5-2.5v-13z"/></svg></span>
+            <span class="text-xs font-semibold text-navy flex-1">Uber Eats</span>
+            <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 rounded-full px-2 py-1">Conectar</span>
+          </div>
+          <div class="flex items-center gap-2.5 bg-white rounded-lg px-3 py-2">
+            <span class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="18" rx="2"/><path stroke-linecap="round" d="M8 8h8M8 12h8M8 16h4"/></svg></span>
+            <span class="text-xs font-semibold text-navy flex-1">TPV Square</span>
+            <span class="text-[10px] font-semibold text-emerald-600 bg-emerald-50 rounded-full px-2 py-1">Conectado</span>
+          </div>
         </div>
         <p class="text-accent text-sm font-semibold mb-2">Integraciones</p>
         <h3 class="text-2xl font-bold text-navy">Conecta tu TPV, delivery y WhatsApp al instante.</h3>
@@ -980,12 +990,13 @@
     <!-- 6 card grid -->
     <div class="mt-6 grid md:grid-cols-3 gap-6 reveal">
       <div class="rounded-2xl bg-white border border-slate-200/70 card-shadow p-7">
-        <div class="rounded-xl bg-slate-50 border border-slate-100 h-36 mb-6 p-4 text-xs">
-          <p class="font-semibold text-slate-600 mb-2">Turno</p>
-          <div class="border border-slate-200 rounded-md px-2 py-1.5 bg-white mb-2">Noche</div>
-          <p class="font-semibold text-slate-600 mb-1">Tipo</p>
-          <div class="flex items-center gap-1.5 text-slate-500"><span class="w-3 h-3 border border-slate-300 rounded-sm inline-block bg-violet-200"></span>Reservados</div>
-          <div class="flex items-center gap-1.5 text-slate-500"><span class="w-3 h-3 border border-slate-300 rounded-sm inline-block"></span>Walk-in</div>
+        <div class="rounded-xl bg-slate-50 border border-slate-100 h-36 mb-6 p-3 text-[10px] overflow-hidden">
+          <div class="grid grid-cols-4 gap-1 font-semibold text-slate-500 border-b border-slate-200 pb-1 mb-1">
+            <span>Hora</span><span>Cliente</span><span>Mesa</span><span>Estado</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1 items-center text-slate-500 py-1"><span>21:00</span><span>Elena R.</span><span>Mesa 4</span><span class="text-emerald-600 bg-emerald-50 rounded-full px-1.5 py-0.5 text-center">Confirmada</span></div>
+          <div class="grid grid-cols-4 gap-1 items-center text-slate-500 py-1"><span>21:30</span><span>Marc P.</span><span>Mesa 7</span><span class="text-amber-600 bg-amber-50 rounded-full px-1.5 py-0.5 text-center">Pendiente</span></div>
+          <div class="grid grid-cols-4 gap-1 items-center text-slate-400 py-1"><span>22:00</span><span>Laia S.</span><span>Mesa 2</span><span class="text-emerald-600 bg-emerald-50 rounded-full px-1.5 py-0.5 text-center">Confirmada</span></div>
         </div>
         <p class="text-accent text-sm font-semibold mb-1">Reservas</p>
         <h3 class="text-xl font-bold text-navy">Reservas y walk-ins, sin líos.</h3>
@@ -993,25 +1004,34 @@
       </div>
       <div class="rounded-2xl bg-white border border-slate-200/70 card-shadow p-7">
         <div class="rounded-xl bg-slate-50 border border-slate-100 h-36 mb-6 p-3 text-[10px] overflow-hidden">
-          <div class="grid grid-cols-4 gap-1 font-semibold text-slate-500 border-b border-slate-200 pb-1 mb-1">
-            <span>Fecha</span><span>Plataforma</span><span>Pedidos</span><span>Total</span>
+          <div class="grid grid-cols-3 gap-2 mb-2">
+            <div class="bg-white rounded-lg p-1.5 text-center"><span class="inline-flex w-4 h-4 rounded bg-rose-50 text-rose-600 items-center justify-center text-[8px] font-bold mb-0.5">GL</span><p class="font-bold text-navy">12</p></div>
+            <div class="bg-white rounded-lg p-1.5 text-center"><span class="inline-flex w-4 h-4 rounded bg-emerald-50 text-emerald-600 items-center justify-center text-[8px] font-bold mb-0.5">UB</span><p class="font-bold text-navy">9</p></div>
+            <div class="bg-white rounded-lg p-1.5 text-center"><span class="inline-flex w-4 h-4 rounded bg-amber-50 text-amber-600 items-center justify-center text-[8px] font-bold mb-0.5">JE</span><p class="font-bold text-navy">5</p></div>
           </div>
-          <div class="grid grid-cols-4 gap-1 text-slate-500 py-0.5"><span>3 abr</span><span>Glovo</span><span>124</span><span>1.520€</span></div>
-          <div class="grid grid-cols-4 gap-1 py-0.5 bg-accent/10 rounded"><span>3 abr</span><span>UberEats</span><span class="font-semibold text-navy border border-accent rounded px-1">96</span><span>1.180€</span></div>
-          <div class="grid grid-cols-4 gap-1 text-slate-400 py-0.5"><span>1 abr</span><span>JustEat</span><span>58</span><span>640€</span></div>
+          <div class="flex items-center gap-1.5 bg-white rounded px-1.5 py-1 mb-1">
+            <span class="w-3.5 h-3.5 rounded bg-rose-50 text-rose-600 flex items-center justify-center text-[7px] font-bold shrink-0">GL</span>
+            <span class="text-slate-600 flex-1 truncate">Glovo #A82F</span>
+            <span class="text-amber-600 bg-amber-50 rounded-full px-1.5 shrink-0">Preparando</span>
+          </div>
+          <div class="flex items-center gap-1.5 bg-white rounded px-1.5 py-1">
+            <span class="w-3.5 h-3.5 rounded bg-emerald-50 text-emerald-600 flex items-center justify-center text-[7px] font-bold shrink-0">UB</span>
+            <span class="text-slate-600 flex-1 truncate">Uber Eats #3C1</span>
+            <span class="text-indigo-600 bg-indigo-50 rounded-full px-1.5 shrink-0">Listo</span>
+          </div>
         </div>
         <p class="text-accent text-sm font-semibold mb-1">Delivery</p>
         <h3 class="text-xl font-bold text-navy">Pedidos a domicilio centralizados.</h3>
         <p class="mt-2 text-slate-500 text-sm">Todos tus pedidos de Glovo, Uber Eats y JustEat en una sola tabla, sin duplicar trabajo.</p>
       </div>
       <div class="rounded-2xl bg-white border border-slate-200/70 card-shadow p-7">
-        <div class="rounded-xl bg-slate-50 border border-slate-100 h-36 mb-6 p-4 text-xs flex items-center justify-between">
-          <div class="space-y-1.5">
-            <p><span class="text-slate-400">Nombre</span> <span class="text-navy font-medium ml-2">Marcos Ruiz</span></p>
-            <p><span class="text-slate-400">Email</span> <span class="text-navy font-medium ml-2">marcos@sala.com</span></p>
-            <p><span class="text-slate-400">Puesto</span> <span class="text-navy font-medium ml-2">Jefe de sala</span></p>
+        <div class="rounded-xl bg-slate-50 border border-slate-100 h-36 mb-6 p-3 text-[10px] overflow-hidden">
+          <div class="grid grid-cols-3 gap-1 font-semibold text-slate-500 border-b border-slate-200 pb-1 mb-1">
+            <span>Nombre</span><span>Rol</span><span>Estado</span>
           </div>
-          <span class="w-10 h-10 rounded-full bg-amber-200 shrink-0"></span>
+          <div class="grid grid-cols-3 gap-1 items-center text-slate-600 py-1"><span>Marcos Ruiz</span><span class="text-slate-400">Jefe de sala</span><span class="text-emerald-600 bg-emerald-50 rounded-full px-1.5 py-0.5 text-center w-fit">Activo</span></div>
+          <div class="grid grid-cols-3 gap-1 items-center text-slate-600 py-1"><span>Laia Puig</span><span class="text-slate-400">Cocina</span><span class="text-emerald-600 bg-emerald-50 rounded-full px-1.5 py-0.5 text-center w-fit">Activo</span></div>
+          <div class="grid grid-cols-3 gap-1 items-center text-slate-400 py-1"><span>Nil Costa</span><span class="text-slate-400">Camarero</span><span class="text-slate-500 bg-slate-100 rounded-full px-1.5 py-0.5 text-center w-fit">Descanso</span></div>
         </div>
         <p class="text-accent text-sm font-semibold mb-1">Personal</p>
         <h3 class="text-xl font-bold text-navy">Tu equipo, siempre organizado.</h3>
@@ -1019,21 +1039,25 @@
       </div>
       <div class="rounded-2xl bg-white border border-slate-200/70 card-shadow p-7">
         <div class="rounded-xl bg-slate-50 border border-slate-100 h-36 mb-6 p-3 text-[11px]">
-          <p class="text-slate-400 mb-2">Ayudante IA</p>
-          <div class="flex items-start gap-2 mb-2"><span class="w-5 h-5 rounded-full bg-blue-200 shrink-0"></span><span class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-600">¿Qué plato debería destacar hoy?</span></div>
-          <div class="flex items-start gap-2"><span class="w-5 h-5 rounded-full bg-violet-200 shrink-0"></span><span class="bg-accent text-white rounded-lg px-2 py-1">El salmón: baja stock y se vende un 20% más los viernes.</span></div>
+          <div class="flex justify-end mb-2"><span class="bg-accent text-white rounded-xl px-2.5 py-1.5" style="max-width:78%;">¿Qué plato debería destacar hoy?</span></div>
+          <div class="flex items-start gap-1.5"><span class="w-5 h-5 rounded-full bg-accent/10 text-accent flex items-center justify-center shrink-0"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L20 9.5l-6.1 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.9L12 2z"/></svg></span><span class="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-600" style="max-width:78%;">El salmón: baja stock y se vende un 20% más los viernes.</span></div>
         </div>
         <p class="text-accent text-sm font-semibold mb-1">Ayudante IA</p>
         <h3 class="text-xl font-bold text-navy">Un asistente que conoce tu negocio.</h3>
         <p class="mt-2 text-slate-500 text-sm">Pregúntale lo que necesites y recibe recomendaciones basadas en tus ventas, sala y cocina.</p>
       </div>
       <div class="rounded-2xl bg-white border border-slate-200/70 card-shadow p-7">
-        <div class="rounded-xl bg-slate-50 border border-slate-100 h-36 mb-6 p-3 text-[11px]">
-          <div class="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-400 mb-1.5">¿Qué quieres hacer?</div>
-          <div class="space-y-1 text-slate-500">
-            <p class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 8v8M8 12h8"/></svg>Crear pedido</p>
-            <p class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M3 8h18M5 8v10M19 8v10M9 8v3M15 8v3"/></svg>Mostrar/ocultar mesas</p>
-            <p class="flex items-center gap-1.5 text-navy font-medium bg-slate-100 rounded px-1 -mx-1"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 016.5 3H12v18H6.5A2.5 2.5 0 014 18.5v-13zM20 5.5A2.5 2.5 0 0017.5 3H12v18h5.5a2.5 2.5 0 002.5-2.5v-13z"/></svg>Abrir editor de menú</p>
+        <div class="rounded-xl bg-slate-50 border border-slate-100 h-36 mb-6 p-3 text-[11px] overflow-hidden">
+          <p class="text-[9px] font-bold uppercase tracking-wide text-accent mb-1.5">Principales</p>
+          <div class="flex items-center gap-2 bg-white rounded-lg px-2 py-1.5 mb-1.5">
+            <span class="w-6 h-6 rounded-md bg-slate-100 shrink-0"></span>
+            <span class="text-slate-600 flex-1 truncate">Salmón a la parrilla</span>
+            <span class="font-bold text-navy shrink-0">16,50€</span>
+          </div>
+          <div class="flex items-center gap-2 bg-white rounded-lg px-2 py-1.5">
+            <span class="w-6 h-6 rounded-md bg-slate-100 shrink-0"></span>
+            <span class="text-slate-600 flex-1 truncate">Risotto de setas</span>
+            <span class="font-bold text-navy shrink-0">13,90€</span>
           </div>
         </div>
         <p class="text-accent text-sm font-semibold mb-1">Menú</p>
@@ -1041,8 +1065,13 @@
         <p class="mt-2 text-slate-500 text-sm">Actualiza platos, precios y disponibilidad al instante desde cualquier dispositivo.</p>
       </div>
       <div class="rounded-2xl bg-white border border-slate-200/70 card-shadow p-7">
-        <div class="rounded-xl bg-slate-50 border border-slate-100 h-36 mb-6 flex items-center justify-center">
-          <span class="w-14 h-14 rounded-full bg-white shadow flex items-center justify-center text-accent"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8L12 3 3 8l9 5 9-5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 8v8l9 5 9-5V8M12 13v8"/></svg></span>
+        <div class="rounded-xl bg-slate-50 border border-slate-100 h-36 mb-6 p-3 text-[10px] overflow-hidden">
+          <div class="rounded-lg bg-rose-50 text-rose-600 font-medium px-2 py-1.5 mb-2">⚠️ 2 ingredientes por debajo del mínimo</div>
+          <div class="grid grid-cols-3 gap-1 font-semibold text-slate-500 border-b border-slate-200 pb-1 mb-1">
+            <span>Ingrediente</span><span>Stock</span><span>Estado</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1 items-center text-slate-600 py-0.5"><span>Salmón</span><span>2 kg</span><span class="text-rose-500 bg-rose-50 rounded-full px-1.5 py-0.5 text-center w-fit">Bajo</span></div>
+          <div class="grid grid-cols-3 gap-1 items-center text-slate-400 py-0.5"><span>Arroz</span><span>18 kg</span><span class="text-emerald-600 bg-emerald-50 rounded-full px-1.5 py-0.5 text-center w-fit">OK</span></div>
         </div>
         <p class="text-accent text-sm font-semibold mb-1">Inventario</p>
         <h3 class="text-xl font-bold text-navy">Nunca te quedes sin stock.</h3>
