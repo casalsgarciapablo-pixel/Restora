@@ -2335,6 +2335,7 @@
     if (typeof toggleLandingMobileNav === 'function') toggleLandingMobileNav(false);
     if (typeof toggleSidebarMobile === 'function') toggleSidebarMobile(false);
     document.getElementById('modalCard').classList.remove('modal-wide');
+    if (type === 'conectar-reservas') reservasWebTab = '';
     const customRenderers = {
       'login': loginFormHtml,
       'signup': signupFormHtml,
@@ -5216,7 +5217,7 @@
   const GOOGLE_CLIENT_ID = '550104490829-38ih72fcjvduj5p5ifimriujklq7vsmp.apps.googleusercontent.com';
   let googleTokenClient = null;
   let googleAccessToken = null;
-  let reservasWebTab = 'enlace';
+  let reservasWebTab = '';
   function conectarReservasFormHtml() {
     const acc = getCurrentAccount();
     const conectado = acc.data.integraciones.googleCalendar && googleAccessToken;
@@ -5249,11 +5250,11 @@
                 <p class="text-xs text-slate-500 mt-2.5">Pega este código donde quieras que aparezca el formulario de reservas, integrado dentro de tu propia web (sin salir de tu página):</p>
                 <div class="mt-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-600 break-all font-mono">${svgEsc(snippet)}</div>
                 <button onclick="navigator.clipboard.writeText('${escAttr(snippet)}'); showToast('Código copiado');" class="mt-2 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Copiar código del widget</button>
-              `; })() : `
+              `; })() : reservasWebTab === 'enlace' ? `
                 <p class="text-xs text-slate-500 mt-2.5">Pega este enlace en el botón de "Reservar" de tu web (lleva al cliente al formulario):</p>
                 <div class="mt-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-600 break-all">${enlaceWeb}</div>
                 <button onclick="navigator.clipboard.writeText('${enlaceWeb}'); showToast('Enlace copiado');" class="mt-2 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Copiar enlace para tu web</button>
-              `}
+              ` : ''}
             </div>
           ` : ''}
         </div>
