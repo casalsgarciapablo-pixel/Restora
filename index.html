@@ -3370,7 +3370,7 @@
     const acc = getCurrentAccount();
     const cd = acc.data.cartaDigital;
     webWiz = {
-      paso: 1,
+      paso: 0,
       tipo: cd.tipoRestaurante || '',
       modoColor: (cd.colorPrimario && cd.colorSecundario) ? 'custom' : 'paleta',
       paleta: cd.paleta || '',
@@ -3385,7 +3385,7 @@
       historia: cd.historia || '',
       instagram: cd.instagram || '',
       secciones: Object.assign({ nosotros: true, galeria: true, horario: true, contacto: true, reservas: true }, cd.secciones || {}),
-      webExistente: false,
+      webExistente: null,
       webUrl: '',
     };
     document.getElementById('modalCard').classList.add('modal-wide');
@@ -3398,6 +3398,7 @@
   function webWizHtml() {
     const w = webWiz;
     const acc = getCurrentAccount();
+    if (w.paso === 0) return webWizGateHtml(w, acc);
     const progress = [1, 2, 3, 4, 5, 6].map(i => `<span class="${i <= w.paso ? 'on' : ''}"></span>`).join('');
     let cuerpo = '';
     if (w.paso === 1) {
@@ -3407,21 +3408,7 @@
         <div class="wiz-chips mt-4">
           ${TIPOS_RESTAURANTE.map(t => `<button type="button" class="wiz-chip ${w.tipo === t ? 'sel' : ''}" onclick="wizSetTipo('${escAttr(t)}')">${TIPO_EMOJI[t] || '🍽️'} ${t}</button>`).join('')}
         </div>
-        <p class="mt-4 text-xs text-slate-400">🍽️ Tu carta ${nPlatos ? `(${nPlatos} ${nPlatos === 1 ? 'plato' : 'platos'})` : ''} se incluirá automáticamente en tu carta digital, con pedidos desde la mesa.</p>
-        <div class="mt-5 rounded-xl border border-dashed border-slate-300 p-3.5">
-          <label class="flex items-center gap-2.5 cursor-pointer">
-            <input type="checkbox" ${w.webExistente ? 'checked' : ''} onchange="webWiz.webExistente=this.checked; renderWebWiz();">
-            <span class="text-sm font-medium text-navy">🔗 Ya tengo una web o carta online</span>
-          </label>
-          ${w.webExistente ? `
-            <p class="text-xs text-slate-400 mt-1.5 mb-2">Pega el enlace y la IA copiará colores, estilo, fotos e información de tu web para que tu carta digital se parezca lo máximo posible.</p>
-            <div class="flex gap-2">
-              <input id="wizWebUrl" type="url" placeholder="https://tuweb.com" value="${escAttr(w.webUrl)}" oninput="webWiz.webUrl=this.value" class="flex-1 min-w-0 rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
-              <button type="button" id="wizAnalizarWebBtn" onclick="wizAnalizarWeb()" class="rounded-lg bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-4 whitespace-nowrap shrink-0">✨ Analizar</button>
-            </div>
-            <p id="wizAnalizarWebMsg" class="text-xs mt-2"></p>
-          ` : ''}
-        </div>`;
+        <p class="mt-4 text-xs text-slate-400">🍽️ Tu carta ${nPlatos ? `(${nPlatos} ${nPlatos === 1 ? 'plato' : 'platos'})` : ''} se incluirá automáticamente en tu carta digital, con pedidos desde la mesa.</p>`;
     } else if (w.paso === 2) {
       const sugerida = PALETA_SUGERIDA[w.tipo] || 'moderno';
       const paletas = Object.keys(PALETAS_CARTA).map(key => {
@@ -3521,7 +3508,7 @@
       ${cuerpo}
       <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
       <div class="wiz-foot">
-        ${w.paso > 1 ? `<button type="button" onclick="wizAtras()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">← Atrás</button>` : ''}
+        ${w.paso > 0 ? `<button type="button" onclick="wizAtras()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">← Atrás</button>` : ''}
         ${w.paso < 6
           ? `<button type="button" onclick="wizSiguiente()" class="flex-1 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Siguiente →</button>`
           : `<button type="button" id="wizCrearBtn" onclick="webWizFinalizar()" class="flex-1 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">✨ Crear mi carta digital</button>`}
@@ -3530,9 +3517,35 @@
   function wizSetTipo(t) { webWiz.tipo = t; renderWebWiz(); }
   function wizSetPaleta(key) { webWiz.modoColor = 'paleta'; webWiz.paleta = key; renderWebWiz(); }
   function wizSetCustomColor() { webWiz.modoColor = 'custom'; renderWebWiz(); }
-  // Analiza la web actual del restaurante con IA y prellena colores, eslogan, historia y fotos
-  // en el asistente, para que el usuario no tenga que rellenarlo todo desde cero.
-  async function wizAnalizarWeb() {
+  // Puerta de entrada del asistente: si el restaurante ya tiene web, pegando el enlace generamos
+  // la carta digital automáticamente (sin más preguntas); si no, sigue el asistente paso a paso.
+  function webWizGateHtml(w, acc) {
+    return `
+      <p class="text-xs font-semibold text-slate-400">CREAR TU CARTA DIGITAL</p>
+      <h3 class="text-xl font-bold text-navy mt-1">¿Ya tienes una web?</h3>
+      <p class="text-sm text-slate-500 mt-1">Si ya tienes web, pega el enlace y te generamos la carta digital automáticamente, copiando tu logo, colores, eslogan y fotos. Si no, te lo preguntamos todo paso a paso.</p>
+      <div class="space-y-2.5 mt-5">
+        <button type="button" class="wiz-pal ${w.webExistente === true ? 'sel' : ''}" onclick="webWiz.webExistente=true; renderWebWiz();">
+          <span class="text-sm font-medium text-navy">🔗 Sí, ya tengo una web</span>
+        </button>
+        <button type="button" class="wiz-pal ${w.webExistente === false ? 'sel' : ''}" onclick="webWiz.webExistente=false; webWiz.paso=1; renderWebWiz();">
+          <span class="text-sm font-medium text-navy">✏️ No, prefiero configurarla yo</span>
+        </button>
+      </div>
+      ${w.webExistente === true ? `
+        <div class="mt-4">
+          <label class="block text-sm font-medium text-navy mb-1.5">Enlace de tu web</label>
+          <input id="wizWebUrl" type="url" placeholder="https://tuweb.com" value="${escAttr(w.webUrl)}" oninput="webWiz.webUrl=this.value" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+          <button type="button" id="wizAnalizarWebBtn" onclick="wizAnalizarWebYGenerar()" class="mt-3 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">✨ Generar mi carta digital automáticamente</button>
+          <p id="wizAnalizarWebMsg" class="text-xs mt-2"></p>
+          <p class="text-xs text-slate-400 mt-3">Podrás ajustar cualquier detalle después desde "✏️ Editar".</p>
+        </div>
+      ` : ''}
+    `;
+  }
+  // Analiza la web del restaurante con IA y, con lo que encuentra, activa y crea la carta digital
+  // directamente (sin pasar por el resto del asistente).
+  async function wizAnalizarWebYGenerar() {
     const input = document.getElementById('wizWebUrl');
     const url = ((input ? input.value : webWiz.webUrl) || '').trim();
     const msgEl = document.getElementById('wizAnalizarWebMsg');
@@ -3542,31 +3555,44 @@
       if (msgEl) { msgEl.textContent = 'Pega primero el enlace de tu web.'; msgEl.className = 'text-xs mt-2 text-rose-600'; }
       return;
     }
-    if (btn) { btn.disabled = true; btn.textContent = 'Analizando…'; }
-    if (msgEl) { msgEl.textContent = 'La IA está visitando tu web, esto puede tardar unos segundos…'; msgEl.className = 'text-xs mt-2 text-slate-400'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Analizando tu web…'; }
+    if (msgEl) { msgEl.textContent = 'La IA está visitando tu web y preparando tu carta digital, esto puede tardar unos segundos…'; msgEl.className = 'text-xs mt-2 text-slate-400'; }
+    let data, error;
     try {
-      const { data, error } = await supabaseClient.functions.invoke('analizar-web-restaurante', { body: { url } });
+      ({ data, error } = await supabaseClient.functions.invoke('analizar-web-restaurante', { body: { url } }));
       if (error || !data || data.error) throw new Error((data && data.error) || 'fallo');
-      let cambios = [];
-      if (data.tipoRestaurante && TIPOS_RESTAURANTE.includes(data.tipoRestaurante)) { webWiz.tipo = data.tipoRestaurante; cambios.push('tipo de cocina'); }
-      if (data.colorPrimario && data.colorSecundario) { webWiz.modoColor = 'custom'; webWiz.color1 = data.colorPrimario; webWiz.color2 = data.colorSecundario; cambios.push('colores'); }
-      if (data.tagline) { webWiz.esloganModo = 'propio'; webWiz.eslogan = data.tagline; cambios.push('eslogan'); }
-      if (data.historia) { webWiz.historia = data.historia; cambios.push('historia'); }
-      if (Array.isArray(data.fotos) && data.fotos.length) {
-        webWiz.fotosModo = 'propias';
-        webWiz.fotoHero = data.fotos[0];
-        webWiz.fotosPropias = data.fotos.slice(1, 4);
-        cambios.push('fotos');
-      }
-      if (msgEl) {
-        msgEl.textContent = cambios.length ? ('✅ Hemos copiado ' + cambios.join(', ') + ' de tu web — revísalo en los siguientes pasos.') : 'No hemos podido extraer suficiente información de esa web.';
-        msgEl.className = 'text-xs mt-2 ' + (cambios.length ? 'text-emerald-600' : 'text-slate-400');
-      }
     } catch (e) {
-      if (msgEl) { msgEl.textContent = 'No hemos podido analizar esa web automáticamente. Puedes seguir configurando todo a mano.'; msgEl.className = 'text-xs mt-2 text-rose-600'; }
+      if (btn) { btn.disabled = false; btn.textContent = '✨ Generar mi carta digital automáticamente'; }
+      if (msgEl) { msgEl.textContent = 'No hemos podido analizar esa web automáticamente. Prueba con otro enlace, o configúrala tú mismo.'; msgEl.className = 'text-xs mt-2 text-rose-600'; }
+      return;
     }
-    if (btn) { btn.disabled = false; btn.textContent = '✨ Analizar'; }
-    renderWebWiz();
+    if (btn) btn.textContent = 'Creando tu carta digital…';
+    const acc = getCurrentAccount();
+    const tipo = (data.tipoRestaurante && TIPOS_RESTAURANTE.includes(data.tipoRestaurante)) ? data.tipoRestaurante : 'Otro';
+    const fotos = Array.isArray(data.fotos) ? data.fotos : [];
+    acc.data.cartaDigital = Object.assign({}, acc.data.cartaDigital, {
+      activada: true,
+      web: true,
+      tipoRestaurante: tipo,
+      paleta: (data.colorPrimario && data.colorSecundario) ? '' : (PALETA_SUGERIDA[tipo] || 'moderno'),
+      colorPrimario: data.colorPrimario || '',
+      colorSecundario: data.colorSecundario || '',
+      tagline: data.tagline || '',
+      logo: data.logo || '',
+      historia: data.historia || '',
+      fotosModo: fotos.length ? 'propias' : 'banco',
+      fotoHero: fotos[0] || '',
+      fotosPropias: fotos.slice(1, 4),
+      direccion: acc.data.perfil.direccion || '',
+      telefono: acc.data.perfil.telefono || '',
+      secciones: Object.assign({ nosotros: true, galeria: true, horario: true, contacto: true, reservas: true }, acc.data.cartaDigital.secciones || {}),
+      creadaEn: acc.data.cartaDigital.creadaEn || new Date().toISOString(),
+    });
+    saveCurrentAccountData(acc.data);
+    try { await syncAccountToServer(); } catch (e) {}
+    closeModal();
+    renderCartaDigitalPreview(true);
+    showToast('🎉 ¡Tu carta digital está lista, copiada de tu web!');
   }
   function wizLeer() {
     const w = webWiz;
