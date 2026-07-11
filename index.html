@@ -1939,9 +1939,9 @@
         </div>
         <div class="rounded-xl border border-slate-200 bg-white p-6 flex flex-col items-center text-center">
           <div class="w-full text-left">
-            <p class="text-xs font-semibold text-slate-400">TU WEB</p>
-            <p class="text-sm font-semibold text-navy mt-0.5">La web de tu restaurante</p>
-            <p class="text-xs text-slate-400 mt-1">El QR de tus mesas abrirá tu web en cuanto la crees.</p>
+            <p class="text-xs font-semibold text-slate-400">TU CARTA DIGITAL</p>
+            <p class="text-sm font-semibold text-navy mt-0.5">La carta digital de tu restaurante</p>
+            <p class="text-xs text-slate-400 mt-1">El QR de tus mesas abrirá tu carta digital en cuanto la crees.</p>
           </div>
           <div class="flex-1 flex flex-col items-center justify-center w-full">
             <div class="phone-mockup mx-auto mt-6">
@@ -1951,9 +1951,9 @@
                 <div id="cartaDigitalPlaceholder" class="phone-mockup-placeholder"></div>
               </div>
             </div>
-            <button id="cartaDigitalBtn" onclick="abrirGenerarCartaDigital()" class="mt-6 w-full max-w-xs rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">✨ Generar web</button>
-            <button id="cartaDigitalEditarBtn" onclick="abrirGenerarCartaDigital()" class="mt-2.5 w-full max-w-xs rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5 hidden">✏️ Editar web</button>
-            <button id="cartaDigitalAbrirBtn" onclick="abrirWebEnPestana()" class="mt-2.5 w-full max-w-xs rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5 hidden">🔗 Abrir mi web</button>
+            <button id="cartaDigitalBtn" onclick="abrirGenerarCartaDigital()" class="mt-6 w-full max-w-xs rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">✨ Generar carta digital</button>
+            <button id="cartaDigitalEditarBtn" onclick="abrirGenerarCartaDigital()" class="mt-2.5 w-full max-w-xs rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5 hidden">✏️ Editar carta digital</button>
+            <button id="cartaDigitalAbrirBtn" onclick="abrirWebEnPestana()" class="mt-2.5 w-full max-w-xs rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5 hidden">🔗 Abrir mi carta digital</button>
             <p id="cartaDigitalEstado" class="mt-3 text-xs text-slate-400"></p>
           </div>
         </div>
@@ -3191,10 +3191,10 @@
     if (editarBtn) editarBtn.classList.toggle('hidden', !cd.activada);
     if (abrirBtn) abrirBtn.classList.toggle('hidden', !cd.activada);
     if (cd.activada) {
-      if (btn) btn.textContent = '✨ Regenerar web';
+      if (btn) btn.textContent = '✨ Regenerar carta digital';
       if (estadoEl) {
         const fecha = cd.creadaEn ? new Date(cd.creadaEn).toLocaleDateString('es-ES') : '';
-        estadoEl.innerHTML = `<span class="inline-flex items-center gap-1.5 text-emerald-600 font-medium">● Web activa${fecha ? ' · creada el ' + fecha : ''}</span>`;
+        estadoEl.innerHTML = `<span class="inline-flex items-center gap-1.5 text-emerald-600 font-medium">● Carta digital activa${fecha ? ' · creada el ' + fecha : ''}</span>`;
       }
       if (force || !frame.dataset.cargado) {
         frame.src = location.origin + location.pathname + '?cuenta=' + encodeURIComponent(acc.userId) + '&mesa=1&preview=1&t=' + Date.now();
@@ -3204,7 +3204,7 @@
       placeholder.style.display = 'none';
       ajustarEscalaMockup();
     } else {
-      if (btn) btn.textContent = '✨ Generar web';
+      if (btn) btn.textContent = '✨ Generar carta digital';
       if (estadoEl) estadoEl.innerHTML = 'Todavía no la has creado';
       delete frame.dataset.cargado;
       frame.style.display = 'none';
@@ -3217,7 +3217,7 @@
           <div class="relative">
             <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-white/15 rounded-full px-2.5 py-1">🍽️ Ejemplo</span>
             <h1 class="text-base font-extrabold text-white mt-2">Tu Restaurante</h1>
-            <p class="text-[11px] text-white/90 mt-1 italic">"Así de profesional quedaría tu web"</p>
+            <p class="text-[11px] text-white/90 mt-1 italic">"Así de profesional quedaría tu carta digital"</p>
           </div>
         </div>
         <div class="px-4 pt-4 pb-3">
@@ -3323,7 +3323,7 @@
         <div class="wiz-chips mt-4">
           ${TIPOS_RESTAURANTE.map(t => `<button type="button" class="wiz-chip ${w.tipo === t ? 'sel' : ''}" onclick="wizSetTipo('${escAttr(t)}')">${TIPO_EMOJI[t] || '🍽️'} ${t}</button>`).join('')}
         </div>
-        <p class="mt-4 text-xs text-slate-400">🍽️ Tu carta ${nPlatos ? `(${nPlatos} ${nPlatos === 1 ? 'plato' : 'platos'})` : ''} se incluirá automáticamente en la web, con pedidos desde la mesa.</p>`;
+        <p class="mt-4 text-xs text-slate-400">🍽️ Tu carta ${nPlatos ? `(${nPlatos} ${nPlatos === 1 ? 'plato' : 'platos'})` : ''} se incluirá automáticamente en tu carta digital, con pedidos desde la mesa.</p>`;
     } else if (w.paso === 2) {
       const sugerida = PALETA_SUGERIDA[w.tipo] || 'moderno';
       const paletas = Object.keys(PALETAS_CARTA).map(key => {
@@ -3350,7 +3350,7 @@
           </div>` : ''}`;
     } else if (w.paso === 3) {
       cuerpo = `
-        <p class="text-sm text-slate-500 mt-1">Dale identidad a tu web con tu logo y un eslogan.</p>
+        <p class="text-sm text-slate-500 mt-1">Dale identidad a tu carta digital con tu logo y un eslogan.</p>
         <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Logo (opcional)</label>
         ${w.logo ? `
           <div class="flex items-center gap-3 mb-2 rounded-lg border border-slate-200 p-2">
@@ -3368,7 +3368,7 @@
     } else if (w.paso === 4) {
       const conPropias = w.fotosModo === 'propias' || w.fotosModo === 'mix';
       cuerpo = `
-        <p class="text-sm text-slate-500 mt-1">Una web profesional necesita buenas fotos. ¿Cómo lo hacemos?</p>
+        <p class="text-sm text-slate-500 mt-1">Una carta digital profesional necesita buenas fotos. ¿Cómo lo hacemos?</p>
         <div class="space-y-2 mt-4">
           <label class="flex items-start gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer ${w.fotosModo === 'banco' ? 'border-accent bg-accent/5' : ''}"><input type="radio" name="wizFotos" class="mt-0.5" ${w.fotosModo === 'banco' ? 'checked' : ''} onchange="wizLeer(); webWiz.fotosModo='banco'; renderWebWiz();"><span class="text-sm text-navy">📸 Banco de fotos profesional<br><span class="text-xs text-slate-400">Seleccionamos fotografías profesionales acordes a tu tipo de cocina.</span></span></label>
           <label class="flex items-start gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer ${w.fotosModo === 'propias' ? 'border-accent bg-accent/5' : ''}"><input type="radio" name="wizFotos" class="mt-0.5" ${w.fotosModo === 'propias' ? 'checked' : ''} onchange="wizLeer(); webWiz.fotosModo='propias'; renderWebWiz();"><span class="text-sm text-navy">🤳 Subir mis propias fotos<br><span class="text-xs text-slate-400">Tu local y tus platos reales, lo más auténtico.</span></span></label>
@@ -3385,12 +3385,12 @@
       const p = acc.data.perfil;
       const s = w.secciones;
       cuerpo = `
-        <p class="text-sm text-slate-500 mt-1">Los detalles que convierten una carta en una web completa.</p>
+        <p class="text-sm text-slate-500 mt-1">Los últimos detalles para dejar tu carta digital completa del todo.</p>
         <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Vuestra historia (opcional)</label>
         <textarea id="wizHistoria" rows="3" placeholder="Ej. Tres generaciones cocinando el recetario de la abuela Carmen…" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(w.historia)}</textarea>
         <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Instagram (opcional)</label>
         <input id="wizInstagram" type="text" placeholder="@turestaurante" value="${escAttr(w.instagram)}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
-        <label class="block text-sm font-medium text-navy mb-1.5 mt-5">Secciones de tu web</label>
+        <label class="block text-sm font-medium text-navy mb-1.5 mt-5">Secciones de tu carta digital</label>
         <div class="space-y-2">
           <label class="flex items-center gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer"><input type="checkbox" id="wizSecGaleria" ${s.galeria ? 'checked' : ''}><span class="text-sm text-navy">🖼️ Galería de fotos</span></label>
           <label class="flex items-center gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer"><input type="checkbox" id="wizSecHorario" ${s.horario ? 'checked' : ''}><span class="text-sm text-navy">🕐 Horario de apertura</span></label>
@@ -3417,7 +3417,7 @@
     }
     const titulos = ['Tu cocina', 'Tus colores', 'Logo y eslogan', 'Las fotos', 'Historia y extras', 'Todo listo'];
     return `
-      <p class="text-xs font-semibold text-slate-400">CREAR TU WEB · PASO ${w.paso} DE 6</p>
+      <p class="text-xs font-semibold text-slate-400">CREAR TU CARTA DIGITAL · PASO ${w.paso} DE 6</p>
       <h3 class="text-xl font-bold text-navy mt-1">${titulos[w.paso - 1]}</h3>
       <div class="wiz-progress">${progress}</div>
       ${cuerpo}
@@ -3426,7 +3426,7 @@
         ${w.paso > 1 ? `<button type="button" onclick="wizAtras()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">← Atrás</button>` : ''}
         ${w.paso < 6
           ? `<button type="button" onclick="wizSiguiente()" class="flex-1 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Siguiente →</button>`
-          : `<button type="button" id="wizCrearBtn" onclick="webWizFinalizar()" class="flex-1 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">✨ Crear mi web</button>`}
+          : `<button type="button" id="wizCrearBtn" onclick="webWizFinalizar()" class="flex-1 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">✨ Crear mi carta digital</button>`}
       </div>`;
   }
   function wizSetTipo(t) { webWiz.tipo = t; renderWebWiz(); }
@@ -3491,7 +3491,7 @@
     const acc = getCurrentAccount();
     const btn = document.getElementById('wizCrearBtn');
     btn.disabled = true;
-    btn.textContent = w.esloganModo === 'ia' ? 'La IA está escribiendo tu eslogan…' : 'Creando tu web…';
+    btn.textContent = w.esloganModo === 'ia' ? 'La IA está escribiendo tu eslogan…' : 'Creando tu carta digital…';
     let tagline = w.esloganModo === 'propio' ? w.eslogan.trim() : '';
     let avisoIa = false;
     if (w.esloganModo === 'ia') {
@@ -3526,11 +3526,11 @@
       creadaEn: acc.data.cartaDigital.creadaEn || new Date().toISOString(),
     });
     saveCurrentAccountData(acc.data);
-    btn.textContent = 'Publicando tu web…';
+    btn.textContent = 'Publicando tu carta digital…';
     try { await syncAccountToServer(); } catch (e) {}
     closeModal();
     renderCartaDigitalPreview(true);
-    showToast(avisoIa ? 'Web creada, pero el eslogan IA falló: añádelo editando tu web' : '🎉 ¡Tu web está lista!');
+    showToast(avisoIa ? 'Carta digital creada, pero el eslogan IA falló: añádelo editando tu carta digital' : '🎉 ¡Tu carta digital está lista!');
   }
 
   function applyTopbar(acc) {
