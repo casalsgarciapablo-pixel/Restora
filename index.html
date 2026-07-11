@@ -4255,10 +4255,18 @@
     renderMesas();
     openMesaDetalle(i);
   }
+  // Devuelve el pedido ACTIVO más reciente de una mesa (nunca uno ya pagado o anulado, y nunca uno
+  // antiguo): recorre de más nuevo a más antiguo para no sacar a la luz pedidos viejos de esa misma
+  // mesa que ya se cobraron hace días.
   function findPedidoDeMesa(numero) {
     const acc = getCurrentAccount();
     const target = ('mesa ' + numero).toLowerCase();
-    return acc.data.pedidos.find(p => p.estado !== 'Anulado' && (p.mesa || '').trim().toLowerCase() === target);
+    const pedidos = acc.data.pedidos;
+    for (let k = pedidos.length - 1; k >= 0; k--) {
+      const p = pedidos[k];
+      if (p.estado !== 'Anulado' && p.estado !== 'Pagado' && (p.mesa || '').trim().toLowerCase() === target) return p;
+    }
+    return null;
   }
   function openMesaDetalle(i) {
     const acc = getCurrentAccount();
