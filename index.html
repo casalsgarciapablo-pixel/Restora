@@ -548,6 +548,20 @@
   .pweb-contacto a:hover { border-color: #D9D6EA; box-shadow: 0 3px 10px rgba(20,18,31,0.08); }
   .pweb-footer { text-align: center; padding: 48px 20px 36px; font-size: 12px; color: #A6A4B3; }
 
+  /* ============ Galería de fotos del plato (carta digital pública) ============ */
+  .fp-tile { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 4/3; background: #F1F3F9; box-shadow: 0 1px 2px rgba(16,24,40,0.04); }
+  .fp-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .fp-badge { position: absolute; left: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; color: #fff; background: rgba(15,23,42,0.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); padding: 4px 9px; border-radius: 999px; }
+  .fp-del { position: absolute; top: 7px; right: 7px; width: 26px; height: 26px; border-radius: 999px; background: rgba(15,23,42,0.5); color: #fff; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); transition: background .15s ease, transform .15s ease; }
+  .fp-del:hover { background: #DC2626; transform: scale(1.06); }
+  .fp-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border: 1px dashed #E2E5EE; border-radius: 18px; padding: 34px 20px; background: #FAFBFD; }
+  .fp-action { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 999px; padding: 12px 14px; font-size: 13px; font-weight: 600; transition: background-color .15s ease, transform .15s ease, box-shadow .15s ease; }
+  .fp-action:active { transform: scale(0.98); }
+  .fp-action-primary { color: #fff; background: linear-gradient(180deg, #16295a 0%, #0a1830 100%); box-shadow: 0 1px 2px rgba(8,16,36,0.35), 0 6px 16px -6px rgba(8,16,36,0.45); }
+  .fp-action-primary:hover { filter: brightness(1.08); }
+  .fp-action-ghost { color: #16161D; background: #F4F5F9; border: 1px solid #EBEBF2; }
+  .fp-action-ghost:hover { background: #EAEAF2; }
+
   /* ============ Mobile / tablet responsive layer (desktop >880px untouched) ============ */
   .platos-grid { column-gap: 3rem; }
   .lang-switcher { background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 6px 10px; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; outline: none; }
@@ -8336,6 +8350,17 @@
   // ---- Galería de fotos del plato (carta digital pública) ----
   let publicFotoPlatoIdx = null;
   let publicFotoSubiendo = false;
+  // Identificador anónimo del dispositivo (no hay login en la carta pública): permite saber qué
+  // fotos ha subido "este" cliente para dejarle borrarlas, sin tocar las de los demás.
+  function publicClienteId() {
+    let id = '';
+    try { id = localStorage.getItem('restora_cliente_id') || ''; } catch (e) {}
+    if (!id) {
+      id = (crypto.randomUUID ? crypto.randomUUID() : (Date.now() + '-' + Math.random())).replace(/-/g, '');
+      try { localStorage.setItem('restora_cliente_id', id); } catch (e) {}
+    }
+    return id;
+  }
   function abrirFotosPlatoPublico(idx) {
     publicFotoPlatoIdx = idx;
     renderFotoPlatoGaleria();
@@ -8345,34 +8370,46 @@
     document.getElementById('fotoPlatoOverlay').classList.remove('open');
     publicFotoPlatoIdx = null;
   }
+  const FP_ICON_PERSONA = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v1a2 2 0 002 2h12a2 2 0 002-2v-1c0-2.8-3.6-5-8-5z"/></svg>';
+  const FP_ICON_PAPELERA = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 7h14M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2m-9 0l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12"/></svg>';
+  const FP_ICON_CAMARA = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h3l1.5-2h7L17 7h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V8a1 1 0 011-1z"/><circle cx="12" cy="13" r="3.3"/></svg>';
+  const FP_ICON_SUBIR = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15V4m0 0L8 8m4-4l4 4M5 16v2a2 2 0 002 2h10a2 2 0 002-2v-2"/></svg>';
+  const FP_ICON_GALERIA_VACIA = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10.5" r="1.6"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 15.5l-5-4.5-4 3.5-2.5-2L3 17"/></svg>';
   function renderFotoPlatoGaleria() {
     const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
     const m = menu[publicFotoPlatoIdx];
     if (!m) return;
     const fotosRest = (m.fotosRestaurante && m.fotosRestaurante.length) ? m.fotosRestaurante : (m.foto ? [m.foto] : []);
-    const fotosCli = m.fotosClientes || [];
+    const miId = publicClienteId();
+    const fotosCli = (m.fotosClientes || []).map(f => typeof f === 'string' ? { url: f, clienteId: null } : f);
     const totalFotos = fotosRest.length + fotosCli.length;
-    const gridItem = (url, deCliente) => `
-      <div style="position:relative;">
-        <img src="${url}" class="w-full rounded-lg object-cover" style="aspect-ratio:1/1;">
-        ${deCliente ? `<span class="absolute bottom-1 left-1 text-[9px] font-semibold text-white bg-black/55 rounded-full px-1.5 py-0.5">De un cliente</span>` : ''}
+    const tileRestaurante = (url) => `<div class="fp-tile"><img src="${url}" loading="lazy"></div>`;
+    const tileCliente = (f) => `<div class="fp-tile">
+        <img src="${f.url}" loading="lazy">
+        <span class="fp-badge">${FP_ICON_PERSONA} Cliente</span>
+        ${f.clienteId && f.clienteId === miId ? `<button type="button" class="fp-del" onclick="publicFotoEliminar('${escAttr(f.url).replace(/'/g, "\\'")}')" title="Eliminar tu foto">${FP_ICON_PAPELERA}</button>` : ''}
       </div>`;
     const galeriaHtml = totalFotos
-      ? `<div class="grid grid-cols-2 gap-2 mt-3">${fotosRest.map(u => gridItem(u, false)).join('')}${fotosCli.map(u => gridItem(u, true)).join('')}</div>`
-      : `<div class="mt-3 rounded-xl border border-dashed border-slate-300 p-6 text-center"><p class="text-sm text-slate-400">Todavía no hay fotos de este plato.</p><p class="text-xs text-slate-300 mt-1">Sé el primero en subir una 👇</p></div>`;
+      ? `<div class="grid grid-cols-2 gap-2.5 mt-4">${fotosRest.map(tileRestaurante).join('')}${fotosCli.map(tileCliente).join('')}</div>`
+      : `<div class="fp-empty mt-4">${FP_ICON_GALERIA_VACIA}<p class="text-sm font-medium text-slate-500">Todavía no hay fotos de este plato</p><p class="text-xs text-slate-400">Sé el primero en subir una</p></div>`;
     document.getElementById('fotoPlatoBody').innerHTML = `
       <h3 class="text-lg font-bold text-navy pr-6">${svgEsc(m.nombre)}</h3>
       <p class="text-xs text-slate-400 mt-0.5">Fotos reales para que sepas qué vas a pedir.</p>
       <div id="fotoPlatoGaleriaGrid">${galeriaHtml}</div>
       <p id="fotoPlatoError" class="mt-3 text-xs text-rose-600 hidden"></p>
-      <div class="grid grid-cols-2 gap-2.5 mt-4">
-        <button type="button" id="fotoPlatoBtnCam" onclick="document.getElementById('fotoPlatoInputCam').click()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-3 py-2.5">📷 Hacer foto</button>
-        <button type="button" id="fotoPlatoBtnGal" onclick="document.getElementById('fotoPlatoInputGal').click()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-3 py-2.5">🖼️ Subir foto</button>
+      <div class="flex gap-2.5 mt-5">
+        <button type="button" id="fotoPlatoBtnCam" onclick="document.getElementById('fotoPlatoInputCam').click()" class="fp-action fp-action-primary">${FP_ICON_CAMARA}<span>Hacer foto</span></button>
+        <button type="button" id="fotoPlatoBtnGal" onclick="document.getElementById('fotoPlatoInputGal').click()" class="fp-action fp-action-ghost">${FP_ICON_SUBIR}<span>Subir foto</span></button>
       </div>
       <input id="fotoPlatoInputCam" type="file" accept="image/*" capture="environment" class="hidden" onchange="publicFotoSubir(this)">
       <input id="fotoPlatoInputGal" type="file" accept="image/*" class="hidden" onchange="publicFotoSubir(this)">
-      <p class="text-[11px] text-slate-400 mt-3 text-center">Tu foto ayudará a otros clientes a saber qué esperar de este plato.</p>
+      <p class="text-[11px] text-slate-400 mt-3.5 text-center">Tu foto ayudará a otros clientes a saber qué esperar de este plato.</p>
     `;
+  }
+  function publicFotoBotonesEstado(deshabilitado, textoGal) {
+    const btnCam = document.getElementById('fotoPlatoBtnCam'), btnGal = document.getElementById('fotoPlatoBtnGal');
+    if (btnCam) btnCam.disabled = deshabilitado;
+    if (btnGal) { btnGal.disabled = deshabilitado; btnGal.querySelector('span').textContent = textoGal; }
   }
   function publicFotoSubir(input) {
     const file = input.files && input.files[0];
@@ -8381,35 +8418,52 @@
     const errorEl = document.getElementById('fotoPlatoError');
     if (errorEl) errorEl.classList.add('hidden');
     publicFotoSubiendo = true;
-    const btnCam = document.getElementById('fotoPlatoBtnCam'), btnGal = document.getElementById('fotoPlatoBtnGal');
-    if (btnCam) btnCam.disabled = true;
-    if (btnGal) { btnGal.disabled = true; btnGal.textContent = 'Subiendo…'; }
+    publicFotoBotonesEstado(true, 'Subiendo…');
     redimensionarImagen(file, 900, async (url) => {
       input.value = '';
-      if (!url) { publicFotoSubiendo = false; if (btnCam) btnCam.disabled = false; if (btnGal) { btnGal.disabled = false; btnGal.textContent = '🖼️ Subir foto'; } return; }
+      if (!url) { publicFotoSubiendo = false; publicFotoBotonesEstado(false, 'Subir foto'); return; }
       const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
       const m = menu[idx];
       try {
         const { data, error } = await supabaseClient.rpc('anadir_foto_plato_publico', {
-          p_user_id: publicMenuCuentaId, p_nombre_plato: m.nombre, p_foto: url,
+          p_user_id: publicMenuCuentaId, p_nombre_plato: m.nombre, p_foto: url, p_cliente_id: publicClienteId(),
         });
         publicFotoSubiendo = false;
-        if (btnCam) btnCam.disabled = false;
-        if (btnGal) { btnGal.disabled = false; btnGal.textContent = '🖼️ Subir foto'; }
+        publicFotoBotonesEstado(false, 'Subir foto');
         if (error || !data || data.error) {
           if (errorEl) { errorEl.textContent = (data && data.error) || 'No se ha podido subir la foto. Inténtalo de nuevo.'; errorEl.classList.remove('hidden'); }
           return;
         }
         m.fotosClientes = m.fotosClientes || [];
-        m.fotosClientes.push(url);
+        m.fotosClientes.push({ url, clienteId: publicClienteId() });
         if (idx === publicFotoPlatoIdx) renderFotoPlatoGaleria();
       } catch (e) {
         publicFotoSubiendo = false;
-        if (btnCam) btnCam.disabled = false;
-        if (btnGal) { btnGal.disabled = false; btnGal.textContent = '🖼️ Subir foto'; }
+        publicFotoBotonesEstado(false, 'Subir foto');
         if (errorEl) { errorEl.textContent = 'No se ha podido subir la foto. Inténtalo de nuevo.'; errorEl.classList.remove('hidden'); }
       }
     });
+  }
+  async function publicFotoEliminar(url) {
+    const idx = publicFotoPlatoIdx;
+    const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
+    const m = menu[idx];
+    if (!m) return;
+    const errorEl = document.getElementById('fotoPlatoError');
+    if (errorEl) errorEl.classList.add('hidden');
+    try {
+      const { data, error } = await supabaseClient.rpc('eliminar_foto_plato_publico', {
+        p_user_id: publicMenuCuentaId, p_nombre_plato: m.nombre, p_foto: url, p_cliente_id: publicClienteId(),
+      });
+      if (error || !data || data.error) {
+        if (errorEl) { errorEl.textContent = (data && data.error) || 'No se ha podido eliminar la foto.'; errorEl.classList.remove('hidden'); }
+        return;
+      }
+      m.fotosClientes = (m.fotosClientes || []).filter(f => (typeof f === 'string' ? f : f.url) !== url);
+      if (idx === publicFotoPlatoIdx) renderFotoPlatoGaleria();
+    } catch (e) {
+      if (errorEl) { errorEl.textContent = 'No se ha podido eliminar la foto.'; errorEl.classList.remove('hidden'); }
+    }
   }
   function cambiarCantidadPublico(idx, delta) {
     const actual = publicPedidoCarrito[idx] || 0;
