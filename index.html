@@ -2171,6 +2171,14 @@
   </div>
 </div>
 
+<!-- Foto del plato a tamaño grande -->
+<div id="fotoZoomOverlay" class="modal-overlay" style="z-index:110; background:rgba(9,14,28,0.9); padding:1.5rem;" onclick="if(event.target===this) cerrarFotoZoom()">
+  <button onclick="cerrarFotoZoom()" aria-label="Cerrar" class="fixed top-5 right-5 text-white/80 hover:text-white transition" style="z-index:111;">
+    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+  </button>
+  <img id="fotoZoomImg" src="" style="max-width:92vw; max-height:88vh; border-radius:14px; box-shadow:0 24px 70px rgba(0,0,0,0.55); object-fit:contain;">
+</div>
+
 <div id="informeRoot" class="min-h-screen font-sans text-navy antialiased" style="display:none; background:#F7F8FC">
   <div class="max-w-2xl mx-auto px-5" style="padding-top:64px; padding-bottom:40px;">
     <div class="flex items-center justify-between gap-4 informe-no-print">
@@ -8370,6 +8378,13 @@
     document.getElementById('fotoPlatoOverlay').classList.remove('open');
     publicFotoPlatoIdx = null;
   }
+  function publicFotoVer(url) {
+    document.getElementById('fotoZoomImg').src = url;
+    document.getElementById('fotoZoomOverlay').classList.add('open');
+  }
+  function cerrarFotoZoom() {
+    document.getElementById('fotoZoomOverlay').classList.remove('open');
+  }
   const FP_ICON_PERSONA = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v1a2 2 0 002 2h12a2 2 0 002-2v-1c0-2.8-3.6-5-8-5z"/></svg>';
   const FP_ICON_PAPELERA = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 7h14M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2m-9 0l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12"/></svg>';
   const FP_ICON_CAMARA = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h3l1.5-2h7L17 7h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V8a1 1 0 011-1z"/><circle cx="12" cy="13" r="3.3"/></svg>';
@@ -8383,9 +8398,10 @@
     const miId = publicClienteId();
     const fotosCli = (m.fotosClientes || []).map(f => typeof f === 'string' ? { url: f, clienteId: null } : f);
     const totalFotos = fotosRest.length + fotosCli.length;
-    const tileRestaurante = (url) => `<div class="fp-tile"><img src="${url}" loading="lazy"></div>`;
+    const verOnclick = (url) => `publicFotoVer('${escAttr(url).replace(/'/g, "\\'")}')`;
+    const tileRestaurante = (url) => `<div class="fp-tile"><img src="${url}" loading="lazy" style="cursor:zoom-in;" onclick="${verOnclick(url)}"></div>`;
     const tileCliente = (f) => `<div class="fp-tile">
-        <img src="${f.url}" loading="lazy">
+        <img src="${f.url}" loading="lazy" style="cursor:zoom-in;" onclick="${verOnclick(f.url)}">
         <span class="fp-badge">${FP_ICON_PERSONA} Cliente</span>
         ${f.clienteId && f.clienteId === miId ? `<button type="button" class="fp-del" onclick="publicFotoEliminar('${escAttr(f.url).replace(/'/g, "\\'")}')" title="Eliminar tu foto">${FP_ICON_PAPELERA}</button>` : ''}
       </div>`;
