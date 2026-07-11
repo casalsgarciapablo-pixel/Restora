@@ -1812,7 +1812,7 @@
       <div id="reservasTableWrap" class="mt-5 rounded-xl border border-slate-200 overflow-hidden bg-white">
         <table class="w-full text-sm">
           <thead class="bg-slate-50 text-slate-500 text-xs">
-            <tr><th class="text-left font-medium px-4 py-2.5">Fecha</th><th class="text-left font-medium px-4 py-2.5">Hora</th><th class="text-left font-medium px-4 py-2.5">Cliente</th><th class="text-left font-medium px-4 py-2.5">Personas</th><th class="text-left font-medium px-4 py-2.5">Mesa</th><th class="text-left font-medium px-4 py-2.5">Estado</th><th class="px-4 py-2.5 w-10"></th></tr>
+            <tr><th class="text-left font-medium px-4 py-2.5">Fecha</th><th class="text-left font-medium px-4 py-2.5">Hora</th><th class="text-left font-medium px-4 py-2.5">Cliente</th><th class="text-left font-medium px-4 py-2.5">Personas</th><th class="text-left font-medium px-4 py-2.5">Mesa</th><th class="text-left font-medium px-4 py-2.5">Canal</th><th class="text-left font-medium px-4 py-2.5">Estado</th><th class="px-4 py-2.5 w-10"></th></tr>
           </thead>
           <tbody id="reservasBody" class="divide-y divide-slate-100"></tbody>
         </table>
@@ -2786,6 +2786,7 @@
       mesaOcupadaDesde: [],
       espacios: [{ nombre: 'Sala principal', mesaIndices: [] }],
       reservas: [],
+      reservasWebUrl: '',
       pedidos: [],
       menu: [],
       menuSecciones: [],
@@ -2845,6 +2846,7 @@
       if (huerfanos.length) data.espacios[0].mesaIndices = data.espacios[0].mesaIndices.concat(huerfanos);
     })();
     data.reservas = Array.isArray(data.reservas) ? data.reservas : [];
+    data.reservasWebUrl = data.reservasWebUrl || '';
     data.pedidos = Array.isArray(data.pedidos) ? data.pedidos : [];
     data.pedidos.forEach((p, pi) => {
       if (!p.id) p.id = 'ped-' + (p.fecha ? Date.parse(p.fecha) || Date.now() : Date.now()) + '-' + pi;
@@ -4619,7 +4621,7 @@
           let mesa = String(a.mesa || '').trim();
           if (/^\d+$/.test(mesa)) mesa = 'Mesa ' + mesa;
           if (!mesa) mesa = 'Mesa 1';
-          acc.data.reservas.push({ fecha: String(a.fecha), hora: String(a.hora), cliente: String(a.cliente).trim(), personas: String(a.personas || '2'), mesa, estado: 'Pendiente' });
+          acc.data.reservas.push({ fecha: String(a.fecha), hora: String(a.hora), cliente: String(a.cliente).trim(), personas: String(a.personas || '2'), mesa, estado: 'Pendiente', canal: 'manual' });
           hechas++;
         } else if (a.tipo === 'actualizar_stock' && a.producto && a.stock != null) {
           const ing = findIngrediente(acc, a.producto);
@@ -5118,16 +5120,22 @@
   }
 
   // ---- Reservas ----
+  const RESERVA_CANAL_INFO = {
+    restora: { label: '🔗 Enlace', cls: 'text-accent bg-accent/10' },
+    web: { label: '🌐 Tu web', cls: 'text-sky-600 bg-sky-50' },
+    manual: { label: '✏️ Manual', cls: 'text-slate-500 bg-slate-100' },
+  };
   function renderReservas() {
     const acc = getCurrentAccount();
     const list = acc.data.reservas;
     if (!list.length) {
-      document.getElementById('reservasBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="7">Sin reservas todavía</td></tr>`;
+      document.getElementById('reservasBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="8">Sin reservas todavía</td></tr>`;
       return;
     }
     const numMesas = acc.data.mesaEstados.length;
     document.getElementById('reservasBody').innerHTML = list.map((r,i) => {
       const estadoCls = r.estado === 'Confirmada' ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50';
+      const canalInfo = RESERVA_CANAL_INFO[r.canal] || RESERVA_CANAL_INFO.manual;
       let mesaHtml;
       if (numMesas) {
         const opciones = Array.from({ length: numMesas }, (_, idx) => 'Mesa ' + (idx + 1));
@@ -5139,7 +5147,7 @@
       } else {
         mesaHtml = r.mesa;
       }
-      return `<tr><td class="px-4 py-2.5" data-label="Fecha">${r.fecha || '—'}</td><td class="px-4 py-2.5" data-label="Hora">${r.hora}</td><td class="px-4 py-2.5" data-label="Cliente">${r.cliente}</td><td class="px-4 py-2.5" data-label="Personas">${r.personas}</td><td class="px-4 py-2.5" data-label="Mesa">${mesaHtml}</td><td class="px-4 py-2.5" data-label="Estado"><span onclick="cicloEstadoReserva(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${r.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarReserva(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
+      return `<tr><td class="px-4 py-2.5" data-label="Fecha">${r.fecha || '—'}</td><td class="px-4 py-2.5" data-label="Hora">${r.hora}</td><td class="px-4 py-2.5" data-label="Cliente">${r.cliente}</td><td class="px-4 py-2.5" data-label="Personas">${r.personas}</td><td class="px-4 py-2.5" data-label="Mesa">${mesaHtml}</td><td class="px-4 py-2.5" data-label="Canal"><span class="${canalInfo.cls} rounded-full px-2 py-0.5 text-xs font-medium">${canalInfo.label}</span></td><td class="px-4 py-2.5" data-label="Estado"><span onclick="cicloEstadoReserva(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${r.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarReserva(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
     }).join('');
   }
   function cicloEstadoReserva(i) {
@@ -5194,7 +5202,7 @@
     const estado = document.getElementById('resEstado').value;
     if (!fecha || !hora || !cliente || !personas || !mesa) return modalFormError('Rellena todos los campos.');
     const acc = getCurrentAccount();
-    const reserva = { fecha, hora, cliente, personas, mesa, estado };
+    const reserva = { fecha, hora, cliente, personas, mesa, estado, canal: 'manual' };
     acc.data.reservas.push(reserva);
     saveCurrentAccountData(acc.data);
     renderReservas();
@@ -5211,10 +5219,30 @@
   function conectarReservasFormHtml() {
     const acc = getCurrentAccount();
     const conectado = acc.data.integraciones.googleCalendar && googleAccessToken;
+    const webUrl = acc.data.reservasWebUrl || '';
+    const enlaceWeb = location.origin + location.pathname + '?reservar=' + encodeURIComponent(acc.userId) + '&origen=web';
     return `
       <h3 class="text-xl font-bold text-navy">Conectar Reservas</h3>
       <p class="mt-1.5 text-sm text-slate-500">Sincroniza tus reservas con otras herramientas.</p>
       <div class="mt-4 space-y-3">
+        <div class="rounded-lg border border-slate-200 p-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="w-9 h-9 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0"><svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg></span>
+              <div class="min-w-0"><p class="text-sm font-semibold text-navy">Tu web actual</p><p class="text-xs text-slate-400 truncate">${webUrl ? webUrl : 'Recibe también las reservas hechas en tu propia web'}</p></div>
+            </div>
+            ${webUrl
+              ? `<button onclick="desconectarWebReservas()" class="text-xs font-semibold text-rose-500 hover:underline shrink-0">Desconectar</button>`
+              : `<button onclick="conectarWebReservas()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2 shrink-0">Conectar</button>`}
+          </div>
+          ${webUrl ? `
+            <div class="mt-3 pt-3 border-t border-slate-100">
+              <p class="text-xs text-slate-500">Pega este botón o enlace en tu web para que esas reservas también entren aquí, marcadas como "🌐 Tu web":</p>
+              <div class="mt-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-600 break-all">${enlaceWeb}</div>
+              <button onclick="navigator.clipboard.writeText('${enlaceWeb}'); showToast('Enlace copiado');" class="mt-2 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Copiar enlace para tu web</button>
+            </div>
+          ` : ''}
+        </div>
         <div class="flex items-center justify-between rounded-lg border border-slate-200 p-3">
           <div class="flex items-center gap-3">
             <span class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M8 3v4M16 3v4M3 10h18"/></svg></span>
@@ -5241,6 +5269,26 @@
       </div>
       <button onclick="closeModal()" class="mt-5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>
     `;
+  }
+  // Guarda solo el enlace de referencia a la web ya existente del restaurante; las reservas hechas
+  // desde ahí llegan porque el propio restaurante pega el enlace público (con &origen=web) en su web.
+  function conectarWebReservas() {
+    const url = prompt('Pega el enlace de tu web actual (ej. https://turestaurante.com)');
+    if (url === null) return;
+    const limpio = url.trim();
+    if (!limpio) return;
+    const acc = getCurrentAccount();
+    acc.data.reservasWebUrl = limpio;
+    saveCurrentAccountData(acc.data);
+    document.getElementById('modalBody').innerHTML = conectarReservasFormHtml();
+    showToast('Web conectada');
+  }
+  function desconectarWebReservas() {
+    const acc = getCurrentAccount();
+    acc.data.reservasWebUrl = '';
+    saveCurrentAccountData(acc.data);
+    document.getElementById('modalBody').innerHTML = conectarReservasFormHtml();
+    showToast('Web desconectada');
   }
   function conectarGoogleCalendar() {
     if (typeof google === 'undefined' || !google.accounts) {
@@ -9162,7 +9210,8 @@
     avisoEl.textContent = 'Horario ese día: ' + dia.apertura + ' - ' + dia.cierre + '.';
     avisoEl.classList.remove('hidden');
   }
-  async function renderPublicReserva(cuentaId) {
+  async function renderPublicReserva(cuentaId, canal) {
+    canal = canal === 'web' ? 'web' : 'restora';
     document.getElementById('landingRoot').style.display = 'none';
     document.getElementById('publicReservaRoot').style.display = 'block';
     const body = document.getElementById('publicReservaBody');
@@ -9198,7 +9247,7 @@
               <input id="pubResPersonas" type="number" min="1" placeholder="2" class="w-full rounded-xl border border-slate-200 px-3.5 py-3 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition">
             </div>
             <p id="pubResError" class="text-xs text-rose-600 hidden"></p>
-            <button id="pubResBtnEnviar" onclick="enviarReservaPublica('${cuentaId}')" class="w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-3.5 mt-2 shadow-sm">Reservar</button>
+            <button id="pubResBtnEnviar" onclick="enviarReservaPublica('${cuentaId}', '${canal}')" class="w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-3.5 mt-2 shadow-sm">Reservar</button>
           </div>
         </div>
       `;
@@ -9207,7 +9256,7 @@
       body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar la página de reservas.</p>`;
     }
   }
-  async function enviarReservaPublica(cuentaId) {
+  async function enviarReservaPublica(cuentaId, canal) {
     const nombre = document.getElementById('pubResNombre').value.trim();
     const fecha = document.getElementById('pubResFecha').value;
     const hora = document.getElementById('pubResHora').value;
@@ -9221,7 +9270,7 @@
     errorEl.classList.add('hidden');
     try {
       const { data, error } = await supabaseClient.rpc('crear_reserva_publica', {
-        p_user_id: cuentaId, p_nombre: nombre, p_fecha: fecha, p_hora: hora, p_personas: personas,
+        p_user_id: cuentaId, p_nombre: nombre, p_fecha: fecha, p_hora: hora, p_personas: personas, p_canal: canal === 'web' ? 'web' : 'restora',
       });
       if (error || !data || data.error) {
         errorEl.textContent = (data && data.error) || 'No se ha podido enviar la reserva. Inténtalo de nuevo.';
@@ -9885,7 +9934,7 @@
       return;
     }
     if (reservarId) {
-      renderPublicReserva(reservarId);
+      renderPublicReserva(reservarId, params.get('origen') === 'web' ? 'web' : 'restora');
       return;
     }
     const { data: { session } } = await supabaseClient.auth.getSession();
