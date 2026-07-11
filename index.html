@@ -523,7 +523,7 @@
   .pubcal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
   .pubcal-dow { margin-bottom: 1px; }
   .pubcal-dow span { text-align: center; font-size: 9px; font-weight: 600; color: #94A3B8; display: block; padding: 1px 0; }
-  .pubcal-day { height: 32px; width: 26px; margin: 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11px; font-weight: 500; color: #16161D; background: transparent; border: none; cursor: pointer; transition: background-color .15s ease, color .15s ease; padding: 0; }
+  .pubcal-day { height: 30px; width: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 10.5px; font-weight: 500; color: #16161D; background: transparent; border: none; cursor: pointer; transition: background-color .15s ease, color .15s ease; padding: 0; }
   .pubcal-day:hover:not(:disabled) { background: #F1F0FA; }
   .pubcal-day.hoy { box-shadow: inset 0 0 0 1.5px var(--saas-accent, #4F3FFF); }
   .pubcal-day.sel { background: var(--saas-accent, #4F3FFF); color: #fff; font-weight: 700; }
@@ -2251,9 +2251,9 @@
 </div>
 
 <div id="publicReservaRoot" class="min-h-screen font-sans text-navy antialiased" style="display:none; background:linear-gradient(180deg,#F1F4FB 0%,#F7F8FC 40%)">
-  <div class="min-h-screen flex items-start sm:items-center justify-center px-4 sm:px-6 py-10 sm:py-14">
-    <div class="w-full max-w-md">
-      <div id="publicReservaBody" class="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 sm:p-8 text-center text-slate-400 text-sm">Cargando…</div>
+  <div class="min-h-screen flex items-start sm:items-center justify-center px-6 sm:px-8 py-10 sm:py-14">
+    <div class="w-full max-w-sm">
+      <div id="publicReservaBody" class="bg-white rounded-2xl shadow-lg border border-slate-100 p-7 sm:p-9 text-center text-slate-400 text-sm">Cargando…</div>
       <p class="text-center text-xs text-slate-400 mt-5">Powered by <span class="font-semibold text-slate-500">Restora</span></p>
     </div>
   </div>
@@ -9358,14 +9358,14 @@
               <label class="block text-sm font-medium text-navy mb-1.5">Tu nombre</label>
               <input id="pubResNombre" type="text" placeholder="Nombre y apellido" class="w-full rounded-xl border border-slate-200 px-3.5 py-3 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition">
             </div>
-            <div class="grid grid-cols-2 gap-2.5 items-start">
-              <div>
-                <label class="block text-sm font-medium text-navy mb-1.5">Día</label>
-                <div id="pubResCalWrap" class="rounded-xl border border-slate-200 p-2"></div>
+            <div class="grid grid-cols-2 gap-6 items-start">
+              <div class="flex flex-col items-center">
+                <label class="block text-sm font-medium text-navy mb-1.5 self-start">Día</label>
+                <div id="pubResCalWrap" class="rounded-xl border border-slate-200 p-2 mx-auto" style="max-width:150px;"></div>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-navy mb-1.5">Hora</label>
-                <div id="pubResHorasWrap"></div>
+              <div class="flex flex-col items-center">
+                <label class="block text-sm font-medium text-navy mb-1.5 self-start">Hora</label>
+                <div id="pubResHorasWrap" class="mx-auto" style="max-width:130px;"></div>
               </div>
             </div>
             <p id="pubResAvisoHorario" class="text-xs text-slate-400 -mt-2 hidden"></p>
