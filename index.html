@@ -8191,7 +8191,9 @@
       const esBebida = esCategoriaBebida(m.categoria);
       const clickFotos = esBebida ? '' : ` onclick="abrirFotosPlatoPublico(${idx})" style="cursor:pointer;"`;
       const iconoCamara = `<svg class="w-4.5 h-4.5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h3l1.5-2h7L17 7h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V8a1 1 0 011-1z"/><circle cx="12" cy="13" r="3.3"/></svg>`;
-      const foto = m.foto ? `<img src="${m.foto}" class="w-14 h-14 rounded-lg object-cover shrink-0"${clickFotos}>` : `<div class="w-14 h-14 rounded-lg ${temaActivo ? '' : 'bg-slate-100'} shrink-0 flex items-center justify-center" ${temaActivo ? `style="background:${paleta.color1}14;"` : ''}${clickFotos}>${!esBebida ? iconoCamara : ''}</div>`;
+      const primeraFotoCliente = (m.fotosClientes && m.fotosClientes.length) ? (typeof m.fotosClientes[0] === 'string' ? m.fotosClientes[0] : m.fotosClientes[0].url) : '';
+      const fotoIcono = m.foto || primeraFotoCliente;
+      const foto = fotoIcono ? `<img src="${fotoIcono}" class="w-14 h-14 rounded-lg object-cover shrink-0"${clickFotos}>` : `<div class="w-14 h-14 rounded-lg ${temaActivo ? '' : 'bg-slate-100'} shrink-0 flex items-center justify-center" ${temaActivo ? `style="background:${paleta.color1}14;"` : ''}${clickFotos}>${!esBebida ? iconoCamara : ''}</div>`;
       const qty = publicPedidoCarrito[idx] || 0;
       const stepper = disponible ? `
         <div class="flex items-center gap-1.5 shrink-0">
