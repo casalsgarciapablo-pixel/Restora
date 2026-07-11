@@ -5216,6 +5216,7 @@
   const GOOGLE_CLIENT_ID = '550104490829-38ih72fcjvduj5p5ifimriujklq7vsmp.apps.googleusercontent.com';
   let googleTokenClient = null;
   let googleAccessToken = null;
+  let reservasWebTab = 'enlace';
   function conectarReservasFormHtml() {
     const acc = getCurrentAccount();
     const conectado = acc.data.integraciones.googleCalendar && googleAccessToken;
@@ -5237,9 +5238,22 @@
           </div>
           ${webUrl ? `
             <div class="mt-3 pt-3 border-t border-slate-100">
-              <p class="text-xs text-slate-500">Pega este botón o enlace en tu web para que esas reservas también entren aquí, marcadas como "🌐 Tu web":</p>
-              <div class="mt-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-600 break-all">${enlaceWeb}</div>
-              <button onclick="navigator.clipboard.writeText('${enlaceWeb}'); showToast('Enlace copiado');" class="mt-2 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Copiar enlace para tu web</button>
+              <p class="text-xs text-slate-500">Elige cómo quieres añadir las reservas a tu web; en ambos casos entran aquí marcadas como "🌐 Tu web":</p>
+              <div class="flex gap-1.5 mt-2.5">
+                <button type="button" onclick="reservasWebTab='enlace'; document.getElementById('modalBody').innerHTML = conectarReservasFormHtml();" class="cd-tab ${reservasWebTab === 'enlace' ? 'sel' : ''}">Botón / enlace</button>
+                <button type="button" onclick="reservasWebTab='widget'; document.getElementById('modalBody').innerHTML = conectarReservasFormHtml();" class="cd-tab ${reservasWebTab === 'widget' ? 'sel' : ''}">Widget incrustado</button>
+              </div>
+              ${reservasWebTab === 'widget' ? (() => {
+                const snippet = '<iframe src="' + enlaceWeb + '" style="width:100%;max-width:480px;height:720px;border:none;"></iframe>';
+                return `
+                <p class="text-xs text-slate-500 mt-2.5">Pega este código donde quieras que aparezca el formulario de reservas, integrado dentro de tu propia web (sin salir de tu página):</p>
+                <div class="mt-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-600 break-all font-mono">${svgEsc(snippet)}</div>
+                <button onclick="navigator.clipboard.writeText('${escAttr(snippet)}'); showToast('Código copiado');" class="mt-2 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Copiar código del widget</button>
+              `; })() : `
+                <p class="text-xs text-slate-500 mt-2.5">Pega este enlace en el botón de "Reservar" de tu web (lleva al cliente al formulario):</p>
+                <div class="mt-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-600 break-all">${enlaceWeb}</div>
+                <button onclick="navigator.clipboard.writeText('${enlaceWeb}'); showToast('Enlace copiado');" class="mt-2 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Copiar enlace para tu web</button>
+              `}
             </div>
           ` : ''}
         </div>
