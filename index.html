@@ -519,16 +519,17 @@
   .cd-tab { font-size: 12.5px; font-weight: 600; color: #6B7280; background: #F5F4FA; border: none; border-radius: 999px; padding: 7px 12px; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
   .cd-tab:hover { background: #ECEBF3; }
   .cd-tab.sel { background: #4F3FFF; color: #fff; }
-  .pubcal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-  .pubcal-dow { margin-bottom: 2px; }
-  .pubcal-dow span { text-align: center; font-size: 11px; font-weight: 600; color: #94A3B8; display: block; padding: 2px 0; }
-  .pubcal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 13px; font-weight: 500; color: #16161D; background: transparent; border: none; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+  .pubcal-wrap { max-width: 290px; margin: 0 auto; }
+  .pubcal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .pubcal-dow { margin-bottom: 1px; }
+  .pubcal-dow span { text-align: center; font-size: 10px; font-weight: 600; color: #94A3B8; display: block; padding: 1px 0; }
+  .pubcal-day { height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 12px; font-weight: 500; color: #16161D; background: transparent; border: none; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
   .pubcal-day:hover:not(:disabled) { background: #F1F0FA; }
   .pubcal-day.hoy { box-shadow: inset 0 0 0 1.5px var(--saas-accent, #4F3FFF); }
   .pubcal-day.sel { background: var(--saas-accent, #4F3FFF); color: #fff; font-weight: 700; }
   .pubcal-day.off { color: #D7DBE3; cursor: not-allowed; }
-  .pubcal-horas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 220px; overflow-y: auto; padding: 2px; }
-  .pubcal-hora { border: 1.5px solid #E5E4EE; border-radius: 10px; padding: 9px 6px; font-size: 13px; font-weight: 600; color: #16161D; background: #fff; cursor: pointer; transition: border-color .15s ease, background-color .15s ease, color .15s ease; }
+  .pubcal-horas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-height: 150px; overflow-y: auto; padding: 2px; }
+  .pubcal-hora { border: 1.5px solid #E5E4EE; border-radius: 8px; padding: 6px 4px; font-size: 12px; font-weight: 600; color: #16161D; background: #fff; cursor: pointer; transition: border-color .15s ease, background-color .15s ease, color .15s ease; }
   .pubcal-hora:hover { border-color: #C9C5E8; }
   .pubcal-hora.sel { background: var(--saas-accent, #4F3FFF); border-color: var(--saas-accent, #4F3FFF); color: #fff; }
 
@@ -9253,13 +9254,15 @@
       return `<button type="button" ${deshabilitado ? 'disabled' : `onclick="publicResElegirDia('${key}')"`} class="${cls}">${d.getDate()}</button>`;
     }).join('');
     wrap.innerHTML = `
-      <div class="flex items-center justify-between mb-2">
-        <button type="button" onclick="publicResCalMoverMes(-1)" ${!puedeRetroceder ? 'disabled' : ''} class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-navy hover:bg-slate-100 transition disabled:opacity-30 disabled:pointer-events-none"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg></button>
-        <p class="text-sm font-semibold text-navy capitalize">${MESES_ES[mes.getMonth()]} ${mes.getFullYear()}</p>
-        <button type="button" onclick="publicResCalMoverMes(1)" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-navy hover:bg-slate-100 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>
+      <div class="pubcal-wrap">
+      <div class="flex items-center justify-between mb-1.5">
+        <button type="button" onclick="publicResCalMoverMes(-1)" ${!puedeRetroceder ? 'disabled' : ''} class="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-navy hover:bg-slate-100 transition disabled:opacity-30 disabled:pointer-events-none"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg></button>
+        <p class="text-xs font-semibold text-navy capitalize">${MESES_ES[mes.getMonth()]} ${mes.getFullYear()}</p>
+        <button type="button" onclick="publicResCalMoverMes(1)" class="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-navy hover:bg-slate-100 transition"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>
       </div>
       <div class="pubcal-grid pubcal-dow">${DIAS_SEMANA_CORTO.map(d => `<span>${d}</span>`).join('')}</div>
       <div class="pubcal-grid">${celdasHtml}</div>
+      </div>
     `;
   }
   function publicResCalMoverMes(delta) {
@@ -9333,6 +9336,12 @@
       publicReservaHorario = data.horario || null;
       publicReservaHorarioConfigurado = !!data.horarioConfigurado;
       const nombre = data.restaurant_name || 'Restaurante';
+      // El color de acento de esta página se adapta a los colores propios del restaurante (los
+      // mismos que su carta digital), en vez del morado por defecto del SaaS.
+      if (data.cartaDigital && (data.cartaDigital.activada || data.cartaDigital.colorPrimario || data.cartaDigital.paleta)) {
+        const colores = coloresCartaDigital(data.cartaDigital);
+        document.getElementById('publicReservaRoot').style.setProperty('--saas-accent', colores.color1);
+      }
       const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
       publicResCalMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
       publicResFechaSel = publicResDiaCerrado(hoy) ? null : publicResFechaAKey(hoy);
