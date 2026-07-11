@@ -515,6 +515,10 @@
   .wiz-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
   .wiz-thumb button { position: absolute; top: -7px; right: -7px; width: 21px; height: 21px; border-radius: 999px; background: #14121F; color: #fff; font-size: 11px; line-height: 1; border: none; cursor: pointer; }
   .wiz-foot { display: flex; gap: 10px; margin-top: 22px; }
+  .cd-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; border-bottom: 1px solid #ECEBF3; padding-bottom: 12px; }
+  .cd-tab { font-size: 12.5px; font-weight: 600; color: #6B7280; background: #F5F4FA; border: none; border-radius: 999px; padding: 7px 12px; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+  .cd-tab:hover { background: #ECEBF3; }
+  .cd-tab.sel { background: #4F3FFF; color: #fff; }
 
   /* ============ Web pública del restaurante (QR) ============ */
   .pweb-hero { position: relative; min-height: 62vh; display: flex; flex-direction: column; color: #fff; overflow: hidden; }
@@ -1986,7 +1990,7 @@
               </div>
             </div>
             <button id="cartaDigitalBtn" onclick="abrirGenerarCartaDigital()" class="mt-6 w-full max-w-xs rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">✨ Generar carta digital</button>
-            <button id="cartaDigitalEditarBtn" onclick="abrirGenerarCartaDigital()" class="mt-2.5 w-full max-w-xs rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5 hidden">✏️ Editar</button>
+            <button id="cartaDigitalEditarBtn" onclick="abrirEditorCartaDigital()" class="mt-2.5 w-full max-w-xs rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5 hidden">✏️ Editar</button>
             <button id="cartaDigitalAbrirBtn" onclick="abrirWebEnPestana()" class="mt-2.5 w-full max-w-xs rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5 hidden">🔗 Abrir</button>
             <p id="cartaDigitalEstado" class="mt-3 text-xs text-slate-400"></p>
           </div>
@@ -2791,7 +2795,7 @@
       iaConversaciones: [],
       iaInformes: [],
       caja: { abierta: false, fecha: null, efectivoInicial: 0, aperturaHora: null, historico: [] },
-      cartaDigital: { activada: false, tipoRestaurante: '', paleta: '', colorPrimario: '', colorSecundario: '', tagline: '', logo: '', creadaEn: null, web: false, historia: '', fotosModo: '', fotoHero: '', fotosPropias: [], instagram: '', direccion: '', telefono: '', secciones: { nosotros: true, galeria: true, horario: true, contacto: true, reservas: true } },
+      cartaDigital: { activada: false, tipoRestaurante: '', paleta: '', colorPrimario: '', colorSecundario: '', tagline: '', logo: '', creadaEn: null, web: false, historia: '', fotosModo: '', fotoHero: '', fotosPropias: [], instagram: '', direccion: '', telefono: '', fuente: '', textoBotonCarta: '', textoBotonReservar: '', secciones: { nosotros: true, galeria: true, horario: true, contacto: true, reservas: true } },
       chatMensajes: [],
       promociones: [],
       anulaciones: [],
@@ -2952,6 +2956,9 @@
     data.cartaDigital.instagram = data.cartaDigital.instagram || '';
     data.cartaDigital.direccion = data.cartaDigital.direccion || '';
     data.cartaDigital.telefono = data.cartaDigital.telefono || '';
+    data.cartaDigital.fuente = data.cartaDigital.fuente || '';
+    data.cartaDigital.textoBotonCarta = data.cartaDigital.textoBotonCarta || '';
+    data.cartaDigital.textoBotonReservar = data.cartaDigital.textoBotonReservar || '';
     data.cartaDigital.secciones = Object.assign({ nosotros: true, galeria: true, horario: true, contacto: true, reservas: true }, data.cartaDigital.secciones || {});
     data.chatMensajes = Array.isArray(data.chatMensajes) ? data.chatMensajes.filter(m => m && m.texto) : [];
     return data;
@@ -3606,6 +3613,241 @@
     closeModal();
     renderCartaDigitalPreview(true);
     showToast(avisoIa ? 'Carta digital creada, pero el eslogan IA falló: añádelo editando tu carta digital' : '🎉 ¡Tu carta digital está lista!');
+  }
+
+  // ---- Editor de carta digital (edición directa por pestañas, sin repetir el asistente) ----
+  let cdEdit = null;
+  let cdEditTab = 'colores';
+  const CD_EDIT_TABS = [
+    { id: 'colores', label: 'Colores' },
+    { id: 'identidad', label: 'Logo y eslogan' },
+    { id: 'fotos', label: 'Fotos' },
+    { id: 'historia', label: 'Historia e Instagram' },
+    { id: 'secciones', label: 'Secciones y botones' },
+    { id: 'platos', label: 'Platos' },
+  ];
+  function abrirEditorCartaDigital() {
+    const acc = getCurrentAccount();
+    const cd = acc.data.cartaDigital;
+    cdEdit = {
+      tipo: cd.tipoRestaurante || '',
+      modoColor: (cd.colorPrimario && cd.colorSecundario) ? 'custom' : 'paleta',
+      paleta: cd.paleta || '',
+      color1: cd.colorPrimario || '#b91c1c',
+      color2: cd.colorSecundario || '#78350f',
+      logo: cd.logo || '',
+      eslogan: cd.tagline || '',
+      fuente: cd.fuente || '',
+      fotosModo: cd.fotosModo || 'banco',
+      fotoHero: cd.fotoHero || '',
+      fotosPropias: (cd.fotosPropias || []).slice(),
+      historia: cd.historia || '',
+      instagram: cd.instagram || '',
+      secciones: Object.assign({ nosotros: true, galeria: true, horario: true, contacto: true, reservas: true }, cd.secciones || {}),
+      textoBotonCarta: cd.textoBotonCarta || '',
+      textoBotonReservar: cd.textoBotonReservar || '',
+    };
+    cdEditTab = 'colores';
+    document.getElementById('modalCard').classList.add('modal-wide');
+    renderCdEdit();
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function renderCdEdit() {
+    document.getElementById('modalBody').innerHTML = cdEditHtml();
+  }
+  function cdIrTab(tab) { cdEditTab = tab; renderCdEdit(); }
+  function cdColoresTabHtml() {
+    const w = cdEdit;
+    const sugerida = PALETA_SUGERIDA[w.tipo] || 'moderno';
+    const paletas = Object.keys(PALETAS_CARTA).map(key => {
+      const p = PALETAS_CARTA[key];
+      const sel = w.modoColor === 'paleta' && w.paleta === key;
+      return `<button type="button" class="wiz-pal ${sel ? 'sel' : ''}" onclick="cdEdit.modoColor='paleta'; cdEdit.paleta='${key}'; renderCdEdit();">
+        ${key === sugerida ? '<span class="wiz-reco">Recomendada</span>' : ''}
+        <span class="flex -space-x-1 shrink-0"><span class="w-6 h-6 rounded-full border-2 border-white" style="background:${p.color1}"></span><span class="w-6 h-6 rounded-full border-2 border-white" style="background:${p.color2}"></span></span>
+        <span class="text-sm font-medium text-navy">${p.label}</span>
+      </button>`;
+    }).join('');
+    return `
+      <label class="block text-sm font-medium text-navy mb-1.5">Tipo de cocina</label>
+      <div class="wiz-chips">
+        ${TIPOS_RESTAURANTE.map(t => `<button type="button" class="wiz-chip ${w.tipo === t ? 'sel' : ''}" onclick="cdEdit.tipo='${escAttr(t)}'; renderCdEdit();">${TIPO_EMOJI[t] || '🍽️'} ${t}</button>`).join('')}
+      </div>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-5">Colores</label>
+      <div class="space-y-2.5">${paletas}
+        <button type="button" class="wiz-pal ${w.modoColor === 'custom' ? 'sel' : ''}" onclick="cdEdit.modoColor='custom'; renderCdEdit();">
+          <span class="flex -space-x-1 shrink-0"><span class="w-6 h-6 rounded-full border-2 border-white" style="background:${w.color1}"></span><span class="w-6 h-6 rounded-full border-2 border-white" style="background:${w.color2}"></span></span>
+          <span class="text-sm font-medium text-navy">Mis propios colores</span>
+        </button>
+      </div>
+      ${w.modoColor === 'custom' ? `
+        <div class="grid grid-cols-2 gap-3 mt-3">
+          <div><label class="block text-xs text-slate-400 mb-1">Color principal</label><input type="color" value="${w.color1}" onchange="cdEdit.color1=this.value; renderCdEdit();" class="w-full h-10 rounded-lg border border-slate-200 cursor-pointer"></div>
+          <div><label class="block text-xs text-slate-400 mb-1">Color secundario</label><input type="color" value="${w.color2}" onchange="cdEdit.color2=this.value; renderCdEdit();" class="w-full h-10 rounded-lg border border-slate-200 cursor-pointer"></div>
+        </div>` : ''}
+    `;
+  }
+  function cdIdentidadTabHtml() {
+    const w = cdEdit;
+    return `
+      <label class="block text-sm font-medium text-navy mb-1.5">Logo</label>
+      ${w.logo ? `
+        <div class="flex items-center gap-3 mb-2 rounded-lg border border-slate-200 p-2">
+          <img src="${w.logo}" class="w-11 h-11 rounded-md object-cover shrink-0 bg-slate-50">
+          <button type="button" onclick="cdEdit.logo=''; renderCdEdit();" class="text-xs font-semibold text-rose-500 hover:text-rose-600">Quitar logo</button>
+        </div>` : ''}
+      <input type="file" accept="image/*" onchange="cdLogoFile(this)" class="w-full text-sm text-slate-500">
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-5">Eslogan</label>
+      <input type="text" placeholder="Ej. Cocina de mercado desde 1987" value="${escAttr(w.eslogan)}" oninput="cdEdit.eslogan=this.value" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <p class="mt-1.5 text-xs text-slate-400">Déjalo en blanco para no mostrar ningún eslogan.</p>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-5">Tipo de letra</label>
+      <div class="grid grid-cols-2 gap-2.5">
+        ${Object.keys(CD_FUENTES).map(key => `<button type="button" class="wiz-pal ${w.fuente === key ? 'sel' : ''}" style="font-family:${CD_FUENTES[key].css || 'inherit'};" onclick="cdEdit.fuente='${key}'; renderCdEdit();"><span class="text-sm font-medium text-navy">${CD_FUENTES[key].label}</span></button>`).join('')}
+      </div>
+    `;
+  }
+  function cdFotosTabHtml() {
+    const w = cdEdit;
+    const conPropias = w.fotosModo === 'propias' || w.fotosModo === 'mix';
+    return `
+      <div class="space-y-2">
+        <label class="flex items-start gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer ${w.fotosModo === 'banco' ? 'border-accent bg-accent/5' : ''}"><input type="radio" name="cdFotos" class="mt-0.5" ${w.fotosModo === 'banco' ? 'checked' : ''} onchange="cdEdit.fotosModo='banco'; renderCdEdit();"><span class="text-sm text-navy">📸 Banco de fotos profesional<br><span class="text-xs text-slate-400">Fotografías genéricas acordes a tu tipo de cocina.</span></span></label>
+        <label class="flex items-start gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer ${w.fotosModo === 'propias' ? 'border-accent bg-accent/5' : ''}"><input type="radio" name="cdFotos" class="mt-0.5" ${w.fotosModo === 'propias' ? 'checked' : ''} onchange="cdEdit.fotosModo='propias'; renderCdEdit();"><span class="text-sm text-navy">🤳 Solo mis propias fotos</span></label>
+        <label class="flex items-start gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer ${w.fotosModo === 'mix' ? 'border-accent bg-accent/5' : ''}"><input type="radio" name="cdFotos" class="mt-0.5" ${w.fotosModo === 'mix' ? 'checked' : ''} onchange="cdEdit.fotosModo='mix'; renderCdEdit();"><span class="text-sm text-navy">🎨 Mix: mis fotos + banco</span></label>
+      </div>
+      ${conPropias ? `
+        <label class="block text-sm font-medium text-navy mb-1.5 mt-5">Foto principal (portada)</label>
+        ${w.fotoHero ? `<div class="wiz-thumbs"><div class="wiz-thumb" style="width:120px;height:74px;"><img src="${w.fotoHero}"><button type="button" onclick="cdEdit.fotoHero=''; renderCdEdit();">✕</button></div></div>` : `<input type="file" accept="image/*" onchange="cdHeroFile(this)" class="w-full text-sm text-slate-500">`}
+        <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Galería (hasta 4 fotos)</label>
+        ${w.fotosPropias.length ? `<div class="wiz-thumbs">${w.fotosPropias.map((u, i) => `<div class="wiz-thumb"><img src="${u}"><button type="button" onclick="cdQuitarFoto(${i})">✕</button></div>`).join('')}</div>` : ''}
+        ${w.fotosPropias.length < 4 ? `<input type="file" accept="image/*" multiple onchange="cdGaleriaFiles(this)" class="w-full text-sm text-slate-500 mt-2">` : ''}
+      ` : ''}
+    `;
+  }
+  function cdHistoriaTabHtml() {
+    const w = cdEdit;
+    return `
+      <label class="block text-sm font-medium text-navy mb-1.5">Vuestra historia (opcional)</label>
+      <textarea rows="4" placeholder="Ej. Tres generaciones cocinando el recetario de la abuela Carmen…" oninput="cdEdit.historia=this.value" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(w.historia)}</textarea>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Instagram (opcional)</label>
+      <input type="text" placeholder="@turestaurante" value="${escAttr(w.instagram)}" oninput="cdEdit.instagram=this.value" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+    `;
+  }
+  function cdSeccionesTabHtml() {
+    const w = cdEdit;
+    const s = w.secciones;
+    const toggle = (key, label, emoji) => `<label class="flex items-center gap-2.5 rounded-lg border border-slate-200 p-2.5 cursor-pointer"><input type="checkbox" ${s[key] ? 'checked' : ''} onchange="cdEdit.secciones.${key}=this.checked;"><span class="text-sm text-navy">${emoji} ${label}</span></label>`;
+    return `
+      <label class="block text-sm font-medium text-navy mb-1.5">Secciones visibles</label>
+      <div class="space-y-2">
+        ${toggle('nosotros', 'Nuestra historia', '📖')}
+        ${toggle('galeria', 'Galería de fotos', '🖼️')}
+        ${toggle('horario', 'Horario de apertura', '🕐')}
+        ${toggle('contacto', 'Ubicación y contacto', '📍')}
+        ${toggle('reservas', 'Botón de reservas online', '📅')}
+      </div>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-5">Texto del botón principal</label>
+      <input type="text" value="${escAttr(w.textoBotonCarta)}" oninput="cdEdit.textoBotonCarta=this.value" placeholder="Ver la carta y pedir" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Texto del botón de reservas</label>
+      <input type="text" value="${escAttr(w.textoBotonReservar)}" oninput="cdEdit.textoBotonReservar=this.value" placeholder="Reservar mesa" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+    `;
+  }
+  function cdPlatosTabHtml() {
+    const acc = getCurrentAccount();
+    const grupos = gruposMenu(acc);
+    const filas = grupos.map(g => {
+      if (!g.indices.length) return '';
+      const rows = g.indices.map((i, pos) => {
+        const m = acc.data.menu[i];
+        const foto = m.foto ? `<img src="${m.foto}" class="w-9 h-9 rounded-lg object-cover shrink-0">` : `<div class="w-9 h-9 rounded-lg bg-slate-100 shrink-0"></div>`;
+        return `<div class="flex items-center gap-2.5 py-2 border-b border-slate-100 last:border-0">
+          <div class="flex flex-col gap-0.5 shrink-0">
+            <button type="button" onclick="moverPlatoMenu(${i}, -1)" ${pos === 0 ? 'disabled' : ''} class="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-navy disabled:opacity-20" title="Subir"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg></button>
+            <button type="button" onclick="moverPlatoMenu(${i}, 1)" ${pos === g.indices.length - 1 ? 'disabled' : ''} class="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-navy disabled:opacity-20" title="Bajar"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></button>
+          </div>
+          ${foto}
+          <span class="text-sm text-navy truncate flex-1">${svgEsc(m.nombre)}</span>
+          <button type="button" onclick="cdEditarPlatoDesde(${i})" class="text-xs font-semibold text-accent hover:underline shrink-0">Editar</button>
+        </div>`;
+      }).join('');
+      return `<p class="text-xs font-bold uppercase tracking-wide text-slate-400 mt-4 mb-1">${svgEsc(g.nombre)}</p>${rows}`;
+    }).join('') || `<p class="text-sm text-slate-400 mt-3">Todavía no tienes platos. Añádelos desde Menú.</p>`;
+    return `
+      <p class="text-sm text-slate-500 mb-1">Ordena tus platos con las flechas. Para cambiar sus fotos o descripción, pulsa "Editar".</p>
+      <div class="mt-2">${filas}</div>
+    `;
+  }
+  function cdEditHtml() {
+    const tabsHtml = CD_EDIT_TABS.map(t => `<button type="button" onclick="cdIrTab('${t.id}')" class="cd-tab ${cdEditTab === t.id ? 'sel' : ''}">${t.label}</button>`).join('');
+    const cuerpo = {
+      colores: cdColoresTabHtml, identidad: cdIdentidadTabHtml, fotos: cdFotosTabHtml,
+      historia: cdHistoriaTabHtml, secciones: cdSeccionesTabHtml, platos: cdPlatosTabHtml,
+    }[cdEditTab]();
+    return `
+      <div class="flex items-center justify-between gap-3">
+        <h3 class="text-xl font-bold text-navy">Editar carta digital</h3>
+        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-navy transition shrink-0" aria-label="Cerrar"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <p class="text-xs text-slate-400 mt-0.5">Cambia solo lo que quieras, sin volver a pasar por todo.</p>
+      <div class="cd-tabs">${tabsHtml}</div>
+      <div class="mt-4">${cuerpo}</div>
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <div class="wiz-foot">
+        <button type="button" id="cdGuardarBtn" onclick="cdGuardar()" class="flex-1 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar cambios</button>
+      </div>
+    `;
+  }
+  function cdLogoFile(input) {
+    const f = input.files && input.files[0];
+    if (!f) return;
+    redimensionarImagen(f, 400, url => { if (url) cdEdit.logo = url; renderCdEdit(); });
+  }
+  function cdHeroFile(input) {
+    const f = input.files && input.files[0];
+    if (!f) return;
+    redimensionarImagen(f, 1400, url => { if (url) cdEdit.fotoHero = url; renderCdEdit(); });
+  }
+  function cdGaleriaFiles(input) {
+    const files = Array.from(input.files || []).slice(0, 4 - cdEdit.fotosPropias.length);
+    if (!files.length) return;
+    let pendientes = files.length;
+    files.forEach(f => redimensionarImagen(f, 1000, url => {
+      if (url) cdEdit.fotosPropias.push(url);
+      pendientes -= 1;
+      if (pendientes === 0) renderCdEdit();
+    }));
+  }
+  function cdQuitarFoto(i) { cdEdit.fotosPropias.splice(i, 1); renderCdEdit(); }
+  function cdEditarPlatoDesde(i) { abrirEditarPlato(i); }
+  function cdGuardar() {
+    const w = cdEdit;
+    const acc = getCurrentAccount();
+    const btn = document.getElementById('cdGuardarBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+    acc.data.cartaDigital = Object.assign({}, acc.data.cartaDigital, {
+      tipoRestaurante: w.tipo,
+      paleta: w.modoColor === 'paleta' ? w.paleta : '',
+      colorPrimario: w.modoColor === 'custom' ? w.color1 : '',
+      colorSecundario: w.modoColor === 'custom' ? w.color2 : '',
+      tagline: w.eslogan.trim(),
+      logo: w.logo,
+      fuente: w.fuente,
+      historia: w.historia.trim(),
+      fotosModo: w.fotosModo,
+      fotoHero: w.fotoHero,
+      fotosPropias: w.fotosPropias,
+      instagram: w.instagram.trim().replace(/^@/, ''),
+      direccion: acc.data.perfil.direccion || '',
+      telefono: acc.data.perfil.telefono || '',
+      secciones: w.secciones,
+      textoBotonCarta: w.textoBotonCarta.trim(),
+      textoBotonReservar: w.textoBotonReservar.trim(),
+    });
+    saveCurrentAccountData(acc.data);
+    syncAccountToServer().catch(() => {});
+    renderCartaDigitalPreview(true);
+    if (btn) { btn.disabled = false; btn.textContent = 'Guardar cambios'; }
+    showToast('Cambios guardados');
   }
 
   function applyTopbar(acc) {
@@ -6321,10 +6563,14 @@
     if (otros.indices.length) grupos.push(otros);
     return grupos;
   }
-  function menuPlatoRowHtml(m, i) {
+  function menuPlatoRowHtml(m, i, esPrimero, esUltimo) {
     const foto = m.foto ? `<img src="${m.foto}" class="w-11 h-11 rounded-lg object-cover shrink-0">` : `<div class="w-11 h-11 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-slate-300"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 016.5 3H12v18H6.5A2.5 2.5 0 014 18.5v-13zM20 5.5A2.5 2.5 0 0017.5 3H12v18h5.5a2.5 2.5 0 002.5-2.5v-13z"/></svg></div>`;
     const agotado = m.estado !== 'Disponible';
     return `<div class="menu-plato" onclick="abrirEditarPlato(${i})">
+      <div class="flex flex-col gap-0.5 shrink-0" onclick="event.stopPropagation();">
+        <button type="button" onclick="moverPlatoMenu(${i}, -1)" ${esPrimero ? 'disabled' : ''} class="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-navy disabled:opacity-20" title="Subir"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg></button>
+        <button type="button" onclick="moverPlatoMenu(${i}, 1)" ${esUltimo ? 'disabled' : ''} class="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-navy disabled:opacity-20" title="Bajar"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></button>
+      </div>
       ${foto}
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2">
@@ -6351,7 +6597,7 @@
     const grupos = gruposMenu(acc);
     wrap.innerHTML = grupos.map((g, gi) => {
       const platosHtml = g.indices.length
-        ? g.indices.map(i => menuPlatoRowHtml(acc.data.menu[i], i)).join('')
+        ? g.indices.map((i, pos) => menuPlatoRowHtml(acc.data.menu[i], i, pos === 0, pos === g.indices.length - 1)).join('')
         : `<p class="text-xs text-slate-400 px-4 py-4 text-center">Sección vacía · añade platos y asígnalos a esta sección.</p>`;
       let acciones = '';
       if (!g.esOtros) {
@@ -6423,6 +6669,27 @@
     const tmp = arr[idx]; arr[idx] = arr[destino]; arr[destino] = tmp;
     saveCurrentAccountData(acc.data);
     renderMenu();
+  }
+  // Cambia la posición de un plato dentro de su misma sección (busca el vecino con la misma
+  // categoría más próximo en el array plano y los intercambia).
+  function moverPlatoMenu(i, delta) {
+    const acc = getCurrentAccount();
+    const menu = acc.data.menu;
+    const m = menu[i];
+    if (!m) return;
+    const cat = m.categoria || '';
+    let j = -1;
+    if (delta < 0) {
+      for (let k = i - 1; k >= 0; k--) { if ((menu[k].categoria || '') === cat) { j = k; break; } }
+    } else {
+      for (let k = i + 1; k < menu.length; k++) { if ((menu[k].categoria || '') === cat) { j = k; break; } }
+    }
+    if (j === -1) return;
+    const tmp = menu[i]; menu[i] = menu[j]; menu[j] = tmp;
+    saveCurrentAccountData(acc.data);
+    renderMenu();
+    renderCartaDigitalPreview();
+    if (cdEdit && cdEditTab === 'platos') renderCdEdit();
   }
   function opcionesSeccionSelect(acc, seleccionada) {
     const opts = acc.data.menuSecciones.map(s => `<option value="${escAttr(s)}" ${seleccionada === s ? 'selected' : ''}>${svgEsc(s)}</option>`).join('');
@@ -8109,6 +8376,12 @@
     'Mediterráneo': 'fresco',
     'Otro': 'moderno',
   };
+  const CD_FUENTES = {
+    '': { label: 'Predeterminada', css: '' },
+    serif: { label: 'Elegante', css: "Georgia, 'Times New Roman', serif" },
+    redondeada: { label: 'Redondeada', css: "'Trebuchet MS', 'Segoe UI', sans-serif" },
+    moderna: { label: 'Moderna', css: "'Helvetica Neue', Arial, sans-serif" },
+  };
   const FOTO_UNSPLASH = (id, w) => 'https://images.unsplash.com/' + id + '?auto=format&fit=crop&w=' + w + '&q=70';
   const FOTOS_BANCO = {
     'Italiano': {
@@ -8323,6 +8596,8 @@
     const heroBg = fotos.hero
       ? `background-image:linear-gradient(rgba(16,12,32,0.45), rgba(16,12,32,0.72)), url('${fotos.hero}');background-size:cover;background-position:center;`
       : `background:linear-gradient(140deg, ${paleta.color1}, ${paleta.color2});`;
+    const textoBotonCarta = svgEsc(cd.textoBotonCarta || 'Ver la carta y pedir');
+    const textoBotonReservar = svgEsc(cd.textoBotonReservar || 'Reservar mesa');
     const heroHtml = `
       <header class="pweb-hero" style="${heroBg}">
         <nav class="pweb-nav">
@@ -8334,8 +8609,8 @@
           <h1>${n}</h1>
           ${cd.tagline ? `<p class="pweb-tagline">"${svgEsc(cd.tagline)}"</p>` : ''}
           <div class="pweb-hero-ctas">
-            <a href="#pweb-carta" class="pweb-btn-primary" style="background:${paleta.color1};">Ver la carta y pedir</a>
-            ${sec.reservas ? `<a href="${reservarUrl}" class="pweb-btn-ghost">Reservar mesa</a>` : ''}
+            <a href="#pweb-carta" class="pweb-btn-primary" style="background:${paleta.color1};">${textoBotonCarta}</a>
+            ${sec.reservas ? `<a href="${reservarUrl}" class="pweb-btn-ghost">${textoBotonReservar}</a>` : ''}
           </div>
           ${publicMenuMesaNumero && !publicMenuIsPreview ? `<p class="pweb-mesa">📍 Estás en la mesa ${svgEsc(publicMenuMesaNumero)}</p>` : ''}
         </div>
@@ -8394,7 +8669,8 @@
         </div>
       </section>` : '';
     const footerHtml = `<footer class="pweb-footer">© ${new Date().getFullYear()} ${n} · Web creada con Restora</footer>`;
-    return `<div class="text-left" style="${totalItems > 0 ? 'padding-bottom:88px;' : ''}">
+    const fuenteCss = (CD_FUENTES[cd.fuente] || CD_FUENTES['']).css;
+    return `<div class="text-left" style="${totalItems > 0 ? 'padding-bottom:88px;' : ''}${fuenteCss ? 'font-family:' + fuenteCss + ';' : ''}">
       ${heroHtml}${nosotrosHtml}${cartaHtml}${galeriaHtml}${horarioHtml}${contactoHtml}${footerHtml}
     </div>`;
   }
@@ -8500,7 +8776,8 @@
       : `<div class="fp-empty mt-4">${FP_ICON_GALERIA_VACIA}<p class="text-sm font-medium text-slate-500">Todavía no hay fotos de este plato</p><p class="text-xs text-slate-400">Sé el primero en subir una</p></div>`;
     document.getElementById('fotoPlatoBody').innerHTML = `
       <h3 class="text-lg font-bold text-navy pr-6">${svgEsc(m.nombre)}</h3>
-      <p class="text-xs text-slate-400 mt-0.5">Fotos reales para que sepas qué vas a pedir.</p>
+      ${m.descripcion ? `<p class="text-sm text-slate-500 mt-1.5">${svgEsc(m.descripcion)}</p>` : ''}
+      <p class="text-xs text-slate-400 mt-2">Fotos reales para que sepas qué vas a pedir.</p>
       <div id="fotoPlatoGaleriaGrid">${galeriaHtml}</div>
       <p id="fotoPlatoError" class="mt-3 text-xs text-rose-600 hidden"></p>
       <div class="flex gap-2.5 mt-5">
