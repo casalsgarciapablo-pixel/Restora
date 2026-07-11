@@ -1881,6 +1881,8 @@
           <button onclick="openModal('paste-menu')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Pegar menú</button>
           <button onclick="abrirPromociones()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">🏷️ Promociones</button>
           <button onclick="anadirSeccionMenu()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">+ Sección</button>
+          <button onclick="confirmarEliminarTodosPlatos()" class="rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-xs font-semibold px-4 py-2">🗑️ Borrar todos los platos</button>
+          <button onclick="abrirAnadirMenuFijo()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">+ Añadir menú</button>
           <button onclick="abrirAnadirPlato()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir plato</button>
         </div>
       </div>
@@ -2223,6 +2225,13 @@
 <div id="pubRecoOverlay" class="modal-overlay" onclick="if(event.target===this) cerrarRecomendacionesPublico(false)">
   <div class="bg-white rounded-2xl card-shadow max-w-sm w-full p-6 relative">
     <div id="pubRecoBody"></div>
+  </div>
+</div>
+
+<!-- Elegir los platos de un menú de precio fijo (carta digital pública) -->
+<div id="pubMenuFijoOverlay" class="modal-overlay" onclick="if(event.target===this) cerrarMenuFijoPublico()">
+  <div class="bg-white rounded-2xl card-shadow max-w-sm w-full p-6 relative" style="max-height:88vh; overflow-y:auto;">
+    <div id="pubMenuFijoBody"></div>
   </div>
 </div>
 
@@ -6510,7 +6519,9 @@
   }
   function platosDisponiblesPedido() {
     const acc = getCurrentAccount();
-    return acc.data.menu.map((m, i) => ({ nombre: m.nombre, precio: m.precio, estado: m.estado, idx: i })).filter(m => m.estado === 'Disponible');
+    // Los menús de precio fijo (con grupos a elegir) todavía no se pueden componer desde el TPV,
+    // solo desde la carta digital pública — se excluyen aquí para no crear líneas de pedido "vacías".
+    return acc.data.menu.map((m, i) => ({ nombre: m.nombre, precio: m.precio, estado: m.estado, idx: i })).filter(m => m.estado === 'Disponible' && !acc.data.menu[m.idx].esMenu);
   }
   function platosPedidoFormHtml() {
     const disponibles = platosDisponiblesPedido();
@@ -6783,9 +6794,14 @@
     return grupos;
   }
   function menuPlatoRowHtml(m, i, esPrimero, esUltimo) {
-    const foto = m.foto ? `<img src="${m.foto}" class="w-11 h-11 rounded-lg object-cover shrink-0">` : `<div class="w-11 h-11 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-slate-300"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 016.5 3H12v18H6.5A2.5 2.5 0 014 18.5v-13zM20 5.5A2.5 2.5 0 0017.5 3H12v18h5.5a2.5 2.5 0 002.5-2.5v-13z"/></svg></div>`;
+    const foto = m.foto ? `<img src="${m.foto}" class="w-11 h-11 rounded-lg object-cover shrink-0">` : (m.esMenu
+      ? `<div class="w-11 h-11 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 text-accent text-lg">🍽️</div>`
+      : `<div class="w-11 h-11 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-slate-300"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 016.5 3H12v18H6.5A2.5 2.5 0 014 18.5v-13zM20 5.5A2.5 2.5 0 0017.5 3H12v18h5.5a2.5 2.5 0 002.5-2.5v-13z"/></svg></div>`);
     const agotado = m.estado !== 'Disponible';
-    return `<div class="menu-plato" onclick="abrirEditarPlato(${i})">
+    const descripcionLinea = m.esMenu
+      ? `<p class="text-xs text-slate-400 mt-0.5 truncate">${(m.grupos || []).length} grupo${(m.grupos || []).length === 1 ? '' : 's'} a elegir</p>`
+      : (m.descripcion ? `<p class="text-xs text-slate-400 mt-0.5 truncate">${svgEsc(m.descripcion)}</p>` : '');
+    return `<div class="menu-plato" onclick="${m.esMenu ? 'abrirEditarMenuFijo' : 'abrirEditarPlato'}(${i})">
       <div class="flex flex-col gap-0.5 shrink-0" onclick="event.stopPropagation();">
         <button type="button" onclick="moverPlatoMenu(${i}, -1)" ${esPrimero ? 'disabled' : ''} class="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-navy disabled:opacity-20" title="Subir"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg></button>
         <button type="button" onclick="moverPlatoMenu(${i}, 1)" ${esUltimo ? 'disabled' : ''} class="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-navy disabled:opacity-20" title="Bajar"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></button>
@@ -6794,11 +6810,12 @@
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2">
           <p class="text-sm font-semibold text-navy truncate">${svgEsc(m.nombre)}</p>
+          ${m.esMenu ? '<span class="text-[10px] font-semibold text-accent bg-accent/10 rounded-full px-2 py-0.5 shrink-0">Menú</span>' : ''}
           ${agotado ? '<span class="text-[10px] font-semibold text-rose-500 bg-rose-50 rounded-full px-2 py-0.5 shrink-0">Agotado</span>' : ''}
         </div>
-        ${m.descripcion ? `<p class="text-xs text-slate-400 mt-0.5 truncate">${svgEsc(m.descripcion)}</p>` : ''}
+        ${descripcionLinea}
       </div>
-      <p class="text-sm font-bold text-navy shrink-0">${svgEsc(m.precio)}</p>
+      <p class="text-sm font-bold text-navy shrink-0">${svgEsc(m.precio) || '—'}</p>
       <svg class="w-4 h-4 text-slate-300 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
     </div>`;
   }
@@ -7075,6 +7092,124 @@
     closeModal();
     showToast('Plato eliminado');
   }
+  // ---- Menús de precio fijo (p. ej. "Menú del día": 1 primero + 1 segundo + postre por un precio único) ----
+  let menuFijoGruposEdicion = [];
+  let menuFijoEditandoIdx = -1;
+  function menuFijoGruposHtml() {
+    if (!menuFijoGruposEdicion.length) return `<p class="text-xs text-slate-400 py-2">Añade al menos un grupo (ej. "Primero", "Segundo", "Postre").</p>`;
+    return menuFijoGruposEdicion.map((g, gi) => `
+      <div class="rounded-lg border border-slate-200 p-3 mt-2.5">
+        <div class="flex items-center gap-2">
+          <input type="text" value="${escAttr(g.nombre)}" oninput="menuFijoGruposEdicion[${gi}].nombre=this.value" placeholder="Nombre del grupo (ej. Primero)" class="flex-1 min-w-0 rounded-lg border border-slate-200 px-2.5 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+          <button type="button" onclick="menuFijoGrupoQuitar(${gi})" class="text-slate-300 hover:text-rose-500 transition shrink-0" title="Eliminar grupo">✕</button>
+        </div>
+        <div class="flex items-center gap-2 mt-2">
+          <label class="text-xs text-slate-400 shrink-0">El cliente elige entre</label>
+          <input type="number" min="1" value="${g.min}" oninput="menuFijoGruposEdicion[${gi}].min=parseInt(this.value,10)||1" class="w-14 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+          <label class="text-xs text-slate-400 shrink-0">y</label>
+          <input type="number" min="1" value="${g.max}" oninput="menuFijoGruposEdicion[${gi}].max=parseInt(this.value,10)||1" class="w-14 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+          <label class="text-xs text-slate-400 shrink-0">opciones de este grupo</label>
+        </div>
+        <label class="block text-xs text-slate-400 mt-2 mb-1">Opciones (una por línea)</label>
+        <textarea rows="3" oninput="menuFijoGruposEdicion[${gi}].opcionesTexto=this.value" placeholder="Sopa de pescado&#10;Ensalada mixta&#10;Croquetas caseras" class="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(g.opcionesTexto)}</textarea>
+      </div>`).join('');
+  }
+  function menuFijoGrupoAnadir() {
+    menuFijoGruposEdicion.push({ nombre: '', min: 1, max: 1, opcionesTexto: '' });
+    const wrap = document.getElementById('menuFijoGruposWrap');
+    if (wrap) wrap.innerHTML = menuFijoGruposHtml();
+  }
+  function menuFijoGrupoQuitar(gi) {
+    menuFijoGruposEdicion.splice(gi, 1);
+    const wrap = document.getElementById('menuFijoGruposWrap');
+    if (wrap) wrap.innerHTML = menuFijoGruposHtml();
+  }
+  function menuFijoFormFieldsHtml(acc, m) {
+    m = m || { nombre: '', precio: '', descripcion: '', categoria: '', estado: 'Disponible' };
+    return `
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Nombre del menú</label>
+      <input id="menuFijoNombre" type="text" placeholder="Menú del día" value="${escAttr(m.nombre)}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <div class="grid grid-cols-2 gap-3 mt-4">
+        <div><label class="block text-sm font-medium text-navy mb-1.5">Precio (único)</label><input id="menuFijoPrecio" type="text" placeholder="13,50€" value="${escAttr(m.precio)}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+        <div><label class="block text-sm font-medium text-navy mb-1.5">Estado</label><select id="menuFijoEstado" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"><option value="Disponible" ${m.estado !== 'Agotado' ? 'selected' : ''}>Disponible</option><option value="Agotado" ${m.estado === 'Agotado' ? 'selected' : ''}>Agotado</option></select></div>
+      </div>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Sección</label>
+      <select id="menuFijoCategoria" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${opcionesSeccionSelect(acc, m.categoria)}</select>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Descripción (opcional)</label>
+      <textarea id="menuFijoDescripcion" rows="2" placeholder="Incluye pan y bebida" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(m.descripcion || '')}</textarea>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-5">Grupos a elegir</label>
+      <p class="text-xs text-slate-400 mb-1.5">Ej. "Primero" (elige 1 de 3), "Segundo" (elige entre 1 y 2 de 4), "Postre o café" (elige 1 de 2).</p>
+      <div id="menuFijoGruposWrap">${menuFijoGruposHtml()}</div>
+      <button type="button" onclick="menuFijoGrupoAnadir()" class="mt-2.5 w-full rounded-lg border border-dashed border-slate-300 hover:border-accent hover:bg-accent/5 transition text-navy text-xs font-semibold px-4 py-2.5">+ Añadir grupo</button>
+    `;
+  }
+  function abrirAnadirMenuFijo() {
+    const acc = getCurrentAccount();
+    menuFijoGruposEdicion = [{ nombre: 'Primero', min: 1, max: 1, opcionesTexto: '' }, { nombre: 'Segundo', min: 1, max: 1, opcionesTexto: '' }, { nombre: 'Postre o café', min: 1, max: 1, opcionesTexto: '' }];
+    menuFijoEditandoIdx = -1;
+    document.getElementById('modalCard').classList.add('modal-wide');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Añadir menú</h3>
+      ${menuFijoFormFieldsHtml(acc, null)}
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" onclick="submitMenuFijo(-1)" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar menú</button>`;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function abrirEditarMenuFijo(i) {
+    const acc = getCurrentAccount();
+    const m = acc.data.menu[i];
+    if (!m) return;
+    menuFijoGruposEdicion = (m.grupos || []).map(g => ({ nombre: g.nombre || '', min: g.min || 1, max: g.max || 1, opcionesTexto: (g.opciones || []).join('\n') }));
+    menuFijoEditandoIdx = i;
+    document.getElementById('modalCard').classList.add('modal-wide');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Editar menú</h3>
+      ${menuFijoFormFieldsHtml(acc, m)}
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" onclick="submitMenuFijo(${i})" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar cambios</button>
+      <button type="button" onclick="eliminarPlato(${i})" class="mt-2.5 w-full rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-sm font-semibold px-5 py-2.5">🗑️ Eliminar menú</button>`;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function submitMenuFijo(i) {
+    const acc = getCurrentAccount();
+    const nombre = document.getElementById('menuFijoNombre').value.trim();
+    const precio = document.getElementById('menuFijoPrecio').value.trim();
+    const estado = document.getElementById('menuFijoEstado').value;
+    const categoria = document.getElementById('menuFijoCategoria').value;
+    const descripcion = document.getElementById('menuFijoDescripcion').value.trim();
+    if (!nombre || !precio) return modalFormError('Escribe al menos el nombre y el precio del menú.');
+    const grupos = menuFijoGruposEdicion
+      .map(g => ({
+        nombre: g.nombre.trim(),
+        min: Math.max(1, g.min || 1),
+        max: Math.max(g.min || 1, g.max || 1),
+        opciones: g.opcionesTexto.split('\n').map(o => o.trim()).filter(Boolean),
+      }))
+      .filter(g => g.nombre && g.opciones.length);
+    if (!grupos.length) return modalFormError('Añade al menos un grupo con nombre y opciones.');
+    if (i === -1) {
+      acc.data.menu.push({ nombre, precio, estado, categoria, descripcion, costo: '', foto: '', esMenu: true, grupos });
+    } else {
+      const m = acc.data.menu[i];
+      Object.assign(m, { nombre, precio, estado, categoria, descripcion, esMenu: true, grupos });
+    }
+    menuFijoGruposEdicion = [];
+    saveCurrentAccountData(acc.data);
+    renderMenu();
+    renderCartaDigitalPreview();
+    closeModal();
+    showToast(i === -1 ? 'Menú añadido' : 'Menú actualizado');
+  }
+  function confirmarEliminarTodosPlatos() {
+    const acc = getCurrentAccount();
+    if (!acc.data.menu.length) { showToast('El menú ya está vacío'); return; }
+    if (!confirm('¿Eliminar TODOS los platos y menús del menú (' + acc.data.menu.length + ')? Las secciones se mantienen. Esto no se puede deshacer.')) return;
+    acc.data.menu = [];
+    saveCurrentAccountData(acc.data);
+    renderMenu();
+    renderCartaDigitalPreview();
+    showToast('Todos los platos han sido eliminados');
+  }
   function uploadMenuFormHtml() {
     return `
       <h3 class="text-xl font-bold text-navy">Subir foto del menú</h3>
@@ -7136,10 +7271,24 @@
     if (!nombre) return null;
     return { nombre, precio };
   }
+  // Una línea sin precio es cabecera de sección solo si de verdad LO PARECE (va en mayúsculas o
+  // coincide con un nombre de sección típico) — si no, es un plato sin precio propio (normal en
+  // menús de precio fijo tipo "menú del día"), nunca se confunde con una sección solo por no tener €.
+  const SECCION_PALABRAS_TIPICAS = ['entrantes', 'primeros', 'primer plato', 'primeros platos', 'segundos', 'segundo plato', 'segundos platos', 'principales', 'postres', 'postre', 'bebidas', 'vinos', 'menu del dia', 'menu', 'menus', 'para picar', 'para compartir', 'ensaladas', 'arroces', 'carnes', 'pescados', 'sopas y cremas', 'tapas', 'entrantes frios', 'entrantes calientes'];
+  function esLineaSeccion(line) {
+    const limpio = line.replace(/[:：]\s*$/, '').trim();
+    if (!limpio || limpio.length > 35) return false;
+    const sinAcentos = limpio.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    if (SECCION_PALABRAS_TIPICAS.includes(sinAcentos)) return true;
+    const soloLetras = limpio.replace(/[^A-Za-zÀ-ÿ\s]/g, '').trim();
+    // Todo en mayúsculas (y con al menas unas letras) suele ser una cabecera tipo "PRIMEROS"
+    if (soloLetras.length >= 3 && limpio === limpio.toUpperCase() && limpio !== limpio.toLowerCase()) return true;
+    return false;
+  }
   function pasteMenuFormHtml() {
     return `
       <h3 class="text-xl font-bold text-navy">Pegar menú</h3>
-      <p class="mt-1.5 text-sm text-slate-500">Una línea por plato, con el precio al final. Escribe el nombre de una sección en su propia línea (sin precio) y los platos siguientes se agruparán en ella.</p>
+      <p class="mt-1.5 text-sm text-slate-500">Una línea por plato, con el precio al final. Escribe el nombre de una sección en su propia línea (en mayúsculas o sin precio) y los platos siguientes se agruparán en ella. Si un plato no tiene precio propio (p. ej. es parte de un menú de precio fijo) se importa igualmente, sin precio.</p>
       <textarea id="menuPasteText" rows="9" placeholder="ENTRANTES&#10;Croquetas caseras - 8,50€&#10;Ensalada César - 9,50€&#10;&#10;PRINCIPALES&#10;Paella valenciana - 14,50€&#10;&#10;POSTRES&#10;Tarta de queso - 5,50€" class="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></textarea>
       <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
       <button type="button" onclick="submitPasteMenu()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Importar platos</button>
@@ -7151,19 +7300,28 @@
     if (!lines.length) return modalFormError('Pega al menos una línea.');
     const acc = getCurrentAccount();
     let added = 0;
+    let sinPrecio = 0;
     let seccionActual = '';
     lines.forEach(line => {
       const parsed = parsePriceLine(line);
       if (parsed) {
         acc.data.menu.push({ nombre: parsed.nombre, precio: parsed.precio, estado: 'Disponible', categoria: seccionActual, descripcion: '', foto: '' });
         added++;
-      } else {
-        // Línea sin precio → cabecera de sección
+      } else if (esLineaSeccion(line)) {
         const nombreSecc = line.replace(/[:：].*$/, '').trim();
         if (nombreSecc && nombreSecc.length <= 40) {
           const existente = acc.data.menuSecciones.find(s => s.toLowerCase() === nombreSecc.toLowerCase());
           if (existente) { seccionActual = existente; }
           else { acc.data.menuSecciones.push(nombreSecc); seccionActual = nombreSecc; }
+        }
+      } else {
+        // Plato sin precio propio (p. ej. parte de un menú de precio fijo): se importa igual, sin
+        // precio, para no bloquear la importación ni confundirlo con una sección.
+        const nombre = line.replace(/[-–,:]+$/, '').trim();
+        if (nombre) {
+          acc.data.menu.push({ nombre, precio: '', estado: 'Disponible', categoria: seccionActual, descripcion: '', foto: '' });
+          added++;
+          sinPrecio++;
         }
       }
     });
@@ -7171,7 +7329,7 @@
     saveCurrentAccountData(acc.data);
     renderMenu();
     closeModal();
-    showToast(added + ' platos importados');
+    showToast(added + ' platos importados' + (sinPrecio ? ' (' + sinPrecio + ' sin precio propio, revísalos)' : ''));
   }
 
   // ---- Personal ----
@@ -8717,6 +8875,32 @@
     const paleta = temaActivo ? coloresCartaDigital(cd) : null;
     const itemCard = (m, idx) => {
       const disponible = m.estado === 'Disponible';
+      if (m.esMenu) {
+        const qtyMenu = publicPedidoCarrito[idx] || 0;
+        const resumenGrupos = (m.grupos || []).map(g => g.nombre).join(' + ');
+        const cardStyleMenu = temaActivo ? `style="border-left:3px solid ${paleta.color1}; box-shadow:0 1px 2px rgba(16,24,40,0.04);"` : '';
+        const cardClassMenu = temaActivo ? 'rounded-xl bg-white p-3' : 'rounded-xl border border-slate-200 bg-white p-3';
+        const precioStyleMenu = temaActivo ? `style="color:${paleta.color1};"` : '';
+        const controlMenu = qtyMenu > 0
+          ? `<div class="flex items-center gap-1.5 shrink-0">
+              <button type="button" onclick="cambiarCantidadPublico(${idx}, -1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">−</button>
+              <span class="text-sm font-semibold text-navy w-5 text-center">${qtyMenu}</span>
+              <button type="button" onclick="abrirMenuFijoPublico(${idx})" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">+</button>
+            </div>`
+          : (disponible ? `<button type="button" onclick="abrirMenuFijoPublico(${idx})" class="rounded-full text-white text-xs font-semibold px-4 py-2 shrink-0" style="background:${temaActivo ? paleta.color1 : '#0f2146'};">Elegir</button>` : '');
+        return `<div class="${cardClassMenu} ${disponible ? '' : 'opacity-50'}" ${cardStyleMenu}>
+          <div class="flex items-center gap-3">
+            <div class="w-14 h-14 rounded-lg ${temaActivo ? '' : 'bg-slate-100'} shrink-0 flex items-center justify-center text-xl" ${temaActivo ? `style="background:${paleta.color1}14;"` : ''}>🍽️</div>
+            <div class="min-w-0 flex-1 text-left">
+              <p class="text-sm font-semibold text-navy truncate">${svgEsc(m.nombre)}</p>
+              <p class="text-xs text-slate-400 mt-0.5 truncate">${m.descripcion ? svgEsc(m.descripcion) : svgEsc(resumenGrupos)}</p>
+            </div>
+            <p class="text-sm font-bold shrink-0 ${temaActivo ? '' : 'text-navy'}" ${precioStyleMenu}>${svgEsc(m.precio)}</p>
+            ${controlMenu}
+          </div>
+          ${qtyMenu > 0 && publicPedidoCarritoNotas[idx] ? `<p class="mt-2 text-xs text-slate-500">${svgEsc(publicPedidoCarritoNotas[idx])}</p>` : ''}
+        </div>`;
+      }
       const esBebida = esCategoriaBebida(m.categoria);
       const clickFotos = esBebida ? '' : ` onclick="abrirFotosPlatoPublico(${idx})" style="cursor:pointer;"`;
       const iconoCamara = `<svg class="w-4.5 h-4.5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h3l1.5-2h7L17 7h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V8a1 1 0 011-1z"/><circle cx="12" cy="13" r="3.3"/></svg>`;
@@ -9078,6 +9262,88 @@
     const nuevo = Math.max(0, actual + delta);
     if (nuevo === 0) { delete publicPedidoCarrito[idx]; delete publicPedidoCarritoNotas[idx]; }
     else publicPedidoCarrito[idx] = nuevo;
+    renderPublicMenuBody();
+  }
+  // ---- Elegir los platos de un menú de precio fijo (carta digital pública) ----
+  let publicMenuFijoIdx = null;
+  let publicMenuFijoSeleccion = {}; // { grupoIdx: [nombresElegidos] }
+  function abrirMenuFijoPublico(idx) {
+    publicMenuFijoIdx = idx;
+    publicMenuFijoSeleccion = {};
+    renderMenuFijoPublico();
+    document.getElementById('pubMenuFijoOverlay').classList.add('open');
+  }
+  function cerrarMenuFijoPublico() {
+    document.getElementById('pubMenuFijoOverlay').classList.remove('open');
+    publicMenuFijoIdx = null;
+  }
+  function publicMenuFijoToggleOpcion(gi, opcion, max) {
+    const actual = publicMenuFijoSeleccion[gi] || [];
+    const pos = actual.indexOf(opcion);
+    if (pos !== -1) {
+      actual.splice(pos, 1);
+    } else if (max === 1) {
+      publicMenuFijoSeleccion[gi] = [opcion];
+      renderMenuFijoPublico();
+      return;
+    } else if (actual.length < max) {
+      actual.push(opcion);
+    }
+    publicMenuFijoSeleccion[gi] = actual;
+    renderMenuFijoPublico();
+  }
+  function renderMenuFijoPublico() {
+    const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
+    const m = menu[publicMenuFijoIdx];
+    if (!m) return;
+    const grupos = m.grupos || [];
+    const gruposHtml = grupos.map((g, gi) => {
+      const elegidos = publicMenuFijoSeleccion[gi] || [];
+      const opcionesHtml = (g.opciones || []).map(op => {
+        const sel = elegidos.includes(op);
+        return `<button type="button" onclick="publicMenuFijoToggleOpcion(${gi}, '${escAttr(op).replace(/'/g, "\\'")}', ${g.max})" class="wiz-pal ${sel ? 'sel' : ''}" style="padding:9px 12px;">
+          <span class="text-sm text-navy">${svgEsc(op)}</span>
+        </button>`;
+      }).join('');
+      const ayuda = g.max > 1 ? `Elige entre ${g.min} y ${g.max}` : 'Elige 1';
+      return `<div class="mt-4">
+        <p class="text-sm font-semibold text-navy">${svgEsc(g.nombre)}</p>
+        <p class="text-xs text-slate-400 mb-1.5">${ayuda} · ${elegidos.length} seleccionado${elegidos.length === 1 ? '' : 's'}</p>
+        <div class="space-y-1.5">${opcionesHtml}</div>
+      </div>`;
+    }).join('');
+    const todoCompleto = grupos.every((g, gi) => {
+      const n = (publicMenuFijoSeleccion[gi] || []).length;
+      return n >= g.min && n <= g.max;
+    });
+    document.getElementById('pubMenuFijoBody').innerHTML = `
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 class="text-lg font-bold text-navy leading-tight">${svgEsc(m.nombre)}</h3>
+          <p class="text-sm text-slate-400 mt-0.5">${svgEsc(m.precio)}</p>
+        </div>
+        <button type="button" onclick="cerrarMenuFijoPublico()" class="text-slate-400 hover:text-navy transition shrink-0" aria-label="Cerrar"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      ${m.descripcion ? `<p class="text-xs text-slate-500 mt-1.5">${svgEsc(m.descripcion)}</p>` : ''}
+      ${gruposHtml}
+      <button type="button" ${todoCompleto ? '' : 'disabled'} onclick="confirmarMenuFijoPublico()" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-3 disabled:opacity-40">Añadir al pedido</button>
+    `;
+  }
+  function confirmarMenuFijoPublico() {
+    const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
+    const idx = publicMenuFijoIdx;
+    const m = menu[idx];
+    if (!m) return;
+    const grupos = m.grupos || [];
+    const todoCompleto = grupos.every((g, gi) => {
+      const n = (publicMenuFijoSeleccion[gi] || []).length;
+      return n >= g.min && n <= g.max;
+    });
+    if (!todoCompleto) return;
+    const resumen = grupos.map((g, gi) => g.nombre + ': ' + (publicMenuFijoSeleccion[gi] || []).join(', ')).join(' · ');
+    publicPedidoCarrito[idx] = (publicPedidoCarrito[idx] || 0) + 1;
+    publicPedidoCarritoNotas[idx] = resumen;
+    cerrarMenuFijoPublico();
     renderPublicMenuBody();
   }
   // Punto de entrada real del botón "Enviar pedido": antes de mandar nada, intenta mostrar
