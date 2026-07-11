@@ -2187,12 +2187,19 @@
   </div>
 </div>
 
-<!-- Foto del plato a tamaño grande -->
+<!-- Foto del plato a tamaño grande, deslizable entre todas las fotos del plato -->
 <div id="fotoZoomOverlay" class="modal-overlay" style="z-index:110; background:rgba(9,14,28,0.9); padding:1.5rem;" onclick="if(event.target===this) cerrarFotoZoom()">
   <button onclick="cerrarFotoZoom()" aria-label="Cerrar" class="fixed top-5 right-5 text-white/80 hover:text-white transition" style="z-index:111;">
     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
   </button>
-  <img id="fotoZoomImg" src="" style="max-width:92vw; max-height:88vh; border-radius:14px; box-shadow:0 24px 70px rgba(0,0,0,0.55); object-fit:contain;">
+  <button id="fotoZoomPrev" onclick="event.stopPropagation(); fotoZoomIr(-1)" aria-label="Foto anterior" class="fixed left-2 sm:left-5 top-1/2 -translate-y-1/2 text-white/80 hover:text-white transition w-11 h-11 rounded-full flex items-center justify-center" style="z-index:111; background:rgba(255,255,255,0.08);">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+  </button>
+  <button id="fotoZoomNext" onclick="event.stopPropagation(); fotoZoomIr(1)" aria-label="Foto siguiente" class="fixed right-2 sm:right-5 top-1/2 -translate-y-1/2 text-white/80 hover:text-white transition w-11 h-11 rounded-full flex items-center justify-center" style="z-index:111; background:rgba(255,255,255,0.08);">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+  </button>
+  <img id="fotoZoomImg" src="" ontouchstart="fotoZoomTouchStart(event)" ontouchend="fotoZoomTouchEnd(event)" style="max-width:92vw; max-height:88vh; border-radius:14px; box-shadow:0 24px 70px rgba(0,0,0,0.55); object-fit:contain; touch-action:pan-y;">
+  <p id="fotoZoomContador" class="fixed bottom-6 left-1/2 -translate-x-1/2 text-xs font-semibold text-white/70" style="z-index:111;"></p>
 </div>
 
 <!-- Recomendaciones de la IA antes de enviar el pedido (sube el ticket medio) -->
@@ -8381,6 +8388,9 @@
   // ---- Galería de fotos del plato (carta digital pública) ----
   let publicFotoPlatoIdx = null;
   let publicFotoSubiendo = false;
+  let publicFotoZoomLista = [];
+  let publicFotoZoomIdx = 0;
+  let publicFotoZoomTouchX = null;
   // Identificador anónimo del dispositivo (no hay login en la carta pública): permite saber qué
   // fotos ha subido "este" cliente para dejarle borrarlas, sin tocar las de los demás.
   function publicClienteId() {
@@ -8401,9 +8411,36 @@
     document.getElementById('fotoPlatoOverlay').classList.remove('open');
     publicFotoPlatoIdx = null;
   }
-  function publicFotoVer(url) {
-    document.getElementById('fotoZoomImg').src = url;
+  function publicFotoVer(idx) {
+    publicFotoZoomIdx = idx;
+    renderFotoZoom();
     document.getElementById('fotoZoomOverlay').classList.add('open');
+  }
+  function renderFotoZoom() {
+    const lista = publicFotoZoomLista;
+    if (!lista.length) return;
+    document.getElementById('fotoZoomImg').src = lista[publicFotoZoomIdx];
+    const contador = document.getElementById('fotoZoomContador');
+    if (contador) contador.textContent = lista.length > 1 ? (publicFotoZoomIdx + 1) + ' / ' + lista.length : '';
+    const btnPrev = document.getElementById('fotoZoomPrev'), btnNext = document.getElementById('fotoZoomNext');
+    if (btnPrev) btnPrev.style.display = lista.length > 1 ? '' : 'none';
+    if (btnNext) btnNext.style.display = lista.length > 1 ? '' : 'none';
+  }
+  function fotoZoomIr(delta) {
+    const lista = publicFotoZoomLista;
+    if (!lista.length) return;
+    publicFotoZoomIdx = (publicFotoZoomIdx + delta + lista.length) % lista.length;
+    renderFotoZoom();
+  }
+  function fotoZoomTouchStart(e) {
+    publicFotoZoomTouchX = e.changedTouches[0].clientX;
+  }
+  function fotoZoomTouchEnd(e) {
+    if (publicFotoZoomTouchX === null) return;
+    const dx = e.changedTouches[0].clientX - publicFotoZoomTouchX;
+    publicFotoZoomTouchX = null;
+    if (Math.abs(dx) < 40) return;
+    fotoZoomIr(dx < 0 ? 1 : -1);
   }
   function cerrarFotoZoom() {
     document.getElementById('fotoZoomOverlay').classList.remove('open');
@@ -8421,15 +8458,15 @@
     const miId = publicClienteId();
     const fotosCli = (m.fotosClientes || []).map(f => typeof f === 'string' ? { url: f, clienteId: null } : f);
     const totalFotos = fotosRest.length + fotosCli.length;
-    const verOnclick = (url) => `publicFotoVer('${escAttr(url).replace(/'/g, "\\'")}')`;
-    const tileRestaurante = (url) => `<div class="fp-tile"><img src="${url}" loading="lazy" style="cursor:zoom-in;" onclick="${verOnclick(url)}"></div>`;
-    const tileCliente = (f) => `<div class="fp-tile">
-        <img src="${f.url}" loading="lazy" style="cursor:zoom-in;" onclick="${verOnclick(f.url)}">
+    publicFotoZoomLista = fotosRest.concat(fotosCli.map(f => f.url));
+    const tileRestaurante = (url, i) => `<div class="fp-tile"><img src="${url}" loading="lazy" style="cursor:zoom-in;" onclick="publicFotoVer(${i})"></div>`;
+    const tileCliente = (f, i) => `<div class="fp-tile">
+        <img src="${f.url}" loading="lazy" style="cursor:zoom-in;" onclick="publicFotoVer(${i})">
         <span class="fp-badge">${FP_ICON_PERSONA} Cliente</span>
         ${f.clienteId && f.clienteId === miId ? `<button type="button" class="fp-del" onclick="publicFotoEliminar('${escAttr(f.url).replace(/'/g, "\\'")}')" title="Eliminar tu foto">${FP_ICON_PAPELERA}</button>` : ''}
       </div>`;
     const galeriaHtml = totalFotos
-      ? `<div class="grid grid-cols-2 gap-2.5 mt-4">${fotosRest.map(tileRestaurante).join('')}${fotosCli.map(tileCliente).join('')}</div>`
+      ? `<div class="grid grid-cols-2 gap-2.5 mt-4">${fotosRest.map((url, i) => tileRestaurante(url, i)).join('')}${fotosCli.map((f, i) => tileCliente(f, fotosRest.length + i)).join('')}</div>`
       : `<div class="fp-empty mt-4">${FP_ICON_GALERIA_VACIA}<p class="text-sm font-medium text-slate-500">Todavía no hay fotos de este plato</p><p class="text-xs text-slate-400">Sé el primero en subir una</p></div>`;
     document.getElementById('fotoPlatoBody').innerHTML = `
       <h3 class="text-lg font-bold text-navy pr-6">${svgEsc(m.nombre)}</h3>
