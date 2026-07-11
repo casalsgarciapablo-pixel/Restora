@@ -1957,8 +1957,8 @@
               </div>
             </div>
             <button id="cartaDigitalBtn" onclick="abrirGenerarCartaDigital()" class="mt-6 w-full max-w-xs rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">✨ Generar carta digital</button>
-            <button id="cartaDigitalEditarBtn" onclick="abrirGenerarCartaDigital()" class="mt-2.5 w-full max-w-xs rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5 hidden">✏️ Editar carta digital</button>
-            <button id="cartaDigitalAbrirBtn" onclick="abrirWebEnPestana()" class="mt-2.5 w-full max-w-xs rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5 hidden">🔗 Abrir mi carta digital</button>
+            <button id="cartaDigitalEditarBtn" onclick="abrirGenerarCartaDigital()" class="mt-2.5 w-full max-w-xs rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5 hidden">✏️ Editar</button>
+            <button id="cartaDigitalAbrirBtn" onclick="abrirWebEnPestana()" class="mt-2.5 w-full max-w-xs rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5 hidden">🔗 Abrir</button>
             <p id="cartaDigitalEstado" class="mt-3 text-xs text-slate-400"></p>
           </div>
         </div>
@@ -3196,7 +3196,7 @@
     if (editarBtn) editarBtn.classList.toggle('hidden', !cd.activada);
     if (abrirBtn) abrirBtn.classList.toggle('hidden', !cd.activada);
     if (cd.activada) {
-      if (btn) btn.textContent = '✨ Regenerar carta digital';
+      if (btn) btn.textContent = '✨ Regenerar';
       if (estadoEl) {
         const fecha = cd.creadaEn ? new Date(cd.creadaEn).toLocaleDateString('es-ES') : '';
         estadoEl.innerHTML = `<span class="inline-flex items-center gap-1.5 text-emerald-600 font-medium">● Carta digital activa${fecha ? ' · creada el ' + fecha : ''}</span>`;
