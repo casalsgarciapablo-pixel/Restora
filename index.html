@@ -7271,18 +7271,15 @@
     if (!nombre) return null;
     return { nombre, precio };
   }
-  // Una línea sin precio es cabecera de sección solo si de verdad LO PARECE (va en mayúsculas o
-  // coincide con un nombre de sección típico) — si no, es un plato sin precio propio (normal en
-  // menús de precio fijo tipo "menú del día"), nunca se confunde con una sección solo por no tener €.
-  const SECCION_PALABRAS_TIPICAS = ['entrantes', 'primeros', 'primer plato', 'primeros platos', 'segundos', 'segundo plato', 'segundos platos', 'principales', 'postres', 'postre', 'bebidas', 'vinos', 'menu del dia', 'menu', 'menus', 'para picar', 'para compartir', 'ensaladas', 'arroces', 'carnes', 'pescados', 'sopas y cremas', 'tapas', 'entrantes frios', 'entrantes calientes'];
+  // Una línea sin precio es cabecera de sección solo si coincide con un nombre de sección típico
+  // (nunca por estar en mayúsculas: eso no dice nada del contenido) — si no coincide, se trata como
+  // un plato sin precio propio (normal en menús de precio fijo tipo "menú del día").
+  const SECCION_PALABRAS_TIPICAS = ['entrantes', 'primeros', 'primer plato', 'primeros platos', 'segundos', 'segundo plato', 'segundos platos', 'principales', 'postres', 'postre', 'bebidas', 'vinos', 'menu del dia', 'menu degustacion', 'menu infantil', 'menus', 'para picar', 'para compartir', 'ensaladas', 'arroces', 'carnes', 'carnes y aves', 'pescados', 'pescados y mariscos', 'sopas', 'sopas y cremas', 'tapas', 'entrantes frios', 'entrantes calientes', 'guarniciones', 'complementos', 'quesos'];
   function esLineaSeccion(line) {
     const limpio = line.replace(/[:：]\s*$/, '').trim();
     if (!limpio || limpio.length > 35) return false;
     const sinAcentos = limpio.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
     if (SECCION_PALABRAS_TIPICAS.includes(sinAcentos)) return true;
-    const soloLetras = limpio.replace(/[^A-Za-zÀ-ÿ\s]/g, '').trim();
-    // Todo en mayúsculas (y con al menas unas letras) suele ser una cabecera tipo "PRIMEROS"
-    if (soloLetras.length >= 3 && limpio === limpio.toUpperCase() && limpio !== limpio.toLowerCase()) return true;
     return false;
   }
   function pasteMenuFormHtml() {
