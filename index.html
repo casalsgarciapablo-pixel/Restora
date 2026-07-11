@@ -4040,6 +4040,24 @@
     const cap = acc.data.mesaCapacidades[i];
     return (cap && cap > 0) ? cap : 4;
   }
+  // Asigna automáticamente la mesa más pequeña que quepan los comensales; si ninguna es lo
+  // bastante grande, como mejor esfuerzo coge la de mayor capacidad. Vacío si no hay mesas.
+  function mejorMesaParaPersonas(acc, personas) {
+    const n = acc.data.mesaEstados.length;
+    if (!n) return '';
+    let mejorIdx = -1, mejorCap = null;
+    for (let i = 0; i < n; i++) {
+      const cap = getMesaCapacidad(i);
+      if (cap >= personas && (mejorCap === null || cap < mejorCap)) { mejorCap = cap; mejorIdx = i; }
+    }
+    if (mejorIdx === -1) {
+      for (let i = 0; i < n; i++) {
+        const cap = getMesaCapacidad(i);
+        if (mejorCap === null || cap > mejorCap) { mejorCap = cap; mejorIdx = i; }
+      }
+    }
+    return mejorIdx === -1 ? '' : ('Mesa ' + (mejorIdx + 1));
+  }
   function getMesaEtiqueta(i) {
     const acc = getCurrentAccount();
     const nombre = acc.data.mesaNombres[i] && acc.data.mesaNombres[i].trim();
@@ -4632,9 +4650,10 @@
           asegurarSeccion(a.nombre);
           if (acc.data.menuSecciones.length > antes) hechas++;
         } else if (a.tipo === 'crear_reserva' && a.fecha && a.hora && a.cliente) {
+          const personasRes = parseInt(a.personas || '2', 10) || 2;
           let mesa = String(a.mesa || '').trim();
           if (/^\d+$/.test(mesa)) mesa = 'Mesa ' + mesa;
-          if (!mesa) mesa = 'Mesa 1';
+          if (!mesa) mesa = mejorMesaParaPersonas(acc, personasRes) || 'Mesa 1';
           acc.data.reservas.push({ fecha: String(a.fecha), hora: String(a.hora), cliente: String(a.cliente).trim(), personas: String(a.personas || '2'), mesa, estado: 'Pendiente', canal: 'manual' });
           hechas++;
         } else if (a.tipo === 'actualizar_stock' && a.producto && a.stock != null) {
@@ -5185,6 +5204,16 @@
     renderReservas();
     showToast('Reserva eliminada');
   }
+  // Solo rellena la mesa si el campo está vacío, para no pisar lo que el personal haya escrito a mano.
+  function autosugerirMesaReserva() {
+    const mesaEl = document.getElementById('resMesa');
+    const personasEl = document.getElementById('resPersonas');
+    if (!mesaEl || !personasEl || mesaEl.value.trim()) return;
+    const personas = parseInt(personasEl.value, 10);
+    if (!personas || personas < 1) return;
+    const sugerida = mejorMesaParaPersonas(getCurrentAccount(), personas);
+    if (sugerida) mesaEl.value = sugerida;
+  }
   function addReservaFormHtml() {
     return `
       <h3 class="text-xl font-bold text-navy">Nueva reserva</h3>
@@ -5195,7 +5224,7 @@
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Cliente</label>
       <input id="resCliente" type="text" placeholder="Nombre del cliente" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
       <div class="grid grid-cols-2 gap-3 mt-4">
-        <div><label class="block text-sm font-medium text-navy mb-1.5">Personas</label><input id="resPersonas" type="number" min="1" placeholder="2" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+        <div><label class="block text-sm font-medium text-navy mb-1.5">Personas</label><input id="resPersonas" type="number" min="1" placeholder="2" oninput="autosugerirMesaReserva()" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
         <div><label class="block text-sm font-medium text-navy mb-1.5">Mesa</label><input id="resMesa" type="text" placeholder="Mesa 3" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
       </div>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Estado</label>
