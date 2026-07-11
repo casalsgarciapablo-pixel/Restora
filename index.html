@@ -5980,6 +5980,18 @@
     }
   }
   let divisionArticulosEnCurso = null; // { idx, seleccion: { platoIdx: cantidad } }
+  // Precio por unidad ya con promociones de artículo (2x1, %) y el descuento de cliente del pedido
+  // repartidos proporcionalmente. Sin esto, "por artículos" sumaba precios de catálogo sueltos que
+  // no cuadraban con p.total (que sí lleva promos/descuento aplicados), y la cuenta podía darse por
+  // cobrada antes de que se hubieran seleccionado todos los platos, o quedarse con un resto de
+  // céntimos sin ningún plato ya disponible para seleccionar.
+  function precioUnitarioEfectivo(p, pi) {
+    const pl = p.platos[pi];
+    const cantidad = pl.cantidad || 1;
+    let unit = precioLineaConPromo(pl.nombre, pl.precio, cantidad).total / cantidad;
+    if (p.descuento && p.descuento.pct) unit = unit * (1 - p.descuento.pct / 100);
+    return unit;
+  }
   function iniciarDivisionPorArticulos(i) {
     divisionArticulosEnCurso = { idx: i, seleccion: {} };
     renderDivisionPorArticulos();
@@ -6005,7 +6017,7 @@
         </div>
       </div>`;
     }).join('');
-    const subtotal = Object.keys(seleccion).reduce((sum, pi) => sum + precioToNumero(p.platos[pi].precio) * seleccion[pi], 0);
+    const subtotal = Math.round(Object.keys(seleccion).reduce((sum, pi) => sum + precioUnitarioEfectivo(p, pi) * seleccion[pi], 0) * 100) / 100;
     document.getElementById('modalBody').innerHTML = `
       <div class="flex items-center gap-2">
         <button type="button" onclick="divisionArticulosEnCurso = null; abrirCobroPedido(${idx})" class="text-slate-400 hover:text-navy transition" title="Atrás">
@@ -6019,6 +6031,7 @@
         <p class="text-sm font-semibold text-navy">Subtotal de esta parte</p>
         <p class="text-lg font-bold text-navy">${subtotal.toFixed(2).replace('.', ',')}€</p>
       </div>
+      ${p.descuento ? `<p class="text-xs text-slate-400 mt-1">Ya incluye el descuento "${svgEsc(p.descuento.nombre)}" (${p.descuento.pct}%) del pedido.</p>` : ''}
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Método de pago</label>
       <div class="grid grid-cols-3 gap-2">
         <button type="button" ${subtotal <= 0 ? 'disabled' : ''} onclick="confirmarSubCobroArticulos('Efectivo')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy disabled:opacity-40">💶 Efectivo</button>
@@ -6045,9 +6058,14 @@
     const p = acc.data.pedidos[idx];
     const entradas = Object.keys(seleccion);
     if (!entradas.length) return;
-    const subtotal = entradas.reduce((sum, pi) => sum + precioToNumero(p.platos[pi].precio) * seleccion[pi], 0);
+    let subtotal = Math.round(entradas.reduce((sum, pi) => sum + precioUnitarioEfectivo(p, pi) * seleccion[pi], 0) * 100) / 100;
     const detalle = entradas.map(pi => seleccion[pi] + 'x ' + p.platos[pi].nombre).join(', ');
     entradas.forEach(pi => { p.platos[pi].pagadoCantidad = (p.platos[pi].pagadoCantidad || 0) + seleccion[pi]; });
+    // Si con esto quedan todos los platos ya cobrados, esta parte absorbe cualquier resto de
+    // redondeo y cierra exacto contra lo que de verdad queda pendiente (evita dejar céntimos sueltos
+    // sin ningún plato disponible para seleccionarlos, o cerrar el pedido antes de tiempo).
+    const quedaAlgunoSinCobrar = p.platos.some(pl => (pl.pagadoCantidad || 0) < (pl.cantidad || 1));
+    if (!quedaAlgunoSinCobrar) subtotal = pendienteCobro(p);
     divisionArticulosEnCurso = null;
     await registrarCobroParcial(idx, subtotal, metodo, detalle);
   }
