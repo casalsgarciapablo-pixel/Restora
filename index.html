@@ -6433,6 +6433,8 @@
     return /bebida|drink|refresc|beguda/i.test(String(categoria || ''));
   }
   let platoFotosEdicion = [];
+  let platoFotosClientesEdicion = [];
+  let platoEditandoIdx = -1;
   function platoFotosGaleriaHtml() {
     const thumbs = platoFotosEdicion.map((url, i) => `
       <div class="wiz-thumb" style="position:relative;">
@@ -6442,11 +6444,22 @@
           : `<button type="button" onclick="platoFotoHacerPrincipal(${i})" title="Usar como foto principal del plato" style="position:absolute; left:3px; bottom:3px; font-size:9px; font-weight:700; color:#16161D; background:rgba(255,255,255,0.92); border-radius:999px; padding:2px 6px; border:none; cursor:pointer;">★ Hacer principal</button>`}
         <button type="button" onclick="platoFotoQuitar(${i})">✕</button>
       </div>`).join('');
+    const thumbsClientes = platoFotosClientesEdicion.map((f, i) => `
+      <div class="wiz-thumb" style="position:relative;">
+        <img src="${f.url}">
+        <span style="position:absolute; left:3px; bottom:3px; font-size:9px; font-weight:700; color:#fff; background:rgba(15,23,42,0.62); border-radius:999px; padding:2px 6px;">Cliente</span>
+        <button type="button" onclick="platoFotoClienteQuitar(${i})" title="Eliminar esta foto">✕</button>
+      </div>`).join('');
     return `
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Fotos reales del plato (opcional)</label>
       <p class="text-xs text-slate-400 mb-1.5">La primera foto es la que aparece como icono del plato en la carta. Se muestran todas a los clientes al tocar el nombre del plato.</p>
       ${thumbs ? `<div class="wiz-thumbs">${thumbs}</div>` : ''}
       <input type="file" accept="image/*" multiple onchange="platoFotoAnadir(this)" class="w-full text-sm text-slate-500 mt-1.5">
+      ${thumbsClientes ? `
+        <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Fotos subidas por clientes</label>
+        <p class="text-xs text-slate-400 mb-1.5">Puedes eliminar cualquiera si no te parece adecuada.</p>
+        <div class="wiz-thumbs">${thumbsClientes}</div>
+      ` : ''}
     `;
   }
   function platoFotoAnadir(input) {
@@ -6477,6 +6490,19 @@
     const cont = document.getElementById('platoFotosGaleriaWrap');
     if (cont) cont.innerHTML = platoFotosGaleriaHtml();
   }
+  // El restaurante puede eliminar cualquier foto subida por un cliente, no solo las suyas propias.
+  function platoFotoClienteQuitar(i) {
+    if (platoEditandoIdx === -1) return;
+    const acc = getCurrentAccount();
+    const m = acc.data.menu[platoEditandoIdx];
+    if (!m) return;
+    platoFotosClientesEdicion.splice(i, 1);
+    m.fotosClientes = platoFotosClientesEdicion.slice();
+    saveCurrentAccountData(acc.data);
+    const cont = document.getElementById('platoFotosGaleriaWrap');
+    if (cont) cont.innerHTML = platoFotosGaleriaHtml();
+    showToast('Foto eliminada');
+  }
   function platoFormFieldsHtml(acc, m) {
     m = m || { nombre: '', precio: '', descripcion: '', categoria: '', estado: 'Disponible', foto: '', costo: '' };
     return `
@@ -6499,6 +6525,8 @@
   function abrirAnadirPlato() {
     const acc = getCurrentAccount();
     platoFotosEdicion = [];
+    platoFotosClientesEdicion = [];
+    platoEditandoIdx = -1;
     document.getElementById('modalCard').classList.remove('modal-wide');
     document.getElementById('modalBody').innerHTML = `
       <h3 class="text-xl font-bold text-navy">Añadir plato</h3>
@@ -6513,6 +6541,8 @@
     if (!m) return;
     // Si el plato tiene la foto antigua (de un solo campo) pero aún no tiene galería, se respeta como principal.
     platoFotosEdicion = (m.fotosRestaurante && m.fotosRestaurante.length) ? m.fotosRestaurante.slice() : (m.foto ? [m.foto] : []);
+    platoFotosClientesEdicion = (m.fotosClientes || []).map(f => typeof f === 'string' ? { url: f, clienteId: null } : f).slice();
+    platoEditandoIdx = i;
     document.getElementById('modalCard').classList.remove('modal-wide');
     document.getElementById('modalBody').innerHTML = `
       <h3 class="text-xl font-bold text-navy">Editar plato</h3>
