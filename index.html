@@ -2145,6 +2145,16 @@
   </div>
 </div>
 
+<!-- Galería de fotos del plato (carta digital pública) -->
+<div id="fotoPlatoOverlay" class="modal-overlay" onclick="if(event.target===this) cerrarFotoPlatoModal()">
+  <div class="bg-white rounded-2xl card-shadow max-w-sm w-full p-6 relative">
+    <button onclick="cerrarFotoPlatoModal()" aria-label="Cerrar" class="absolute top-4 right-4 text-slate-400 hover:text-navy transition">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <div id="fotoPlatoBody"></div>
+  </div>
+</div>
+
 <div id="informeRoot" class="min-h-screen font-sans text-navy antialiased" style="display:none; background:#F7F8FC">
   <div class="max-w-2xl mx-auto px-5" style="padding-top:64px; padding-bottom:40px;">
     <div class="flex items-center justify-between gap-4 informe-no-print">
@@ -2797,6 +2807,8 @@
       m.categoria = typeof m.categoria === 'string' ? m.categoria : '';
       m.descripcion = typeof m.descripcion === 'string' ? m.descripcion : '';
       m.costo = typeof m.costo === 'string' ? m.costo : '';
+      m.fotosRestaurante = Array.isArray(m.fotosRestaurante) ? m.fotosRestaurante : [];
+      m.fotosClientes = Array.isArray(m.fotosClientes) ? m.fotosClientes : [];
     });
     data.promociones = Array.isArray(data.promociones) ? data.promociones : [];
     data.promociones.forEach(pr => {
@@ -6337,6 +6349,40 @@
     const opts = acc.data.menuSecciones.map(s => `<option value="${escAttr(s)}" ${seleccionada === s ? 'selected' : ''}>${svgEsc(s)}</option>`).join('');
     return `<option value="" ${!seleccionada ? 'selected' : ''}>Sin sección</option>` + opts;
   }
+  // Las bebidas no necesitan galería de fotos de referencia (no hace falta ver una foto de un refresco).
+  function esCategoriaBebida(categoria) {
+    return /bebida|drink|refresc|beguda/i.test(String(categoria || ''));
+  }
+  let platoFotosEdicion = [];
+  function platoFotosGaleriaHtml() {
+    const thumbs = platoFotosEdicion.map((url, i) => `<div class="wiz-thumb"><img src="${url}"><button type="button" onclick="platoFotoQuitar(${i})">✕</button></div>`).join('');
+    return `
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Fotos reales del plato (opcional)</label>
+      <p class="text-xs text-slate-400 mb-1.5">Se muestran a los clientes en la carta digital cuando tocan el nombre del plato, para que sepan exactamente qué van a pedir.</p>
+      ${thumbs ? `<div class="wiz-thumbs">${thumbs}</div>` : ''}
+      <input type="file" accept="image/*" multiple onchange="platoFotoAnadir(this)" class="w-full text-sm text-slate-500 mt-1.5">
+    `;
+  }
+  function platoFotoAnadir(input) {
+    const files = Array.from(input.files || []);
+    let pendientes = files.length;
+    if (!pendientes) return;
+    files.forEach(f => {
+      redimensionarImagen(f, 900, url => {
+        if (url) platoFotosEdicion.push(url);
+        pendientes -= 1;
+        if (pendientes === 0) {
+          const cont = document.getElementById('platoFotosGaleriaWrap');
+          if (cont) cont.innerHTML = platoFotosGaleriaHtml();
+        }
+      });
+    });
+  }
+  function platoFotoQuitar(i) {
+    platoFotosEdicion.splice(i, 1);
+    const cont = document.getElementById('platoFotosGaleriaWrap');
+    if (cont) cont.innerHTML = platoFotosGaleriaHtml();
+  }
   function platoFormFieldsHtml(acc, m) {
     m = m || { nombre: '', precio: '', descripcion: '', categoria: '', estado: 'Disponible', foto: '', costo: '' };
     return `
@@ -6356,10 +6402,12 @@
       <p class="mt-1 text-xs text-slate-400">Aparecerá bajo el nombre del plato en tu web pública.</p>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Foto (opcional)</label>
       ${m.foto ? `<div class="flex items-center gap-3 mb-2 rounded-lg border border-slate-200 p-2"><img src="${m.foto}" class="w-11 h-11 rounded-md object-cover shrink-0"><label class="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer"><input type="checkbox" id="menuQuitarFoto">Quitar foto actual</label></div>` : ''}
-      <input id="menuFoto" type="file" accept="image/*" class="w-full text-sm text-slate-500">`;
+      <input id="menuFoto" type="file" accept="image/*" class="w-full text-sm text-slate-500">
+      <div id="platoFotosGaleriaWrap">${platoFotosGaleriaHtml()}</div>`;
   }
   function abrirAnadirPlato() {
     const acc = getCurrentAccount();
+    platoFotosEdicion = [];
     document.getElementById('modalCard').classList.remove('modal-wide');
     document.getElementById('modalBody').innerHTML = `
       <h3 class="text-xl font-bold text-navy">Añadir plato</h3>
@@ -6372,6 +6420,7 @@
     const acc = getCurrentAccount();
     const m = acc.data.menu[i];
     if (!m) return;
+    platoFotosEdicion = (m.fotosRestaurante || []).slice();
     document.getElementById('modalCard').classList.remove('modal-wide');
     document.getElementById('modalBody').innerHTML = `
       <h3 class="text-xl font-bold text-navy">Editar plato</h3>
@@ -6393,12 +6442,14 @@
     const quitarFoto = document.getElementById('menuQuitarFoto');
     if (!nombre || !precio) return modalFormError('Escribe al menos el nombre y el precio.');
     const finish = (foto) => {
+      const fotosRestaurante = platoFotosEdicion.slice();
       if (i === -1) {
-        acc.data.menu.push({ nombre, precio, estado, categoria, descripcion, costo, foto: foto || '' });
+        acc.data.menu.push({ nombre, precio, estado, categoria, descripcion, costo, foto: foto || '', fotosRestaurante, fotosClientes: [] });
       } else {
         const m = acc.data.menu[i];
-        Object.assign(m, { nombre, precio, estado, categoria, descripcion, costo, foto });
+        Object.assign(m, { nombre, precio, estado, categoria, descripcion, costo, foto, fotosRestaurante });
       }
+      platoFotosEdicion = [];
       saveCurrentAccountData(acc.data);
       renderMenu();
       renderCartaDigitalPreview();
@@ -8063,7 +8114,10 @@
     const paleta = temaActivo ? coloresCartaDigital(cd) : null;
     const itemCard = (m, idx) => {
       const disponible = m.estado === 'Disponible';
-      const foto = m.foto ? `<img src="${m.foto}" class="w-14 h-14 rounded-lg object-cover shrink-0">` : `<div class="w-14 h-14 rounded-lg ${temaActivo ? '' : 'bg-slate-100'} shrink-0" ${temaActivo ? `style="background:${paleta.color1}14;"` : ''}></div>`;
+      const esBebida = esCategoriaBebida(m.categoria);
+      const clickFotos = esBebida ? '' : ` onclick="abrirFotosPlatoPublico(${idx})" style="cursor:pointer;"`;
+      const iconoCamara = `<svg class="w-4.5 h-4.5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h3l1.5-2h7L17 7h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V8a1 1 0 011-1z"/><circle cx="12" cy="13" r="3.3"/></svg>`;
+      const foto = m.foto ? `<img src="${m.foto}" class="w-14 h-14 rounded-lg object-cover shrink-0"${clickFotos}>` : `<div class="w-14 h-14 rounded-lg ${temaActivo ? '' : 'bg-slate-100'} shrink-0 flex items-center justify-center" ${temaActivo ? `style="background:${paleta.color1}14;"` : ''}${clickFotos}>${!esBebida ? iconoCamara : ''}</div>`;
       const qty = publicPedidoCarrito[idx] || 0;
       const stepper = disponible ? `
         <div class="flex items-center gap-1.5 shrink-0">
@@ -8078,8 +8132,8 @@
       return `<div class="${cardClass} ${disponible ? '' : 'opacity-50'}" ${cardStyle}>
         <div class="flex items-center gap-3">
           ${foto}
-          <div class="min-w-0 flex-1 text-left">
-            <p class="text-sm font-semibold text-navy truncate">${svgEsc(m.nombre)}</p>
+          <div class="min-w-0 flex-1 text-left"${clickFotos}>
+            <p class="text-sm font-semibold text-navy truncate">${svgEsc(m.nombre)}${!esBebida ? ' <span class="text-slate-300 font-normal">· fotos</span>' : ''}</p>
             ${m.descripcion ? `<p class="text-xs text-slate-500 mt-0.5" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${svgEsc(m.descripcion)}</p>` : `<p class="text-xs text-slate-400 mt-0.5">${disponible ? 'Disponible' : 'Agotado'}</p>`}
           </div>
           <p class="text-sm font-bold shrink-0 ${temaActivo ? '' : 'text-navy'}" ${precioStyle}>${svgEsc(m.precio)}</p>
@@ -8251,6 +8305,84 @@
     return `<div class="text-left" style="${totalItems > 0 ? 'padding-bottom:88px;' : ''}">
       ${heroHtml}${nosotrosHtml}${cartaHtml}${galeriaHtml}${horarioHtml}${contactoHtml}${footerHtml}
     </div>${cartBar}`;
+  }
+  // ---- Galería de fotos del plato (carta digital pública) ----
+  let publicFotoPlatoIdx = null;
+  let publicFotoSubiendo = false;
+  function abrirFotosPlatoPublico(idx) {
+    publicFotoPlatoIdx = idx;
+    renderFotoPlatoGaleria();
+    document.getElementById('fotoPlatoOverlay').classList.add('open');
+  }
+  function cerrarFotoPlatoModal() {
+    document.getElementById('fotoPlatoOverlay').classList.remove('open');
+    publicFotoPlatoIdx = null;
+  }
+  function renderFotoPlatoGaleria() {
+    const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
+    const m = menu[publicFotoPlatoIdx];
+    if (!m) return;
+    const fotosRest = (m.fotosRestaurante && m.fotosRestaurante.length) ? m.fotosRestaurante : (m.foto ? [m.foto] : []);
+    const fotosCli = m.fotosClientes || [];
+    const totalFotos = fotosRest.length + fotosCli.length;
+    const gridItem = (url, deCliente) => `
+      <div style="position:relative;">
+        <img src="${url}" class="w-full rounded-lg object-cover" style="aspect-ratio:1/1;">
+        ${deCliente ? `<span class="absolute bottom-1 left-1 text-[9px] font-semibold text-white bg-black/55 rounded-full px-1.5 py-0.5">De un cliente</span>` : ''}
+      </div>`;
+    const galeriaHtml = totalFotos
+      ? `<div class="grid grid-cols-2 gap-2 mt-3">${fotosRest.map(u => gridItem(u, false)).join('')}${fotosCli.map(u => gridItem(u, true)).join('')}</div>`
+      : `<div class="mt-3 rounded-xl border border-dashed border-slate-300 p-6 text-center"><p class="text-sm text-slate-400">Todavía no hay fotos de este plato.</p><p class="text-xs text-slate-300 mt-1">Sé el primero en subir una 👇</p></div>`;
+    document.getElementById('fotoPlatoBody').innerHTML = `
+      <h3 class="text-lg font-bold text-navy pr-6">${svgEsc(m.nombre)}</h3>
+      <p class="text-xs text-slate-400 mt-0.5">Fotos reales para que sepas qué vas a pedir.</p>
+      <div id="fotoPlatoGaleriaGrid">${galeriaHtml}</div>
+      <p id="fotoPlatoError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <div class="grid grid-cols-2 gap-2.5 mt-4">
+        <button type="button" id="fotoPlatoBtnCam" onclick="document.getElementById('fotoPlatoInputCam').click()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-3 py-2.5">📷 Hacer foto</button>
+        <button type="button" id="fotoPlatoBtnGal" onclick="document.getElementById('fotoPlatoInputGal').click()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-3 py-2.5">🖼️ Subir foto</button>
+      </div>
+      <input id="fotoPlatoInputCam" type="file" accept="image/*" capture="environment" class="hidden" onchange="publicFotoSubir(this)">
+      <input id="fotoPlatoInputGal" type="file" accept="image/*" class="hidden" onchange="publicFotoSubir(this)">
+      <p class="text-[11px] text-slate-400 mt-3 text-center">Tu foto ayudará a otros clientes a saber qué esperar de este plato.</p>
+    `;
+  }
+  function publicFotoSubir(input) {
+    const file = input.files && input.files[0];
+    if (!file || publicFotoSubiendo) return;
+    const idx = publicFotoPlatoIdx;
+    const errorEl = document.getElementById('fotoPlatoError');
+    if (errorEl) errorEl.classList.add('hidden');
+    publicFotoSubiendo = true;
+    const btnCam = document.getElementById('fotoPlatoBtnCam'), btnGal = document.getElementById('fotoPlatoBtnGal');
+    if (btnCam) btnCam.disabled = true;
+    if (btnGal) { btnGal.disabled = true; btnGal.textContent = 'Subiendo…'; }
+    redimensionarImagen(file, 900, async (url) => {
+      input.value = '';
+      if (!url) { publicFotoSubiendo = false; if (btnCam) btnCam.disabled = false; if (btnGal) { btnGal.disabled = false; btnGal.textContent = '🖼️ Subir foto'; } return; }
+      const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
+      const m = menu[idx];
+      try {
+        const { data, error } = await supabaseClient.rpc('anadir_foto_plato_publico', {
+          p_user_id: publicMenuCuentaId, p_nombre_plato: m.nombre, p_foto: url,
+        });
+        publicFotoSubiendo = false;
+        if (btnCam) btnCam.disabled = false;
+        if (btnGal) { btnGal.disabled = false; btnGal.textContent = '🖼️ Subir foto'; }
+        if (error || !data || data.error) {
+          if (errorEl) { errorEl.textContent = (data && data.error) || 'No se ha podido subir la foto. Inténtalo de nuevo.'; errorEl.classList.remove('hidden'); }
+          return;
+        }
+        m.fotosClientes = m.fotosClientes || [];
+        m.fotosClientes.push(url);
+        if (idx === publicFotoPlatoIdx) renderFotoPlatoGaleria();
+      } catch (e) {
+        publicFotoSubiendo = false;
+        if (btnCam) btnCam.disabled = false;
+        if (btnGal) { btnGal.disabled = false; btnGal.textContent = '🖼️ Subir foto'; }
+        if (errorEl) { errorEl.textContent = 'No se ha podido subir la foto. Inténtalo de nuevo.'; errorEl.classList.remove('hidden'); }
+      }
+    });
   }
   function cambiarCantidadPublico(idx, delta) {
     const actual = publicPedidoCarrito[idx] || 0;
