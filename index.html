@@ -2810,7 +2810,7 @@
       iaConversaciones: [],
       iaInformes: [],
       caja: { abierta: false, fecha: null, efectivoInicial: 0, aperturaHora: null, historico: [] },
-      cartaDigital: { activada: false, tipoRestaurante: '', paleta: '', colorPrimario: '', colorSecundario: '', tagline: '', logo: '', creadaEn: null, web: false, historia: '', fotosModo: '', fotoHero: '', fotosPropias: [], instagram: '', direccion: '', telefono: '', fuente: '', textoBotonCarta: '', textoBotonReservar: '', secciones: { nosotros: true, galeria: true, horario: true, contacto: true, reservas: true } },
+      cartaDigital: { activada: false, tipoRestaurante: '', paleta: '', colorPrimario: '', colorSecundario: '', tagline: '', logo: '', creadaEn: null, web: false, historia: '', resenas: '', fotosModo: '', fotoHero: '', fotosPropias: [], instagram: '', direccion: '', telefono: '', fuente: '', textoBotonCarta: '', textoBotonReservar: '', secciones: { nosotros: true, opiniones: true, galeria: true, horario: true, contacto: true, reservas: true } },
       chatMensajes: [],
       promociones: [],
       anulaciones: [],
@@ -2966,6 +2966,7 @@
     data.cartaDigital.creadaEn = data.cartaDigital.creadaEn || null;
     data.cartaDigital.web = !!data.cartaDigital.web;
     data.cartaDigital.historia = data.cartaDigital.historia || '';
+    data.cartaDigital.resenas = data.cartaDigital.resenas || '';
     data.cartaDigital.fotosModo = data.cartaDigital.fotosModo || '';
     data.cartaDigital.fotoHero = data.cartaDigital.fotoHero || '';
     data.cartaDigital.fotosPropias = Array.isArray(data.cartaDigital.fotosPropias) ? data.cartaDigital.fotosPropias : [];
@@ -2975,7 +2976,7 @@
     data.cartaDigital.fuente = data.cartaDigital.fuente || '';
     data.cartaDigital.textoBotonCarta = data.cartaDigital.textoBotonCarta || '';
     data.cartaDigital.textoBotonReservar = data.cartaDigital.textoBotonReservar || '';
-    data.cartaDigital.secciones = Object.assign({ nosotros: true, galeria: true, horario: true, contacto: true, reservas: true }, data.cartaDigital.secciones || {});
+    data.cartaDigital.secciones = Object.assign({ nosotros: true, opiniones: true, galeria: true, horario: true, contacto: true, reservas: true }, data.cartaDigital.secciones || {});
     data.chatMensajes = Array.isArray(data.chatMensajes) ? data.chatMensajes.filter(m => m && m.texto) : [];
     return data;
   }
@@ -3400,7 +3401,7 @@
       fotosPropias: (cd.fotosPropias || []).slice(),
       historia: cd.historia || '',
       instagram: cd.instagram || '',
-      secciones: Object.assign({ nosotros: true, galeria: true, horario: true, contacto: true, reservas: true }, cd.secciones || {}),
+      secciones: Object.assign({ nosotros: true, opiniones: true, galeria: true, horario: true, contacto: true, reservas: true }, cd.secciones || {}),
       webExistente: null,
       webUrl: '',
     };
@@ -3596,12 +3597,13 @@
       tagline: data.tagline || '',
       logo: data.logo || '',
       historia: data.historia || '',
+      resenas: data.resenas || '',
       fotosModo: fotos.length ? 'propias' : 'banco',
       fotoHero: fotos[0] || '',
       fotosPropias: fotos.slice(1, 4),
       direccion: acc.data.perfil.direccion || '',
       telefono: acc.data.perfil.telefono || '',
-      secciones: Object.assign({ nosotros: true, galeria: true, horario: true, contacto: true, reservas: true }, acc.data.cartaDigital.secciones || {}),
+      secciones: Object.assign({ nosotros: true, opiniones: true, galeria: true, horario: true, contacto: true, reservas: true }, acc.data.cartaDigital.secciones || {}),
       creadaEn: acc.data.cartaDigital.creadaEn || new Date().toISOString(),
     });
     saveCurrentAccountData(acc.data);
@@ -3738,8 +3740,9 @@
       fotoHero: cd.fotoHero || '',
       fotosPropias: (cd.fotosPropias || []).slice(),
       historia: cd.historia || '',
+      resenas: cd.resenas || '',
       instagram: cd.instagram || '',
-      secciones: Object.assign({ nosotros: true, galeria: true, horario: true, contacto: true, reservas: true }, cd.secciones || {}),
+      secciones: Object.assign({ nosotros: true, opiniones: true, galeria: true, horario: true, contacto: true, reservas: true }, cd.secciones || {}),
       textoBotonCarta: cd.textoBotonCarta || '',
       textoBotonReservar: cd.textoBotonReservar || '',
     };
@@ -3825,6 +3828,9 @@
     return `
       <label class="block text-sm font-medium text-navy mb-1.5">Vuestra historia (opcional)</label>
       <textarea rows="4" placeholder="Ej. Tres generaciones cocinando el recetario de la abuela Carmen…" oninput="cdEdit.historia=this.value" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(w.historia)}</textarea>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Opiniones de clientes (opcional)</label>
+      <textarea rows="3" placeholder="Ej. Nuestros clientes destacan el trato cercano y la calidad de los platos de temporada…" oninput="cdEdit.resenas=this.value" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(w.resenas)}</textarea>
+      <p class="mt-1.5 text-xs text-slate-400">Se muestra como una sección "Lo que dicen de nosotros" en tu carta digital.</p>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Instagram (opcional)</label>
       <input type="text" placeholder="@turestaurante" value="${escAttr(w.instagram)}" oninput="cdEdit.instagram=this.value" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
     `;
@@ -3837,6 +3843,7 @@
       <label class="block text-sm font-medium text-navy mb-1.5">Secciones visibles</label>
       <div class="space-y-2">
         ${toggle('nosotros', 'Nuestra historia', '📖')}
+        ${toggle('opiniones', 'Opiniones de clientes', '💬')}
         ${toggle('galeria', 'Galería de fotos', '🖼️')}
         ${toggle('horario', 'Horario de apertura', '🕐')}
         ${toggle('contacto', 'Ubicación y contacto', '📍')}
@@ -3929,6 +3936,7 @@
       logo: w.logo,
       fuente: w.fuente,
       historia: w.historia.trim(),
+      resenas: w.resenas.trim(),
       fotosModo: w.fotosModo,
       fotoHero: w.fotoHero,
       fotosPropias: w.fotosPropias,
@@ -8832,6 +8840,12 @@
         <h2>Bienvenidos a ${n}</h2>
         <p class="pweb-texto">${svgEsc(cd.historia)}</p>
       </section>` : '';
+    const opinionesHtml = (sec.opiniones !== false && cd.resenas) ? `
+      <section class="pweb-sec">
+        <p class="pweb-kicker" style="color:${paleta.color1};">Opiniones</p>
+        <h2>Lo que dicen de nosotros</h2>
+        <p class="pweb-texto">${svgEsc(cd.resenas)}</p>
+      </section>` : '';
     const cartaHtml = `
       <section class="pweb-sec" id="pweb-carta">
         <p class="pweb-kicker" style="color:${paleta.color1};">La carta</p>
@@ -8882,7 +8896,7 @@
     const footerHtml = `<footer class="pweb-footer">© ${new Date().getFullYear()} ${n} · Web creada con Restora</footer>`;
     const fuenteCss = (CD_FUENTES[cd.fuente] || CD_FUENTES['']).css;
     return `<div class="text-left" style="${totalItems > 0 ? 'padding-bottom:88px;' : ''}${fuenteCss ? 'font-family:' + fuenteCss + ';' : ''}">
-      ${heroHtml}${nosotrosHtml}${cartaHtml}${galeriaHtml}${horarioHtml}${contactoHtml}${footerHtml}
+      ${heroHtml}${nosotrosHtml}${cartaHtml}${galeriaHtml}${opinionesHtml}${horarioHtml}${contactoHtml}${footerHtml}
     </div>`;
   }
   // Barra "Enviar pedido": vive fuera del contenido que se reemplaza en cada render, así se queda
