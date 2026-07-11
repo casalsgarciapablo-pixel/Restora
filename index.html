@@ -3385,6 +3385,8 @@
       historia: cd.historia || '',
       instagram: cd.instagram || '',
       secciones: Object.assign({ nosotros: true, galeria: true, horario: true, contacto: true, reservas: true }, cd.secciones || {}),
+      webExistente: false,
+      webUrl: '',
     };
     document.getElementById('modalCard').classList.add('modal-wide');
     renderWebWiz();
@@ -3405,7 +3407,21 @@
         <div class="wiz-chips mt-4">
           ${TIPOS_RESTAURANTE.map(t => `<button type="button" class="wiz-chip ${w.tipo === t ? 'sel' : ''}" onclick="wizSetTipo('${escAttr(t)}')">${TIPO_EMOJI[t] || '🍽️'} ${t}</button>`).join('')}
         </div>
-        <p class="mt-4 text-xs text-slate-400">🍽️ Tu carta ${nPlatos ? `(${nPlatos} ${nPlatos === 1 ? 'plato' : 'platos'})` : ''} se incluirá automáticamente en tu carta digital, con pedidos desde la mesa.</p>`;
+        <p class="mt-4 text-xs text-slate-400">🍽️ Tu carta ${nPlatos ? `(${nPlatos} ${nPlatos === 1 ? 'plato' : 'platos'})` : ''} se incluirá automáticamente en tu carta digital, con pedidos desde la mesa.</p>
+        <div class="mt-5 rounded-xl border border-dashed border-slate-300 p-3.5">
+          <label class="flex items-center gap-2.5 cursor-pointer">
+            <input type="checkbox" ${w.webExistente ? 'checked' : ''} onchange="webWiz.webExistente=this.checked; renderWebWiz();">
+            <span class="text-sm font-medium text-navy">🔗 Ya tengo una web o carta online</span>
+          </label>
+          ${w.webExistente ? `
+            <p class="text-xs text-slate-400 mt-1.5 mb-2">Pega el enlace y la IA copiará colores, estilo, fotos e información de tu web para que tu carta digital se parezca lo máximo posible.</p>
+            <div class="flex gap-2">
+              <input id="wizWebUrl" type="url" placeholder="https://tuweb.com" value="${escAttr(w.webUrl)}" oninput="webWiz.webUrl=this.value" class="flex-1 min-w-0 rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+              <button type="button" id="wizAnalizarWebBtn" onclick="wizAnalizarWeb()" class="rounded-lg bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-4 whitespace-nowrap shrink-0">✨ Analizar</button>
+            </div>
+            <p id="wizAnalizarWebMsg" class="text-xs mt-2"></p>
+          ` : ''}
+        </div>`;
     } else if (w.paso === 2) {
       const sugerida = PALETA_SUGERIDA[w.tipo] || 'moderno';
       const paletas = Object.keys(PALETAS_CARTA).map(key => {
@@ -3514,6 +3530,44 @@
   function wizSetTipo(t) { webWiz.tipo = t; renderWebWiz(); }
   function wizSetPaleta(key) { webWiz.modoColor = 'paleta'; webWiz.paleta = key; renderWebWiz(); }
   function wizSetCustomColor() { webWiz.modoColor = 'custom'; renderWebWiz(); }
+  // Analiza la web actual del restaurante con IA y prellena colores, eslogan, historia y fotos
+  // en el asistente, para que el usuario no tenga que rellenarlo todo desde cero.
+  async function wizAnalizarWeb() {
+    const input = document.getElementById('wizWebUrl');
+    const url = ((input ? input.value : webWiz.webUrl) || '').trim();
+    const msgEl = document.getElementById('wizAnalizarWebMsg');
+    const btn = document.getElementById('wizAnalizarWebBtn');
+    webWiz.webUrl = url;
+    if (!url) {
+      if (msgEl) { msgEl.textContent = 'Pega primero el enlace de tu web.'; msgEl.className = 'text-xs mt-2 text-rose-600'; }
+      return;
+    }
+    if (btn) { btn.disabled = true; btn.textContent = 'Analizando…'; }
+    if (msgEl) { msgEl.textContent = 'La IA está visitando tu web, esto puede tardar unos segundos…'; msgEl.className = 'text-xs mt-2 text-slate-400'; }
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('analizar-web-restaurante', { body: { url } });
+      if (error || !data || data.error) throw new Error((data && data.error) || 'fallo');
+      let cambios = [];
+      if (data.tipoRestaurante && TIPOS_RESTAURANTE.includes(data.tipoRestaurante)) { webWiz.tipo = data.tipoRestaurante; cambios.push('tipo de cocina'); }
+      if (data.colorPrimario && data.colorSecundario) { webWiz.modoColor = 'custom'; webWiz.color1 = data.colorPrimario; webWiz.color2 = data.colorSecundario; cambios.push('colores'); }
+      if (data.tagline) { webWiz.esloganModo = 'propio'; webWiz.eslogan = data.tagline; cambios.push('eslogan'); }
+      if (data.historia) { webWiz.historia = data.historia; cambios.push('historia'); }
+      if (Array.isArray(data.fotos) && data.fotos.length) {
+        webWiz.fotosModo = 'propias';
+        webWiz.fotoHero = data.fotos[0];
+        webWiz.fotosPropias = data.fotos.slice(1, 4);
+        cambios.push('fotos');
+      }
+      if (msgEl) {
+        msgEl.textContent = cambios.length ? ('✅ Hemos copiado ' + cambios.join(', ') + ' de tu web — revísalo en los siguientes pasos.') : 'No hemos podido extraer suficiente información de esa web.';
+        msgEl.className = 'text-xs mt-2 ' + (cambios.length ? 'text-emerald-600' : 'text-slate-400');
+      }
+    } catch (e) {
+      if (msgEl) { msgEl.textContent = 'No hemos podido analizar esa web automáticamente. Puedes seguir configurando todo a mano.'; msgEl.className = 'text-xs mt-2 text-rose-600'; }
+    }
+    if (btn) { btn.disabled = false; btn.textContent = '✨ Analizar'; }
+    renderWebWiz();
+  }
   function wizLeer() {
     const w = webWiz;
     const esl = document.getElementById('wizEsloganTxt');
