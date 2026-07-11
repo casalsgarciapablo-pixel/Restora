@@ -547,6 +547,19 @@
   .pweb-contacto a { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #ECEBF2; border-radius: 16px; padding: 14px 16px; font-size: 14px; font-weight: 600; color: #14121F; text-align: left; box-shadow: 0 1px 3px rgba(20,18,31,0.05); transition: border-color .15s ease, box-shadow .15s ease; }
   .pweb-contacto a:hover { border-color: #D9D6EA; box-shadow: 0 3px 10px rgba(20,18,31,0.08); }
   .pweb-footer { text-align: center; padding: 48px 20px 36px; font-size: 12px; color: #A6A4B3; }
+  /* Barra "Enviar pedido" de la carta pública: elemento fijo estable, fuera del contenido que se
+     re-renderiza en cada cambio de carrito, para que nunca deje de estar pegada abajo del todo. */
+  #pubCartBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; background: #fff; border-top: 1px solid #E2E8F0; box-shadow: 0 -8px 24px -6px rgba(15,23,42,0.1); padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); display: none; }
+  #pubCartBar.show { display: block; }
+  /* Recomendaciones de la IA antes de enviar el pedido */
+  .reco-card { display: flex; gap: 12px; border: 1px solid #E4E8F1; border-radius: 16px; padding: 10px; align-items: center; }
+  .reco-card-img { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; flex-shrink: 0; }
+  .reco-card-img-vacia { background: #F1F3F9; }
+  .reco-card-body { flex: 1; min-width: 0; }
+  .reco-add-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: #4F3FFF; background: rgba(79,63,255,0.08); border: 1px solid rgba(79,63,255,0.22); border-radius: 999px; padding: 6px 12px; transition: background-color .15s ease, transform .15s ease; }
+  .reco-add-btn:hover { background: rgba(79,63,255,0.15); }
+  .reco-add-btn:active { transform: scale(0.96); }
+  .reco-add-btn.added { color: #059669; background: #ECFDF5; border-color: rgba(5,150,105,0.3); pointer-events: none; }
 
   /* ============ Galería de fotos del plato (carta digital pública) ============ */
   .fp-tile { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 4/3; background: #F1F3F9; box-shadow: 0 1px 2px rgba(16,24,40,0.04); }
@@ -2159,6 +2172,9 @@
   <div class="max-w-lg mx-auto px-5 py-10">
     <div id="publicMenuBody" class="text-center text-slate-400 text-sm">Cargando menú…</div>
   </div>
+  <div id="pubCartBar">
+    <div id="pubCartBarInner" class="max-w-lg mx-auto"></div>
+  </div>
 </div>
 
 <!-- Galería de fotos del plato (carta digital pública) -->
@@ -2177,6 +2193,13 @@
     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
   </button>
   <img id="fotoZoomImg" src="" style="max-width:92vw; max-height:88vh; border-radius:14px; box-shadow:0 24px 70px rgba(0,0,0,0.55); object-fit:contain;">
+</div>
+
+<!-- Recomendaciones de la IA antes de enviar el pedido (sube el ticket medio) -->
+<div id="pubRecoOverlay" class="modal-overlay" onclick="if(event.target===this) cerrarRecomendacionesPublico(false)">
+  <div class="bg-white rounded-2xl card-shadow max-w-sm w-full p-6 relative">
+    <div id="pubRecoBody"></div>
+  </div>
 </div>
 
 <div id="informeRoot" class="min-h-screen font-sans text-navy antialiased" style="display:none; background:#F7F8FC">
@@ -6404,10 +6427,17 @@
   }
   let platoFotosEdicion = [];
   function platoFotosGaleriaHtml() {
-    const thumbs = platoFotosEdicion.map((url, i) => `<div class="wiz-thumb"><img src="${url}"><button type="button" onclick="platoFotoQuitar(${i})">✕</button></div>`).join('');
+    const thumbs = platoFotosEdicion.map((url, i) => `
+      <div class="wiz-thumb" style="position:relative;">
+        <img src="${url}">
+        ${i === 0
+          ? `<span style="position:absolute; left:3px; bottom:3px; font-size:9px; font-weight:700; color:#fff; background:rgba(15,23,42,0.62); border-radius:999px; padding:2px 6px;">★ Principal</span>`
+          : `<button type="button" onclick="platoFotoHacerPrincipal(${i})" title="Usar como foto principal del plato" style="position:absolute; left:3px; bottom:3px; font-size:9px; font-weight:700; color:#16161D; background:rgba(255,255,255,0.92); border-radius:999px; padding:2px 6px; border:none; cursor:pointer;">★ Hacer principal</button>`}
+        <button type="button" onclick="platoFotoQuitar(${i})">✕</button>
+      </div>`).join('');
     return `
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Fotos reales del plato (opcional)</label>
-      <p class="text-xs text-slate-400 mb-1.5">Se muestran a los clientes en la carta digital cuando tocan el nombre del plato, para que sepan exactamente qué van a pedir.</p>
+      <p class="text-xs text-slate-400 mb-1.5">La primera foto es la que aparece como icono del plato en la carta. Se muestran todas a los clientes al tocar el nombre del plato.</p>
       ${thumbs ? `<div class="wiz-thumbs">${thumbs}</div>` : ''}
       <input type="file" accept="image/*" multiple onchange="platoFotoAnadir(this)" class="w-full text-sm text-slate-500 mt-1.5">
     `;
@@ -6432,6 +6462,14 @@
     const cont = document.getElementById('platoFotosGaleriaWrap');
     if (cont) cont.innerHTML = platoFotosGaleriaHtml();
   }
+  // Solo el restaurante puede elegir qué foto es la principal (la que se ve como icono del plato
+  // en la lista de la carta); los clientes nunca pueden cambiarla, solo añadir fotos propias.
+  function platoFotoHacerPrincipal(i) {
+    const [url] = platoFotosEdicion.splice(i, 1);
+    platoFotosEdicion.unshift(url);
+    const cont = document.getElementById('platoFotosGaleriaWrap');
+    if (cont) cont.innerHTML = platoFotosGaleriaHtml();
+  }
   function platoFormFieldsHtml(acc, m) {
     m = m || { nombre: '', precio: '', descripcion: '', categoria: '', estado: 'Disponible', foto: '', costo: '' };
     return `
@@ -6449,9 +6487,6 @@
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Descripción (opcional)</label>
       <textarea id="menuDescripcion" rows="2" placeholder="Arroz con pollo, conejo y verduras, al estilo tradicional" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(m.descripcion || '')}</textarea>
       <p class="mt-1 text-xs text-slate-400">Aparecerá bajo el nombre del plato en tu web pública.</p>
-      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Foto (opcional)</label>
-      ${m.foto ? `<div class="flex items-center gap-3 mb-2 rounded-lg border border-slate-200 p-2"><img src="${m.foto}" class="w-11 h-11 rounded-md object-cover shrink-0"><label class="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer"><input type="checkbox" id="menuQuitarFoto">Quitar foto actual</label></div>` : ''}
-      <input id="menuFoto" type="file" accept="image/*" class="w-full text-sm text-slate-500">
       <div id="platoFotosGaleriaWrap">${platoFotosGaleriaHtml()}</div>`;
   }
   function abrirAnadirPlato() {
@@ -6469,7 +6504,8 @@
     const acc = getCurrentAccount();
     const m = acc.data.menu[i];
     if (!m) return;
-    platoFotosEdicion = (m.fotosRestaurante || []).slice();
+    // Si el plato tiene la foto antigua (de un solo campo) pero aún no tiene galería, se respeta como principal.
+    platoFotosEdicion = (m.fotosRestaurante && m.fotosRestaurante.length) ? m.fotosRestaurante.slice() : (m.foto ? [m.foto] : []);
     document.getElementById('modalCard').classList.remove('modal-wide');
     document.getElementById('modalBody').innerHTML = `
       <h3 class="text-xl font-bold text-navy">Editar plato</h3>
@@ -6487,34 +6523,23 @@
     const categoria = document.getElementById('menuCategoria').value;
     const descripcion = document.getElementById('menuDescripcion').value.trim();
     const costo = document.getElementById('menuCosto').value.trim();
-    const fileInput = document.getElementById('menuFoto');
-    const quitarFoto = document.getElementById('menuQuitarFoto');
     if (!nombre || !precio) return modalFormError('Escribe al menos el nombre y el precio.');
-    const finish = (foto) => {
-      const fotosRestaurante = platoFotosEdicion.slice();
-      if (i === -1) {
-        acc.data.menu.push({ nombre, precio, estado, categoria, descripcion, costo, foto: foto || '', fotosRestaurante, fotosClientes: [] });
-      } else {
-        const m = acc.data.menu[i];
-        Object.assign(m, { nombre, precio, estado, categoria, descripcion, costo, foto, fotosRestaurante });
-      }
-      platoFotosEdicion = [];
-      saveCurrentAccountData(acc.data);
-      renderMenu();
-      renderCartaDigitalPreview();
-      closeModal();
-      showToast(i === -1 ? 'Plato añadido' : 'Plato actualizado');
-    };
-    const file = fileInput && fileInput.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => finish(reader.result);
-      reader.readAsDataURL(file);
-    } else if (quitarFoto && quitarFoto.checked) {
-      finish('');
+    // La foto principal (icono del plato) es siempre la primera de la galería; el resto queda como
+    // fotos adicionales. Se cambia arrastrando el ★ "Hacer principal" — nunca desde aquí un fichero suelto.
+    const fotosRestaurante = platoFotosEdicion.slice();
+    const foto = fotosRestaurante[0] || '';
+    if (i === -1) {
+      acc.data.menu.push({ nombre, precio, estado, categoria, descripcion, costo, foto, fotosRestaurante, fotosClientes: [] });
     } else {
-      finish(i === -1 ? '' : (acc.data.menu[i].foto || ''));
+      const m = acc.data.menu[i];
+      Object.assign(m, { nombre, precio, estado, categoria, descripcion, costo, foto, fotosRestaurante });
     }
+    platoFotosEdicion = [];
+    saveCurrentAccountData(acc.data);
+    renderMenu();
+    renderCartaDigitalPreview();
+    closeModal();
+    showToast(i === -1 ? 'Plato añadido' : 'Plato actualizado');
   }
   function eliminarPlato(i) {
     const acc = getCurrentAccount();
@@ -8215,6 +8240,7 @@
     if (webMode) {
       wrap.className = '';
       body.innerHTML = publicWebHtml(nombre, cd, paleta, itemsHtml, totalItems, total);
+      renderPubCartBar(totalItems, total, paleta.color1);
       return;
     }
     wrap.className = 'max-w-lg mx-auto px-5 py-10';
@@ -8247,19 +8273,8 @@
         <p id="pubPedError" class="text-xs text-rose-600 hidden mt-3"></p>
         ${temaActivo ? `<p class="text-center text-[11px] text-slate-300 mt-8">Carta digital creada con Restora</p>` : ''}
       </div>
-      ${totalItems > 0 ? `
-        <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg px-4 py-3 sm:px-6" style="z-index:40;">
-          ${publicEditandoPedidoId ? `<p class="max-w-lg mx-auto text-center text-[11px] text-slate-400 mb-1.5">Editando tu pedido · <button type="button" onclick="cancelarEdicionPedidoPublico()" class="underline hover:text-navy">Cancelar</button></p>` : ''}
-          <div class="max-w-lg mx-auto flex items-center gap-3">
-            <div class="min-w-0 shrink-0">
-              <p class="text-xs text-slate-400">${totalItems} ${totalItems === 1 ? 'plato' : 'platos'}</p>
-              <p class="text-base font-bold text-navy">${total.toFixed(2).replace('.', ',')}€</p>
-            </div>
-            <button type="button" onclick="enviarPedidoPublico()" id="pubPedBtn" class="flex-1 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-3">${publicEditandoPedidoId ? 'Guardar cambios' : 'Enviar pedido'}</button>
-          </div>
-        </div>
-      ` : ''}
     `;
+    renderPubCartBar(totalItems, total, null);
   }
   function publicWebHtml(nombre, cd, paleta, itemsHtml, totalItems, total) {
     const n = svgEsc(nombre);
@@ -8340,20 +8355,26 @@
         </div>
       </section>` : '';
     const footerHtml = `<footer class="pweb-footer">© ${new Date().getFullYear()} ${n} · Web creada con Restora</footer>`;
-    const cartBar = totalItems > 0 ? `
-      <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg px-4 py-3 sm:px-6" style="z-index:40;">
-        ${publicEditandoPedidoId ? `<p class="max-w-lg mx-auto text-center text-[11px] text-slate-400 mb-1.5">Editando tu pedido · <button type="button" onclick="cancelarEdicionPedidoPublico()" class="underline hover:text-navy">Cancelar</button></p>` : ''}
-        <div class="max-w-lg mx-auto flex items-center gap-3">
-          <div class="min-w-0 shrink-0">
-            <p class="text-xs text-slate-400">${totalItems} ${totalItems === 1 ? 'plato' : 'platos'}</p>
-            <p class="text-base font-bold text-navy">${total.toFixed(2).replace('.', ',')}€</p>
-          </div>
-          <button type="button" onclick="enviarPedidoPublico()" id="pubPedBtn" class="flex-1 rounded-full transition text-white text-sm font-semibold px-5 py-3" style="background:${paleta.color1};">${publicEditandoPedidoId ? 'Guardar cambios' : 'Enviar pedido'}</button>
-        </div>
-      </div>` : '';
     return `<div class="text-left" style="${totalItems > 0 ? 'padding-bottom:88px;' : ''}">
       ${heroHtml}${nosotrosHtml}${cartaHtml}${galeriaHtml}${horarioHtml}${contactoHtml}${footerHtml}
-    </div>${cartBar}`;
+    </div>`;
+  }
+  // Barra "Enviar pedido": vive fuera del contenido que se reemplaza en cada render, así se queda
+  // siempre pegada abajo de la pantalla sin depender de dónde haya scrolleado el cliente.
+  function renderPubCartBar(totalItems, total, colorBoton) {
+    const bar = document.getElementById('pubCartBar');
+    if (!bar) return;
+    if (!totalItems) { bar.classList.remove('show'); return; }
+    document.getElementById('pubCartBarInner').innerHTML = `
+      ${publicEditandoPedidoId ? `<p class="text-center text-[11px] text-slate-400 mb-1.5">Editando tu pedido · <button type="button" onclick="cancelarEdicionPedidoPublico()" class="underline hover:text-navy">Cancelar</button></p>` : ''}
+      <div class="flex items-center gap-3">
+        <div class="min-w-0 shrink-0">
+          <p class="text-xs text-slate-400">${totalItems} ${totalItems === 1 ? 'plato' : 'platos'}</p>
+          <p class="text-base font-bold text-navy">${total.toFixed(2).replace('.', ',')}€</p>
+        </div>
+        <button type="button" onclick="enviarPedidoPublico()" id="pubPedBtn" class="flex-1 rounded-full transition text-white text-sm font-semibold px-5 py-3" style="background:${colorBoton || '#0f2146'};">${publicEditandoPedidoId ? 'Guardar cambios' : 'Enviar pedido'}</button>
+      </div>`;
+    bar.classList.add('show');
   }
   // ---- Galería de fotos del plato (carta digital pública) ----
   let publicFotoPlatoIdx = null;
@@ -8488,15 +8509,93 @@
     else publicPedidoCarrito[idx] = nuevo;
     renderPublicMenuBody();
   }
+  // Punto de entrada real del botón "Enviar pedido": antes de mandar nada, intenta mostrar
+  // recomendaciones de la IA para subir el ticket medio. Si fallan o no hay ninguna, envía directo.
   async function enviarPedidoPublico() {
+    const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
+    const items = Object.keys(publicPedidoCarrito)
+      .map(idx => ({ nombre: menu[idx] && menu[idx].nombre, cantidad: publicPedidoCarrito[idx] }))
+      .filter(it => it.nombre && it.cantidad > 0);
+    if (!items.length) return;
+    await mostrarRecomendacionesPublico(items);
+  }
+  async function mostrarRecomendacionesPublico(itemsCarrito) {
     const btn = document.getElementById('pubPedBtn');
-    const errorEl = document.getElementById('pubPedError');
+    if (btn) { btn.disabled = true; btn.textContent = 'Un momento…'; }
+    let recomendaciones = [];
+    try {
+      const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
+      const disponibles = menu
+        .filter(m => m.estado === 'Disponible' && !itemsCarrito.some(it => it.nombre === m.nombre))
+        .map(m => ({ nombre: m.nombre, precio: m.precio, categoria: m.categoria, descripcion: m.descripcion }));
+      if (disponibles.length) {
+        const { data, error } = await supabaseClient.functions.invoke('recomendar-platos', {
+          body: { menu: disponibles, carrito: itemsCarrito },
+        });
+        if (!error && data && Array.isArray(data.recomendaciones)) recomendaciones = data.recomendaciones;
+      }
+    } catch (e) { recomendaciones = []; }
+    if (btn) { btn.disabled = false; btn.textContent = publicEditandoPedidoId ? 'Guardar cambios' : 'Enviar pedido'; }
+    if (!recomendaciones.length) { confirmarEnviarPedidoPublico(); return; }
+    renderRecomendacionesPublico(recomendaciones);
+    document.getElementById('pubRecoOverlay').classList.add('open');
+  }
+  const RECO_ICON_MAS = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>';
+  const RECO_ICON_CHISPA = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L20 9.5l-6.1 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.9L12 2z"/></svg>';
+  function renderRecomendacionesPublico(recomendaciones) {
+    const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
+    const cardHtml = (r) => {
+      const idx = menu.findIndex(m => m.nombre === r.nombre);
+      const m = menu[idx];
+      if (!m) return '';
+      const yaEnCarrito = (publicPedidoCarrito[idx] || 0) > 0;
+      return `<div class="reco-card" id="recoCard${idx}">
+        ${m.foto ? `<img src="${m.foto}" class="reco-card-img">` : `<div class="reco-card-img reco-card-img-vacia"></div>`}
+        <div class="reco-card-body">
+          <p class="text-sm font-semibold text-navy">${svgEsc(m.nombre)}</p>
+          <p class="text-xs text-slate-400 mt-0.5">${svgEsc(r.motivo || '')}</p>
+          <div class="flex items-center justify-between mt-2">
+            <span class="text-sm font-bold text-navy">${svgEsc(m.precio)}</span>
+            <button type="button" onclick="publicRecoAnadir(${idx})" id="recoBtn${idx}" class="reco-add-btn ${yaEnCarrito ? 'added' : ''}">${yaEnCarrito ? '✓ Añadido' : RECO_ICON_MAS + ' Añadir'}</button>
+          </div>
+        </div>
+      </div>`;
+    };
+    document.getElementById('pubRecoBody').innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="w-8 h-8 rounded-full bg-accent/10 text-accent flex items-center justify-center shrink-0">${RECO_ICON_CHISPA}</span>
+        <div>
+          <h3 class="text-base font-bold text-navy leading-tight">¿Completamos tu pedido?</h3>
+          <p class="text-xs text-slate-400">Esto combina perfecto con lo que has pedido</p>
+        </div>
+      </div>
+      <div class="mt-4 space-y-2.5">${recomendaciones.map(cardHtml).join('')}</div>
+      <button type="button" onclick="cerrarRecomendacionesPublico(true)" id="pubRecoBtnFinal" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-3">Enviar pedido</button>
+      <button type="button" onclick="cerrarRecomendacionesPublico(false)" class="mt-2 w-full text-center text-xs text-slate-400 hover:text-slate-600 transition py-1">No gracias, con esto ya está bien</button>
+    `;
+  }
+  function publicRecoAnadir(idx) {
+    publicPedidoCarrito[idx] = (publicPedidoCarrito[idx] || 0) + 1;
+    const btn = document.getElementById('recoBtn' + idx);
+    if (btn) { btn.textContent = '✓ Añadido'; btn.classList.add('added'); }
+  }
+  function cerrarRecomendacionesPublico(enviar) {
+    document.getElementById('pubRecoOverlay').classList.remove('open');
+    if (enviar) confirmarEnviarPedidoPublico();
+    else renderPublicMenuBody();
+  }
+  async function confirmarEnviarPedidoPublico() {
     const editando = !!publicEditandoPedidoId;
     const menu = Array.isArray(publicMenuData.menu) ? publicMenuData.menu : [];
     const items = Object.keys(publicPedidoCarrito)
       .map(idx => ({ nombre: menu[idx] && menu[idx].nombre, cantidad: publicPedidoCarrito[idx], nota: (publicPedidoCarritoNotas[idx] || '').trim() }))
       .filter(it => it.nombre && it.cantidad > 0);
     if (!items.length) return;
+    // Vuelve a pintar el carrito por si se han añadido recomendaciones mientras el modal estaba abierto,
+    // y solo entonces coge las referencias al botón/error (si no, apuntarían a elementos ya reemplazados).
+    renderPublicMenuBody();
+    const btn = document.getElementById('pubPedBtn');
+    const errorEl = document.getElementById('pubPedError');
     if (btn) { btn.disabled = true; btn.textContent = editando ? 'Guardando…' : 'Enviando…'; }
     const notaGeneral = (publicPedidoNotaGeneral || '').trim();
     try {
@@ -8539,6 +8638,8 @@
   }
   function mostrarConfirmacionPedidoPublico(esEdicion) {
     const puedeEditar = !!(publicUltimoPedido && publicUltimoPedido.id);
+    const bar = document.getElementById('pubCartBar');
+    if (bar) bar.classList.remove('show');
     document.getElementById('publicMenuBody').innerHTML = `
       <div class="text-center py-16 px-6 max-w-lg mx-auto">
         <div class="w-11 h-11 rounded-full bg-accent/10 text-accent flex items-center justify-center mb-4 mx-auto">
