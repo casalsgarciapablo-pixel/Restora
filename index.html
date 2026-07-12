@@ -6785,7 +6785,7 @@
     if (otros.indices.length) grupos.push(otros);
     return grupos;
   }
-  const FRANJA_MENU_LABEL = { mediodia: '☀️ Mediodía', noche: '🌙 Noche', todo_el_dia: 'Todo el día' };
+  const FRANJA_MENU_LABEL = { mediodia: 'Mediodía', noche: 'Noche', todo_el_dia: 'Todo el día' };
   const FRANJA_MENU_DIA_CORTO = { lunes: 'L', martes: 'M', miercoles: 'X', jueves: 'J', viernes: 'V', sabado: 'S', domingo: 'D' };
   function resumenFranjaDiasMenu(m) {
     const franja = FRANJA_MENU_LABEL[m.franja] || 'Todo el día';
@@ -6808,7 +6808,7 @@
   }
   function menuPlatoRowHtml(m, i, esPrimero, esUltimo) {
     const foto = m.foto ? `<img src="${m.foto}" class="w-11 h-11 rounded-lg object-cover shrink-0">` : (m.esMenu
-      ? `<div class="w-11 h-11 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 text-accent text-lg">🍽️</div>`
+      ? `<div class="w-11 h-11 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-slate-300"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10"/></svg></div>`
       : `<div class="w-11 h-11 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-slate-300"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 016.5 3H12v18H6.5A2.5 2.5 0 014 18.5v-13zM20 5.5A2.5 2.5 0 0017.5 3H12v18h5.5a2.5 2.5 0 002.5-2.5v-13z"/></svg></div>`);
     const agotado = m.estado !== 'Disponible';
     const descripcionLinea = m.esMenu
@@ -6841,18 +6841,15 @@
         <p class="text-sm text-slate-500 mt-1.5">Así preparamos tu Carta a tu medida. Podrás cambiarlo cuando quieras.</p>
         <div class="grid sm:grid-cols-3 gap-3 mt-6 text-left">
           <button type="button" onclick="elegirOfertaTipo('carta')" class="rounded-xl border border-slate-200 hover:border-accent hover:bg-accent/5 transition p-4">
-            <p class="text-2xl">📋</p>
-            <p class="text-sm font-semibold text-navy mt-2">Carta a la carta</p>
+            <p class="text-sm font-semibold text-navy">Carta a la carta</p>
             <p class="text-xs text-slate-400 mt-1">Platos sueltos, cada uno con su propio precio.</p>
           </button>
           <button type="button" onclick="elegirOfertaTipo('menu')" class="rounded-xl border border-slate-200 hover:border-accent hover:bg-accent/5 transition p-4">
-            <p class="text-2xl">🍽️</p>
-            <p class="text-sm font-semibold text-navy mt-2">Menú de precio fijo</p>
+            <p class="text-sm font-semibold text-navy">Menú de precio fijo</p>
             <p class="text-xs text-slate-400 mt-1">Ej. menú del día: primero + segundo + postre por un precio único.</p>
           </button>
           <button type="button" onclick="elegirOfertaTipo('ambos')" class="rounded-xl border border-slate-200 hover:border-accent hover:bg-accent/5 transition p-4">
-            <p class="text-2xl">📋 + 🍽️</p>
-            <p class="text-sm font-semibold text-navy mt-2">Los dos</p>
+            <p class="text-sm font-semibold text-navy">Los dos</p>
             <p class="text-xs text-slate-400 mt-1">Carta a la carta y menús de precio fijo.</p>
           </button>
         </div>
@@ -6886,17 +6883,17 @@
     const tabActiva = tipo === 'ambos' ? cartaTabActiva : tipo;
     const tabsHtml = tipo === 'ambos' ? `
       <div class="flex gap-1.5">
-        <button type="button" onclick="cartaTabActiva='carta'; renderMenu();" class="cd-tab ${tabActiva === 'carta' ? 'sel' : ''}">📋 Carta</button>
-        <button type="button" onclick="cartaTabActiva='menu'; renderMenu();" class="cd-tab ${tabActiva === 'menu' ? 'sel' : ''}">🍽️ Menú</button>
+        <button type="button" onclick="cartaTabActiva='carta'; renderMenu();" class="cd-tab ${tabActiva === 'carta' ? 'sel' : ''}">Carta</button>
+        <button type="button" onclick="cartaTabActiva='menu'; renderMenu();" class="cd-tab ${tabActiva === 'menu' ? 'sel' : ''}">Menú</button>
       </div>` : '';
     const toolbarCarta = `
       <button onclick="abrirAnadirPlato()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir plato</button>
       <button onclick="anadirSeccionMenu()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">+ Sección</button>
-      <button onclick="abrirPromociones()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">🏷️ Promociones</button>
-      <button onclick="abrirMasOpcionesCarta()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">⚙️ Más</button>`;
+      <button onclick="abrirPromociones()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Promociones</button>
+      <button onclick="abrirMasOpcionesCarta()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Más</button>`;
     const toolbarMenu = `
       <button onclick="abrirAnadirMenuFijo()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir menú</button>
-      <button onclick="abrirMasOpcionesMenu()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">⚙️ Más</button>`;
+      <button onclick="abrirMasOpcionesMenu()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Más</button>`;
     wrap.innerHTML = `
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div class="flex items-center gap-3">
@@ -6917,10 +6914,10 @@
     document.getElementById('modalBody').innerHTML = `
       <h3 class="text-xl font-bold text-navy">Más opciones de la carta</h3>
       <div class="mt-4 space-y-2">
-        <button type="button" onclick="openModal('upload-menu')" class="w-full text-left rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-3 text-sm font-medium text-navy">📸 Subir foto de la carta</button>
-        <button type="button" onclick="openModal('paste-menu')" class="w-full text-left rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-3 text-sm font-medium text-navy">📋 Pegar carta</button>
-        <button type="button" onclick="closeModal(); confirmarEliminarTodasSecciones();" class="w-full text-left rounded-lg border border-slate-200 hover:border-rose-300 hover:bg-rose-50 transition px-4 py-3 text-sm font-medium text-rose-600">🗑️ Borrar todas las secciones</button>
-        <button type="button" onclick="closeModal(); confirmarEliminarTodosPlatosCarta();" class="w-full text-left rounded-lg border border-slate-200 hover:border-rose-300 hover:bg-rose-50 transition px-4 py-3 text-sm font-medium text-rose-600">🗑️ Borrar todos los platos</button>
+        <button type="button" onclick="openModal('upload-menu')" class="w-full text-left rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-3 text-sm font-medium text-navy">Subir foto de la carta</button>
+        <button type="button" onclick="openModal('paste-menu')" class="w-full text-left rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-3 text-sm font-medium text-navy">Pegar carta</button>
+        <button type="button" onclick="closeModal(); confirmarEliminarTodasSecciones();" class="w-full text-left rounded-lg border border-slate-200 hover:border-rose-300 hover:bg-rose-50 transition px-4 py-3 text-sm font-medium text-rose-600">Borrar todas las secciones</button>
+        <button type="button" onclick="closeModal(); confirmarEliminarTodosPlatosCarta();" class="w-full text-left rounded-lg border border-slate-200 hover:border-rose-300 hover:bg-rose-50 transition px-4 py-3 text-sm font-medium text-rose-600">Borrar todos los platos</button>
       </div>
       <button type="button" onclick="closeModal()" class="mt-4 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>`;
     document.getElementById('modalOverlay').classList.add('open');
@@ -6930,8 +6927,8 @@
     document.getElementById('modalBody').innerHTML = `
       <h3 class="text-xl font-bold text-navy">Más opciones de menús</h3>
       <div class="mt-4 space-y-2">
-        <button type="button" onclick="openModal('upload-menu-fijo')" class="w-full text-left rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-3 text-sm font-medium text-navy">📸 Subir foto del menú</button>
-        <button type="button" onclick="closeModal(); confirmarEliminarTodosMenus();" class="w-full text-left rounded-lg border border-slate-200 hover:border-rose-300 hover:bg-rose-50 transition px-4 py-3 text-sm font-medium text-rose-600">🗑️ Borrar todos los menús</button>
+        <button type="button" onclick="openModal('upload-menu-fijo')" class="w-full text-left rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-3 text-sm font-medium text-navy">Subir foto del menú</button>
+        <button type="button" onclick="closeModal(); confirmarEliminarTodosMenus();" class="w-full text-left rounded-lg border border-slate-200 hover:border-rose-300 hover:bg-rose-50 transition px-4 py-3 text-sm font-medium text-rose-600">Borrar todos los menús</button>
       </div>
       <button type="button" onclick="closeModal()" class="mt-4 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>`;
     document.getElementById('modalOverlay').classList.add('open');
@@ -7189,7 +7186,7 @@
       ${platoFormFieldsHtml(acc, m)}
       <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
       <button type="button" onclick="submitPlato(${i})" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar cambios</button>
-      <button type="button" onclick="eliminarPlato(${i})" class="mt-2.5 w-full rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-sm font-semibold px-5 py-2.5">🗑️ Eliminar plato</button>`;
+      <button type="button" onclick="eliminarPlato(${i})" class="mt-2.5 w-full rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-sm font-semibold px-5 py-2.5">Eliminar plato</button>`;
     document.getElementById('modalOverlay').classList.add('open');
   }
   function submitPlato(i) {
@@ -7279,9 +7276,9 @@
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">¿Cuándo se ofrece?</label>
       <input type="hidden" id="menuFijoFranja" value="${franja}">
       <div class="grid grid-cols-3 gap-2">
-        ${franjaOpt('mediodia', '☀️ Mediodía')}
-        ${franjaOpt('noche', '🌙 Noche')}
-        ${franjaOpt('todo_el_dia', '⏱️ Todo el día')}
+        ${franjaOpt('mediodia', 'Mediodía')}
+        ${franjaOpt('noche', 'Noche')}
+        ${franjaOpt('todo_el_dia', 'Todo el día')}
       </div>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Días de la semana</label>
       <div class="flex flex-wrap gap-1.5">
@@ -7318,7 +7315,7 @@
       ${menuFijoFormFieldsHtml(acc, m)}
       <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
       <button type="button" onclick="submitMenuFijo(${i})" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar cambios</button>
-      <button type="button" onclick="eliminarPlato(${i})" class="mt-2.5 w-full rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-sm font-semibold px-5 py-2.5">🗑️ Eliminar menú</button>`;
+      <button type="button" onclick="eliminarPlato(${i})" class="mt-2.5 w-full rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-sm font-semibold px-5 py-2.5">Eliminar menú</button>`;
     document.getElementById('modalOverlay').classList.add('open');
   }
   function submitMenuFijo(i) {
@@ -11039,8 +11036,8 @@
     "Subir foto de la carta": ["Puja una foto de la carta", "Upload menu photo"],
     "Pegar carta": ["Enganxa la carta", "Paste menu"],
     "Carta del restaurante": ["Carta del restaurant", "Restaurant menu"],
-    "🗑️ Borrar todos los platos": ["🗑️ Esborra tots els plats", "🗑️ Delete all dishes"],
-    "🗑️ Borrar todas las secciones": ["🗑️ Esborra totes les seccions", "🗑️ Delete all sections"],
+    "Borrar todos los platos": ["Esborra tots els plats", "Delete all dishes"],
+    "Borrar todas las secciones": ["Esborra totes les seccions", "Delete all sections"],
     "Personas": ["Persones", "Guests"],
     "Estado": ["Estat", "Status"],
     "Plato": ["Plat", "Dish"],
