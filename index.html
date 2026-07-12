@@ -1895,14 +1895,14 @@
           </div>
         </div>
         <div class="flex gap-2 flex-wrap">
-          <button onclick="openModal('excel-inventario')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">📊 Conectar Excel</button>
+          <button onclick="openModal('excel-inventario')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Conectar Excel</button>
           <button onclick="openModal('add-inventario')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir ingrediente</button>
         </div>
       </div>
       <div id="invAvisos" class="mt-4"></div>
       <div class="mt-4 flex gap-2">
-        <button id="invTabPlatos" onclick="setInvVista('platos')" class="rounded-full text-xs font-semibold px-4 py-2 transition bg-navydeep text-white">🍽️ Platos</button>
-        <button id="invTabIngredientes" onclick="setInvVista('ingredientes')" class="rounded-full text-xs font-semibold px-4 py-2 transition bg-slate-100 text-slate-500 hover:bg-slate-200">🥕 Ingredientes</button>
+        <button id="invTabPlatos" onclick="setInvVista('platos')" class="rounded-full text-xs font-semibold px-4 py-2 transition bg-navydeep text-white">Platos</button>
+        <button id="invTabIngredientes" onclick="setInvVista('ingredientes')" class="rounded-full text-xs font-semibold px-4 py-2 transition bg-slate-100 text-slate-500 hover:bg-slate-200">Ingredientes</button>
       </div>
       <div id="inventarioContenido" class="mt-4"></div>
     </section>
@@ -7989,7 +7989,7 @@
     if (avisos) {
       const bajos = acc.data.inventario.filter(p => inventarioEstado(p.stock, p.minimo).label === 'Bajo');
       avisos.innerHTML = bajos.length
-        ? `<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600 font-medium">⚠️ ${bajos.length === 1 ? '1 ingrediente está por debajo del mínimo' : bajos.length + ' ingredientes están por debajo del mínimo'}: ${bajos.map(p => p.producto).join(', ')}. Pide más antes del próximo servicio.</div>`
+        ? `<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600 font-medium">${bajos.length === 1 ? '1 ingrediente está por debajo del mínimo' : bajos.length + ' ingredientes están por debajo del mínimo'}: ${bajos.map(p => p.producto).join(', ')}. Pide más antes del próximo servicio.</div>`
         : '';
     }
     if (invVista === 'ingredientes') return renderInvIngredientes(acc, cont);
@@ -8046,7 +8046,7 @@
       cuerpo = `<div class="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
         <p class="text-sm font-semibold text-navy">Este plato aún no tiene receta</p>
         <p class="text-xs text-slate-400 mt-1">Asigna ingredientes y cantidades por ración para descontar stock automáticamente con cada pedido listo.</p>
-        <button onclick="abrirEditarReceta(${i})" class="mt-4 rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">✏️ Crear receta</button>
+        <button onclick="abrirEditarReceta(${i})" class="mt-4 rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">Crear receta</button>
       </div>`;
     } else {
       const filas = receta.map(r => {
@@ -8072,7 +8072,7 @@
         <button onclick="setInvVista('platos')" class="text-sm font-semibold text-slate-500 hover:text-navy transition">← Volver a platos</button>
         <div class="flex items-center gap-3">
           ${rac != null ? `<span class="text-xs text-slate-400">Raciones posibles: <b class="text-navy">${rac}</b></span>` : ''}
-          ${receta.length ? `<button onclick="abrirEditarReceta(${i})" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">✏️ Editar receta</button>` : ''}
+          ${receta.length ? `<button onclick="abrirEditarReceta(${i})" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Editar receta</button>` : ''}
         </div>
       </div>
       <p class="text-base font-bold text-navy mb-3">${m.nombre}</p>
@@ -11163,18 +11163,17 @@
     "Mañana": ["Matí", "Morning"],
     "Tarde": ["Tarda", "Afternoon"],
     // SaaS: inventario con recetas
-    "📊 Conectar Excel": ["📊 Connecta amb Excel", "📊 Connect Excel"],
+    "Conectar Excel": ["Connecta amb Excel", "Connect Excel"],
     "+ Añadir ingrediente": ["+ Afegeix ingredient", "+ Add ingredient"],
-    "🍽️ Platos": ["🍽️ Plats", "🍽️ Dishes"],
-    "🥕 Ingredientes": ["🥕 Ingredients", "🥕 Ingredients"],
-    "Ingrediente": ["Ingredient", "Ingredient"],
+    "Platos": ["Plats", "Dishes"],
     "Ingredientes": ["Ingredients", "Ingredients"],
+    "Ingrediente": ["Ingredient", "Ingredient"],
     "Unidad": ["Unitat", "Unit"],
     "Raciones posibles": ["Racions possibles", "Possible servings"],
     "Sin receta": ["Sense recepta", "No recipe"],
     "Sin stock": ["Sense estoc", "Out of stock"],
-    "✏️ Editar receta": ["✏️ Edita la recepta", "✏️ Edit recipe"],
-    "✏️ Crear receta": ["✏️ Crea la recepta", "✏️ Create recipe"],
+    "Editar receta": ["Edita la recepta", "Edit recipe"],
+    "Crear receta": ["Crea la recepta", "Create recipe"],
     "← Volver a platos": ["← Torna a plats", "← Back to dishes"],
     "Por ración": ["Per ració", "Per serving"],
     "En stock": ["En estoc", "In stock"],
