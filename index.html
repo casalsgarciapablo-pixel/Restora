@@ -2354,6 +2354,7 @@
       'add-pedido': addPedidoFormHtml,
       'paste-menu': pasteMenuFormHtml,
       'upload-menu': uploadMenuFormHtml,
+      'upload-menu-fijo': uploadMenuFijoFormHtml,
       'add-personal': addPersonalFormHtml,
       'add-inventario': addInventarioFormHtml,
       'excel-inventario': excelInventarioFormHtml,
@@ -6908,6 +6909,7 @@
     document.getElementById('modalBody').innerHTML = `
       <h3 class="text-xl font-bold text-navy">Más opciones de menús</h3>
       <div class="mt-4 space-y-2">
+        <button type="button" onclick="openModal('upload-menu-fijo')" class="w-full text-left rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-3 text-sm font-medium text-navy">📸 Subir foto del menú</button>
         <button type="button" onclick="closeModal(); confirmarEliminarTodosMenus();" class="w-full text-left rounded-lg border border-slate-200 hover:border-rose-300 hover:bg-rose-50 transition px-4 py-3 text-sm font-medium text-rose-600">🗑️ Borrar todos los menús</button>
       </div>
       <button type="button" onclick="closeModal()" class="mt-4 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>`;
@@ -7305,6 +7307,67 @@
     renderCartaDigitalPreview();
     closeModal();
     showToast(i === -1 ? 'Menú añadido' : 'Menú actualizado');
+  }
+  function uploadMenuFijoFormHtml() {
+    return `
+      <h3 class="text-xl font-bold text-navy">Subir foto del menú</h3>
+      <p class="mt-1.5 text-sm text-slate-500">Sube una foto de tu menú de precio fijo (ej. menú del día) y la IA detectará los platos y los agrupará por sección (primeros, segundos, postres…). Después revisas los grupos, pones el nombre y el precio único, y guardas.</p>
+      <input id="menuFijoUploadFoto" type="file" accept="image/*" class="mt-3 w-full text-sm text-slate-500">
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" id="menuFijoUploadBtn" onclick="submitUploadMenuFijo()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Transcribir con IA</button>
+    `;
+  }
+  function submitUploadMenuFijo() {
+    const fileInput = document.getElementById('menuFijoUploadFoto');
+    const file = fileInput.files[0];
+    if (!file) return modalFormError('Selecciona una foto del menú.');
+    const btn = document.getElementById('menuFijoUploadBtn');
+    btn.disabled = true;
+    btn.textContent = 'Leyendo el menú…';
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const { data, error } = await supabaseClient.functions.invoke('menu-ocr', { body: { image: reader.result } });
+        if (error || !data || data.error) {
+          modalFormError((data && data.error) || (error && error.message) || 'No se ha podido leer el menú. Inténtalo de nuevo.');
+          btn.disabled = false;
+          btn.textContent = 'Transcribir con IA';
+          return;
+        }
+        const items = Array.isArray(data.items) ? data.items : [];
+        if (!items.length) {
+          modalFormError('No se ha reconocido ningún plato en la imagen.');
+          btn.disabled = false;
+          btn.textContent = 'Transcribir con IA';
+          return;
+        }
+        // Agrupa los platos detectados por su sección (primeros, segundos, postres…); los que no
+        // tengan sección van a un grupo genérico "Platos" que el usuario puede renombrar.
+        const gruposMap = {};
+        const ordenGrupos = [];
+        items.forEach(it => {
+          const secc = (it.seccion || it.categoria || '').trim() || 'Platos';
+          if (!gruposMap[secc]) { gruposMap[secc] = []; ordenGrupos.push(secc); }
+          if (it.nombre) gruposMap[secc].push(String(it.nombre).trim());
+        });
+        menuFijoGruposEdicion = ordenGrupos.map(nombre => ({ nombre, min: 1, max: 1, opcionesTexto: gruposMap[nombre].join('\n') }));
+        menuFijoEditandoIdx = -1;
+        const acc = getCurrentAccount();
+        document.getElementById('modalCard').classList.add('modal-wide');
+        document.getElementById('modalBody').innerHTML = `
+          <h3 class="text-xl font-bold text-navy">Revisa tu menú</h3>
+          <p class="mt-1.5 text-sm text-slate-500">La IA ha detectado ${items.length} plato${items.length === 1 ? '' : 's'} agrupados por sección. Revisa los grupos, pon el nombre y el precio único del menú, y guarda.</p>
+          ${menuFijoFormFieldsHtml(acc, null)}
+          <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+          <button type="button" onclick="submitMenuFijo(-1)" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar menú</button>`;
+        document.getElementById('modalOverlay').classList.add('open');
+      } catch (e) {
+        modalFormError('Error de red al leer el menú.');
+        btn.disabled = false;
+        btn.textContent = 'Transcribir con IA';
+      }
+    };
+    reader.readAsDataURL(file);
   }
   function confirmarEliminarTodosPlatosCarta() {
     const acc = getCurrentAccount();
