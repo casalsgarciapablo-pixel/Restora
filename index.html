@@ -6785,13 +6785,34 @@
     if (otros.indices.length) grupos.push(otros);
     return grupos;
   }
+  const FRANJA_MENU_LABEL = { mediodia: '☀️ Mediodía', noche: '🌙 Noche', todo_el_dia: 'Todo el día' };
+  const FRANJA_MENU_DIA_CORTO = { lunes: 'L', martes: 'M', miercoles: 'X', jueves: 'J', viernes: 'V', sabado: 'S', domingo: 'D' };
+  function resumenFranjaDiasMenu(m) {
+    const franja = FRANJA_MENU_LABEL[m.franja] || 'Todo el día';
+    const dias = Array.isArray(m.dias) && m.dias.length ? m.dias : MENU_FIJO_DIAS_DEFECTO;
+    const diasTxt = dias.length === 7 ? 'todos los días' : dias.map(d => FRANJA_MENU_DIA_CORTO[d] || '').join('');
+    return franja + ' · ' + diasTxt;
+  }
+  // ¿Toca mostrar este menú de precio fijo ahora mismo? Se comprueba con la hora/día del navegador
+  // del cliente en cada carga de la carta digital, así se actualiza sola sin que nadie la toque.
+  function menuFijoVisibleAhora(m) {
+    const ahora = new Date();
+    const dias = Array.isArray(m.dias) && m.dias.length ? m.dias : MENU_FIJO_DIAS_DEFECTO;
+    if (!dias.includes(DIA_JS_A_KEY[ahora.getDay()])) return false;
+    const franja = m.franja || 'todo_el_dia';
+    if (franja === 'todo_el_dia') return true;
+    const hora = ahora.getHours();
+    if (franja === 'mediodia') return hora < 17;
+    if (franja === 'noche') return hora >= 17;
+    return true;
+  }
   function menuPlatoRowHtml(m, i, esPrimero, esUltimo) {
     const foto = m.foto ? `<img src="${m.foto}" class="w-11 h-11 rounded-lg object-cover shrink-0">` : (m.esMenu
       ? `<div class="w-11 h-11 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 text-accent text-lg">🍽️</div>`
       : `<div class="w-11 h-11 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-slate-300"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 016.5 3H12v18H6.5A2.5 2.5 0 014 18.5v-13zM20 5.5A2.5 2.5 0 0017.5 3H12v18h5.5a2.5 2.5 0 002.5-2.5v-13z"/></svg></div>`);
     const agotado = m.estado !== 'Disponible';
     const descripcionLinea = m.esMenu
-      ? `<p class="text-xs text-slate-400 mt-0.5 truncate">${(m.grupos || []).length} grupo${(m.grupos || []).length === 1 ? '' : 's'} a elegir</p>`
+      ? `<p class="text-xs text-slate-400 mt-0.5 truncate">${(m.grupos || []).length} grupo${(m.grupos || []).length === 1 ? '' : 's'} a elegir · ${resumenFranjaDiasMenu(m)}</p>`
       : (m.descripcion ? `<p class="text-xs text-slate-400 mt-0.5 truncate">${svgEsc(m.descripcion)}</p>` : '');
     return `<div class="menu-plato" onclick="${m.esMenu ? 'abrirEditarMenuFijo' : 'abrirEditarPlato'}(${i})">
       <div class="flex flex-col gap-0.5 shrink-0" onclick="event.stopPropagation();">
@@ -7240,8 +7261,12 @@
     const wrap = document.getElementById('menuFijoGruposWrap');
     if (wrap) wrap.innerHTML = menuFijoGruposHtml();
   }
+  const MENU_FIJO_DIAS_DEFECTO = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
   function menuFijoFormFieldsHtml(acc, m) {
-    m = m || { nombre: '', precio: '', descripcion: '', categoria: '', estado: 'Disponible' };
+    m = m || { nombre: '', precio: '', descripcion: '', categoria: '', estado: 'Disponible', franja: 'todo_el_dia', dias: MENU_FIJO_DIAS_DEFECTO };
+    const franja = m.franja || 'todo_el_dia';
+    const dias = Array.isArray(m.dias) && m.dias.length ? m.dias : MENU_FIJO_DIAS_DEFECTO;
+    const franjaOpt = (val, label) => `<button type="button" onclick="document.getElementById('menuFijoFranja').value='${val}'; document.querySelectorAll('.menuFijoFranjaBtn').forEach(b=>b.classList.remove('sel')); event.currentTarget.classList.add('sel');" class="menuFijoFranjaBtn wiz-pal ${franja === val ? 'sel' : ''}" style="padding:9px 10px;"><span class="text-sm text-navy">${label}</span></button>`;
     return `
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Nombre del menú</label>
       <input id="menuFijoNombre" type="text" placeholder="Menú del día" value="${escAttr(m.nombre)}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
@@ -7251,6 +7276,18 @@
       </div>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Descripción (opcional)</label>
       <textarea id="menuFijoDescripcion" rows="2" placeholder="Incluye pan y bebida" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(m.descripcion || '')}</textarea>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">¿Cuándo se ofrece?</label>
+      <input type="hidden" id="menuFijoFranja" value="${franja}">
+      <div class="grid grid-cols-3 gap-2">
+        ${franjaOpt('mediodia', '☀️ Mediodía')}
+        ${franjaOpt('noche', '🌙 Noche')}
+        ${franjaOpt('todo_el_dia', '⏱️ Todo el día')}
+      </div>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Días de la semana</label>
+      <div class="flex flex-wrap gap-1.5">
+        ${DIAS_SEMANA.map(d => `<label class="flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1.5 cursor-pointer"><input type="checkbox" class="menuFijoDiaChk" value="${d.key}" ${dias.includes(d.key) ? 'checked' : ''}><span class="text-xs text-navy">${d.label.slice(0, 3)}</span></label>`).join('')}
+      </div>
+      <p class="mt-1.5 text-xs text-slate-400">La carta digital solo mostrará este menú en ese horario y esos días — se actualiza sola.</p>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-5">Grupos a elegir</label>
       <p class="text-xs text-slate-400 mb-1.5">Ej. "Primero" (elige 1 de 3), "Segundo" (elige entre 1 y 2 de 4), "Postre o café" (elige 1 de 2).</p>
       <div id="menuFijoGruposWrap">${menuFijoGruposHtml()}</div>
@@ -7290,6 +7327,10 @@
     const precio = document.getElementById('menuFijoPrecio').value.trim();
     const estado = document.getElementById('menuFijoEstado').value;
     const descripcion = document.getElementById('menuFijoDescripcion').value.trim();
+    const franjaEl = document.getElementById('menuFijoFranja');
+    const franja = (franjaEl && ['mediodia', 'noche', 'todo_el_dia'].includes(franjaEl.value)) ? franjaEl.value : 'todo_el_dia';
+    let dias = Array.from(document.querySelectorAll('.menuFijoDiaChk:checked')).map(el => el.value);
+    if (!dias.length) dias = MENU_FIJO_DIAS_DEFECTO.slice();
     if (!nombre || !precio) return modalFormError('Escribe al menos el nombre y el precio del menú.');
     const grupos = menuFijoGruposEdicion
       .map(g => ({
@@ -7301,10 +7342,10 @@
       .filter(g => g.nombre && g.opciones.length);
     if (!grupos.length) return modalFormError('Añade al menos un grupo con nombre y opciones.');
     if (i === -1) {
-      acc.data.menu.push({ nombre, precio, estado, categoria: '', descripcion, costo: '', foto: '', esMenu: true, grupos });
+      acc.data.menu.push({ nombre, precio, estado, categoria: '', descripcion, costo: '', foto: '', esMenu: true, franja, dias, grupos });
     } else {
       const m = acc.data.menu[i];
-      Object.assign(m, { nombre, precio, estado, categoria: '', descripcion, esMenu: true, grupos });
+      Object.assign(m, { nombre, precio, estado, categoria: '', descripcion, esMenu: true, franja, dias, grupos });
     }
     menuFijoGruposEdicion = [];
     saveCurrentAccountData(acc.data);
@@ -9129,7 +9170,10 @@
     menu.forEach(m => { const c = m.categoria || ''; if (c && ordenSecc.indexOf(c) === -1) ordenSecc.push(c); });
     const grupos = ordenSecc.map(nombre => ({ nombre, indices: [] }));
     const otrosPub = { nombre: '', indices: [] };
-    menu.forEach((m, i) => { const c = m.categoria || ''; const g = c ? grupos.find(x => x.nombre === c) : null; (g || otrosPub).indices.push(i); });
+    menu.forEach((m, i) => {
+      if (m.esMenu && !menuFijoVisibleAhora(m)) return;
+      const c = m.categoria || ''; const g = c ? grupos.find(x => x.nombre === c) : null; (g || otrosPub).indices.push(i);
+    });
     if (otrosPub.indices.length) grupos.push(otrosPub);
     const gruposConPlatos = grupos.filter(g => g.indices.length);
     const catHeader = (nombre) => temaActivo
