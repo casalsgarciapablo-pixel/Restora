@@ -6772,10 +6772,11 @@
 
   // ---- Menú ----
   // Agrupa los platos por sección (en el orden de menuSecciones) + un grupo final "Sin sección"
-  function gruposMenu(acc) {
+  function gruposMenu(acc, filtro) {
     const grupos = acc.data.menuSecciones.map(nombre => ({ nombre, esOtros: false, indices: [] }));
     const otros = { nombre: 'Sin sección', esOtros: true, indices: [] };
     acc.data.menu.forEach((m, i) => {
+      if (filtro && !filtro(m)) return;
       const cat = m.categoria || '';
       const g = cat ? grupos.find(x => x.nombre === cat) : null;
       (g || otros).indices.push(i);
@@ -6847,6 +6848,9 @@
     if (!wrap) return;
     wrap.innerHTML = ofertaTipoChooserHtml() + `<p class="text-center mt-3"><button type="button" onclick="renderMenu()" class="text-xs text-slate-400 hover:text-navy hover:underline">Cancelar</button></p>`;
   }
+  // Cuando se ofrecen los dos tipos, la Carta y el Menú se separan en pestañas — cada una con solo
+  // sus propios botones (nada de "+ Añadir menú" mientras se ve la Carta, y viceversa).
+  let cartaTabActiva = 'carta';
   function renderMenuHeader() {
     const acc = getCurrentAccount();
     const wrap = document.getElementById('menuHeaderWrap');
@@ -6857,13 +6861,22 @@
       wrap.innerHTML = `<div class="flex items-center gap-3">${iconoCarta}<div><p class="text-sm font-semibold text-navy">Carta del restaurante</p><p class="text-xs text-slate-400 mt-1">Primero, cuéntanos qué ofrecéis.</p></div></div>`;
       return;
     }
-    const mostrarCarta = tipo === 'carta' || tipo === 'ambos';
-    const mostrarMenu = tipo === 'menu' || tipo === 'ambos';
-    const menuBtnClass = mostrarCarta
-      ? 'rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2'
-      : 'rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2';
+    const tabActiva = tipo === 'ambos' ? cartaTabActiva : tipo;
+    const tabsHtml = tipo === 'ambos' ? `
+      <div class="flex gap-1.5">
+        <button type="button" onclick="cartaTabActiva='carta'; renderMenu();" class="cd-tab ${tabActiva === 'carta' ? 'sel' : ''}">📋 Carta</button>
+        <button type="button" onclick="cartaTabActiva='menu'; renderMenu();" class="cd-tab ${tabActiva === 'menu' ? 'sel' : ''}">🍽️ Menú</button>
+      </div>` : '';
+    const toolbarCarta = `
+      <button onclick="abrirAnadirPlato()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir plato</button>
+      <button onclick="anadirSeccionMenu()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">+ Sección</button>
+      <button onclick="abrirPromociones()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">🏷️ Promociones</button>
+      <button onclick="abrirMasOpcionesCarta()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">⚙️ Más</button>`;
+    const toolbarMenu = `
+      <button onclick="abrirAnadirMenuFijo()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir menú</button>
+      <button onclick="abrirMasOpcionesMenu()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">⚙️ Más</button>`;
     wrap.innerHTML = `
-      <div class="flex items-center justify-between flex-wrap gap-2">
+      <div class="flex items-center justify-between flex-wrap gap-3">
         <div class="flex items-center gap-3">
           ${iconoCarta}
           <div>
@@ -6871,17 +6884,34 @@
             <p class="text-xs text-slate-400 mt-1">Gestiona tus platos y precios. <button type="button" onclick="abrirElegirOfertaTipo()" class="text-accent hover:underline font-medium">Cambiar qué ofreces</button></p>
           </div>
         </div>
-        <div class="flex gap-2 flex-wrap">
-          ${mostrarCarta ? `<button onclick="openModal('upload-menu')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Subir foto de la carta</button>` : ''}
-          ${mostrarCarta ? `<button onclick="openModal('paste-menu')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Pegar carta</button>` : ''}
-          <button onclick="abrirPromociones()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">🏷️ Promociones</button>
-          ${mostrarCarta ? `<button onclick="anadirSeccionMenu()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">+ Sección</button>` : ''}
-          <button onclick="confirmarEliminarTodosPlatos()" class="rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-xs font-semibold px-4 py-2">🗑️ Borrar todos los platos</button>
-          ${mostrarCarta ? `<button onclick="confirmarEliminarTodasSecciones()" class="rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-xs font-semibold px-4 py-2">🗑️ Borrar todas las secciones</button>` : ''}
-          ${mostrarMenu ? `<button onclick="abrirAnadirMenuFijo()" class="${menuBtnClass}">+ Añadir menú</button>` : ''}
-          ${mostrarCarta ? `<button onclick="abrirAnadirPlato()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir plato</button>` : ''}
+        <div class="flex items-center gap-3 flex-wrap">
+          ${tabsHtml}
+          <div class="flex gap-2 flex-wrap">${tabActiva === 'menu' ? toolbarMenu : toolbarCarta}</div>
         </div>
       </div>`;
+  }
+  function abrirMasOpcionesCarta() {
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Más opciones de la carta</h3>
+      <div class="mt-4 space-y-2">
+        <button type="button" onclick="openModal('upload-menu')" class="w-full text-left rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-3 text-sm font-medium text-navy">📸 Subir foto de la carta</button>
+        <button type="button" onclick="openModal('paste-menu')" class="w-full text-left rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-3 text-sm font-medium text-navy">📋 Pegar carta</button>
+        <button type="button" onclick="closeModal(); confirmarEliminarTodasSecciones();" class="w-full text-left rounded-lg border border-slate-200 hover:border-rose-300 hover:bg-rose-50 transition px-4 py-3 text-sm font-medium text-rose-600">🗑️ Borrar todas las secciones</button>
+        <button type="button" onclick="closeModal(); confirmarEliminarTodosPlatosCarta();" class="w-full text-left rounded-lg border border-slate-200 hover:border-rose-300 hover:bg-rose-50 transition px-4 py-3 text-sm font-medium text-rose-600">🗑️ Borrar todos los platos</button>
+      </div>
+      <button type="button" onclick="closeModal()" class="mt-4 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>`;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function abrirMasOpcionesMenu() {
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Más opciones de menús</h3>
+      <div class="mt-4 space-y-2">
+        <button type="button" onclick="closeModal(); confirmarEliminarTodosMenus();" class="w-full text-left rounded-lg border border-slate-200 hover:border-rose-300 hover:bg-rose-50 transition px-4 py-3 text-sm font-medium text-rose-600">🗑️ Borrar todos los menús</button>
+      </div>
+      <button type="button" onclick="closeModal()" class="mt-4 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>`;
+    document.getElementById('modalOverlay').classList.add('open');
   }
   function renderMenu() {
     renderMenuHeader();
@@ -6892,19 +6922,21 @@
       wrap.innerHTML = ofertaTipoChooserHtml();
       return;
     }
-    if (!acc.data.menu.length && !acc.data.menuSecciones.length) {
-      const ayudaVacio = acc.data.ofertaTipo === 'menu'
+    const tabActiva = acc.data.ofertaTipo === 'ambos' ? cartaTabActiva : acc.data.ofertaTipo;
+    const filtro = tabActiva === 'menu' ? (m => m.esMenu) : (m => !m.esMenu);
+    const hayAlgoEnTab = acc.data.menu.some(filtro);
+    if (!hayAlgoEnTab) {
+      const ayudaVacio = tabActiva === 'menu'
         ? 'Pulsa "+ Añadir menú" para crear tu primer menú de precio fijo.'
-        : acc.data.ofertaTipo === 'carta'
-          ? 'Sube una foto de tu carta, pégala, o crea secciones y añade platos para organizarlo.'
-          : 'Sube una foto de tu carta, pégala, o añade platos y menús para organizarlo.';
+        : 'Sube una foto de tu carta, pégala, o crea secciones y añade platos para organizarlo.';
+      const tituloVacio = tabActiva === 'menu' ? 'Todavía no tienes ningún menú' : 'Tu carta está vacía';
       wrap.innerHTML = `<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-        <p class="text-sm font-semibold text-navy">Tu carta está vacía</p>
+        <p class="text-sm font-semibold text-navy">${tituloVacio}</p>
         <p class="text-xs text-slate-400 mt-1">${ayudaVacio}</p>
       </div>`;
       return;
     }
-    const grupos = gruposMenu(acc);
+    const grupos = gruposMenu(acc, filtro);
     wrap.innerHTML = grupos.map((g, gi) => {
       const platosHtml = g.indices.length
         ? g.indices.map((i, pos) => menuPlatoRowHtml(acc.data.menu[i], i, pos === 0, pos === g.indices.length - 1)).join('')
@@ -7274,15 +7306,27 @@
     closeModal();
     showToast(i === -1 ? 'Menú añadido' : 'Menú actualizado');
   }
-  function confirmarEliminarTodosPlatos() {
+  function confirmarEliminarTodosPlatosCarta() {
     const acc = getCurrentAccount();
-    if (!acc.data.menu.length) { showToast('La carta ya está vacía'); return; }
-    if (!confirm('¿Eliminar TODOS los platos y menús de la carta (' + acc.data.menu.length + ')? Las secciones se mantienen. Esto no se puede deshacer.')) return;
-    acc.data.menu = [];
+    const n = acc.data.menu.filter(m => !m.esMenu).length;
+    if (!n) { showToast('La carta ya está vacía'); return; }
+    if (!confirm('¿Eliminar TODOS los platos de la carta (' + n + ')? Los menús de precio fijo no se tocan. Esto no se puede deshacer.')) return;
+    acc.data.menu = acc.data.menu.filter(m => m.esMenu);
     saveCurrentAccountData(acc.data);
     renderMenu();
     renderCartaDigitalPreview();
-    showToast('Todos los platos han sido eliminados');
+    showToast('Todos los platos de la carta han sido eliminados');
+  }
+  function confirmarEliminarTodosMenus() {
+    const acc = getCurrentAccount();
+    const n = acc.data.menu.filter(m => m.esMenu).length;
+    if (!n) { showToast('No tienes ningún menú'); return; }
+    if (!confirm('¿Eliminar TODOS los menús de precio fijo (' + n + ')? Los platos de la carta no se tocan. Esto no se puede deshacer.')) return;
+    acc.data.menu = acc.data.menu.filter(m => !m.esMenu);
+    saveCurrentAccountData(acc.data);
+    renderMenu();
+    renderCartaDigitalPreview();
+    showToast('Todos los menús han sido eliminados');
   }
   function confirmarEliminarTodasSecciones() {
     const acc = getCurrentAccount();
