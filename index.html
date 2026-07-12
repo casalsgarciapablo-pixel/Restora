@@ -7953,6 +7953,28 @@
   function setInvVista(v) { invVista = v; invPlatoAbierto = null; renderInventario(); }
   function abrirPlatoInventario(i) { invVista = 'platos'; invPlatoAbierto = i; renderInventario(); }
 
+  function eliminarPlatoDesdeInventario(i) {
+    const acc = getCurrentAccount();
+    if (!acc.data.menu[i]) return;
+    if (!confirm('¿Eliminar "' + acc.data.menu[i].nombre + '" de la carta? Esto no se puede deshacer.')) return;
+    acc.data.menu.splice(i, 1);
+    saveCurrentAccountData(acc.data);
+    renderCartaDigitalPreview();
+    invPlatoAbierto = null;
+    renderInventario();
+    showToast('Plato eliminado');
+  }
+  function confirmarEliminarTodosPlatosInventario() {
+    const acc = getCurrentAccount();
+    if (!acc.data.menu.length) { showToast('No tienes ningún plato'); return; }
+    if (!confirm('¿Eliminar TODOS los platos y menús (' + acc.data.menu.length + ')? Esto no se puede deshacer.')) return;
+    acc.data.menu = [];
+    saveCurrentAccountData(acc.data);
+    renderCartaDigitalPreview();
+    invPlatoAbierto = null;
+    renderInventario();
+    showToast('Todos los platos han sido eliminados');
+  }
   function renderInventario() {
     const cont = document.getElementById('inventarioContenido');
     if (!cont) return;
@@ -7998,10 +8020,14 @@
         <td data-label="Ingredientes" class="px-4 py-2.5">${receta.length || '—'}</td>
         <td data-label="Raciones posibles" class="px-4 py-2.5">${rac == null ? '—' : rac}</td>
         <td data-label="Estado" class="px-4 py-2.5">${chip}</td>
-        <td class="px-4 py-2.5 text-right text-slate-300">›</td>
+        <td class="px-4 py-2.5 text-right"><button onclick="event.stopPropagation(); eliminarPlatoDesdeInventario(${i});" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar plato">✕</button></td>
       </tr>`;
     }).join('');
-    cont.innerHTML = `<div id="invPlatosWrap" class="rounded-xl border border-slate-200 overflow-hidden bg-white">
+    cont.innerHTML = `
+    <div class="flex justify-end mb-2">
+      <button onclick="confirmarEliminarTodosPlatosInventario()" class="rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-xs font-semibold px-4 py-2">Borrar todos los platos</button>
+    </div>
+    <div id="invPlatosWrap" class="rounded-xl border border-slate-200 overflow-hidden bg-white">
       <table class="w-full text-sm">
         <thead class="bg-slate-50 text-slate-500 text-xs"><tr><th class="text-left font-medium px-4 py-2.5">Plato</th><th class="text-left font-medium px-4 py-2.5">Ingredientes</th><th class="text-left font-medium px-4 py-2.5">Raciones posibles</th><th class="text-left font-medium px-4 py-2.5">Estado</th><th class="px-4 py-2.5 w-10"></th></tr></thead>
         <tbody class="divide-y divide-slate-100">${filas}</tbody>
