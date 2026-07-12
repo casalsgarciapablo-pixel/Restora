@@ -6938,6 +6938,13 @@
       </div>`;
       return;
     }
+    if (tabActiva === 'menu') {
+      // Los menús de precio fijo van en lista plana, sin secciones.
+      const indices = acc.data.menu.map((m, i) => i).filter(i => filtro(acc.data.menu[i]));
+      const filas = indices.map((i, pos) => menuPlatoRowHtml(acc.data.menu[i], i, pos === 0, pos === indices.length - 1)).join('');
+      wrap.innerHTML = `<div class="menu-sec"><div class="menu-sec-body">${filas}</div></div>`;
+      return;
+    }
     const grupos = gruposMenu(acc, filtro);
     wrap.innerHTML = grupos.map((g, gi) => {
       const platosHtml = g.indices.length
@@ -7022,11 +7029,12 @@
     const m = menu[i];
     if (!m) return;
     const cat = m.categoria || '';
+    const esMenu = !!m.esMenu;
     let j = -1;
     if (delta < 0) {
-      for (let k = i - 1; k >= 0; k--) { if ((menu[k].categoria || '') === cat) { j = k; break; } }
+      for (let k = i - 1; k >= 0; k--) { if ((menu[k].categoria || '') === cat && !!menu[k].esMenu === esMenu) { j = k; break; } }
     } else {
-      for (let k = i + 1; k < menu.length; k++) { if ((menu[k].categoria || '') === cat) { j = k; break; } }
+      for (let k = i + 1; k < menu.length; k++) { if ((menu[k].categoria || '') === cat && !!menu[k].esMenu === esMenu) { j = k; break; } }
     }
     if (j === -1) return;
     const tmp = menu[i]; menu[i] = menu[j]; menu[j] = tmp;
@@ -7241,8 +7249,6 @@
         <div><label class="block text-sm font-medium text-navy mb-1.5">Precio (único)</label><input id="menuFijoPrecio" type="text" placeholder="13,50€" value="${escAttr(m.precio)}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
         <div><label class="block text-sm font-medium text-navy mb-1.5">Estado</label><select id="menuFijoEstado" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"><option value="Disponible" ${m.estado !== 'Agotado' ? 'selected' : ''}>Disponible</option><option value="Agotado" ${m.estado === 'Agotado' ? 'selected' : ''}>Agotado</option></select></div>
       </div>
-      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Sección</label>
-      <select id="menuFijoCategoria" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${opcionesSeccionSelect(acc, m.categoria)}</select>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Descripción (opcional)</label>
       <textarea id="menuFijoDescripcion" rows="2" placeholder="Incluye pan y bebida" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(m.descripcion || '')}</textarea>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-5">Grupos a elegir</label>
@@ -7283,7 +7289,6 @@
     const nombre = document.getElementById('menuFijoNombre').value.trim();
     const precio = document.getElementById('menuFijoPrecio').value.trim();
     const estado = document.getElementById('menuFijoEstado').value;
-    const categoria = document.getElementById('menuFijoCategoria').value;
     const descripcion = document.getElementById('menuFijoDescripcion').value.trim();
     if (!nombre || !precio) return modalFormError('Escribe al menos el nombre y el precio del menú.');
     const grupos = menuFijoGruposEdicion
@@ -7296,10 +7301,10 @@
       .filter(g => g.nombre && g.opciones.length);
     if (!grupos.length) return modalFormError('Añade al menos un grupo con nombre y opciones.');
     if (i === -1) {
-      acc.data.menu.push({ nombre, precio, estado, categoria, descripcion, costo: '', foto: '', esMenu: true, grupos });
+      acc.data.menu.push({ nombre, precio, estado, categoria: '', descripcion, costo: '', foto: '', esMenu: true, grupos });
     } else {
       const m = acc.data.menu[i];
-      Object.assign(m, { nombre, precio, estado, categoria, descripcion, esMenu: true, grupos });
+      Object.assign(m, { nombre, precio, estado, categoria: '', descripcion, esMenu: true, grupos });
     }
     menuFijoGruposEdicion = [];
     saveCurrentAccountData(acc.data);
