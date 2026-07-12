@@ -1868,25 +1868,7 @@
 
     <!-- MENU -->
     <section id="sec-menu" class="app-section">
-      <div class="flex items-center justify-between flex-wrap gap-2">
-        <div class="flex items-center gap-3">
-          <span class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 016.5 3H12v18H6.5A2.5 2.5 0 014 18.5v-13zM20 5.5A2.5 2.5 0 0017.5 3H12v18h5.5a2.5 2.5 0 002.5-2.5v-13z"/></svg></span>
-          <div>
-            <p class="text-sm font-semibold text-navy">Carta del restaurante</p>
-            <p class="text-xs text-slate-400 mt-1">Gestiona tus platos y precios.</p>
-          </div>
-        </div>
-        <div class="flex gap-2 flex-wrap">
-          <button onclick="openModal('upload-menu')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Subir foto de la carta</button>
-          <button onclick="openModal('paste-menu')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Pegar carta</button>
-          <button onclick="abrirPromociones()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">🏷️ Promociones</button>
-          <button onclick="anadirSeccionMenu()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">+ Sección</button>
-          <button onclick="confirmarEliminarTodosPlatos()" class="rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-xs font-semibold px-4 py-2">🗑️ Borrar todos los platos</button>
-          <button onclick="confirmarEliminarTodasSecciones()" class="rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-xs font-semibold px-4 py-2">🗑️ Borrar todas las secciones</button>
-          <button onclick="abrirAnadirMenuFijo()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">+ Añadir menú</button>
-          <button onclick="abrirAnadirPlato()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir plato</button>
-        </div>
-      </div>
+      <div id="menuHeaderWrap"></div>
       <div id="menuSeccionesWrap" class="mt-5 space-y-4"></div>
     </section>
 
@@ -2814,6 +2796,7 @@
       pedidos: [],
       menu: [],
       menuSecciones: [],
+      ofertaTipo: '', // '' (sin elegir todavía) | 'carta' | 'menu' | 'ambos'
       personal: [],
       inventario: [],
       integraciones: { square: false, glovo: defaultDeliveryIntegracion(), uber: defaultDeliveryIntegracion(), justeat: defaultDeliveryIntegracion(), notifs: false, googleCalendar: false },
@@ -2909,6 +2892,12 @@
     data.anulaciones = Array.isArray(data.anulaciones) ? data.anulaciones : [];
     data.ultimoTicketNumero = typeof data.ultimoTicketNumero === 'number' ? data.ultimoTicketNumero : 0;
     data.ultimoTicketHash = typeof data.ultimoTicketHash === 'string' ? data.ultimoTicketHash : '';
+    // Qué ofrece el restaurante (carta a la carta, menús de precio fijo, o ambos). Las cuentas que
+    // ya tenían platos o menús antes de este campo se consideran ya configuradas ("ambos"), para no
+    // taparles la carta con la pantalla de elegir de nuevo.
+    if (data.ofertaTipo !== 'carta' && data.ofertaTipo !== 'menu' && data.ofertaTipo !== 'ambos') {
+      data.ofertaTipo = (Array.isArray(data.menu) && data.menu.length) ? 'ambos' : '';
+    }
     // Secciones del menú (orden gestionable por el usuario). Si no hay lista pero los platos ya
     // tienen categorías, se deriva de las categorías existentes en orden de aparición.
     data.menuSecciones = Array.isArray(data.menuSecciones) ? data.menuSecciones.filter(s => typeof s === 'string' && s.trim()) : [];
@@ -6820,14 +6809,98 @@
       <svg class="w-4 h-4 text-slate-300 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
     </div>`;
   }
+  // Qué ofrece el restaurante: a la carta, menús de precio fijo, o ambos. Se pregunta una vez y
+  // condiciona qué botones/herramientas se ven en la sección Carta — siempre se puede cambiar.
+  function ofertaTipoChooserHtml() {
+    return `
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 text-center max-w-lg mx-auto">
+        <p class="text-lg font-bold text-navy">¿Qué ofrece tu restaurante?</p>
+        <p class="text-sm text-slate-500 mt-1.5">Así preparamos tu Carta a tu medida. Podrás cambiarlo cuando quieras.</p>
+        <div class="grid sm:grid-cols-3 gap-3 mt-6 text-left">
+          <button type="button" onclick="elegirOfertaTipo('carta')" class="rounded-xl border border-slate-200 hover:border-accent hover:bg-accent/5 transition p-4">
+            <p class="text-2xl">📋</p>
+            <p class="text-sm font-semibold text-navy mt-2">Carta a la carta</p>
+            <p class="text-xs text-slate-400 mt-1">Platos sueltos, cada uno con su propio precio.</p>
+          </button>
+          <button type="button" onclick="elegirOfertaTipo('menu')" class="rounded-xl border border-slate-200 hover:border-accent hover:bg-accent/5 transition p-4">
+            <p class="text-2xl">🍽️</p>
+            <p class="text-sm font-semibold text-navy mt-2">Menú de precio fijo</p>
+            <p class="text-xs text-slate-400 mt-1">Ej. menú del día: primero + segundo + postre por un precio único.</p>
+          </button>
+          <button type="button" onclick="elegirOfertaTipo('ambos')" class="rounded-xl border border-slate-200 hover:border-accent hover:bg-accent/5 transition p-4">
+            <p class="text-2xl">📋 + 🍽️</p>
+            <p class="text-sm font-semibold text-navy mt-2">Los dos</p>
+            <p class="text-xs text-slate-400 mt-1">Carta a la carta y menús de precio fijo.</p>
+          </button>
+        </div>
+      </div>`;
+  }
+  function elegirOfertaTipo(tipo) {
+    const acc = getCurrentAccount();
+    acc.data.ofertaTipo = tipo;
+    saveCurrentAccountData(acc.data);
+    renderMenu();
+    showToast('Preferencia guardada — puedes cambiarla cuando quieras');
+  }
+  function abrirElegirOfertaTipo() {
+    const wrap = document.getElementById('menuSeccionesWrap');
+    if (!wrap) return;
+    wrap.innerHTML = ofertaTipoChooserHtml() + `<p class="text-center mt-3"><button type="button" onclick="renderMenu()" class="text-xs text-slate-400 hover:text-navy hover:underline">Cancelar</button></p>`;
+  }
+  function renderMenuHeader() {
+    const acc = getCurrentAccount();
+    const wrap = document.getElementById('menuHeaderWrap');
+    if (!wrap) return;
+    const tipo = acc.data.ofertaTipo;
+    const iconoCarta = `<span class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 016.5 3H12v18H6.5A2.5 2.5 0 014 18.5v-13zM20 5.5A2.5 2.5 0 0017.5 3H12v18h5.5a2.5 2.5 0 002.5-2.5v-13z"/></svg></span>`;
+    if (!tipo) {
+      wrap.innerHTML = `<div class="flex items-center gap-3">${iconoCarta}<div><p class="text-sm font-semibold text-navy">Carta del restaurante</p><p class="text-xs text-slate-400 mt-1">Primero, cuéntanos qué ofrecéis.</p></div></div>`;
+      return;
+    }
+    const mostrarCarta = tipo === 'carta' || tipo === 'ambos';
+    const mostrarMenu = tipo === 'menu' || tipo === 'ambos';
+    const menuBtnClass = mostrarCarta
+      ? 'rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2'
+      : 'rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2';
+    wrap.innerHTML = `
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-3">
+          ${iconoCarta}
+          <div>
+            <p class="text-sm font-semibold text-navy">Carta del restaurante</p>
+            <p class="text-xs text-slate-400 mt-1">Gestiona tus platos y precios. <button type="button" onclick="abrirElegirOfertaTipo()" class="text-accent hover:underline font-medium">Cambiar qué ofreces</button></p>
+          </div>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          ${mostrarCarta ? `<button onclick="openModal('upload-menu')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Subir foto de la carta</button>` : ''}
+          ${mostrarCarta ? `<button onclick="openModal('paste-menu')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Pegar carta</button>` : ''}
+          <button onclick="abrirPromociones()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">🏷️ Promociones</button>
+          ${mostrarCarta ? `<button onclick="anadirSeccionMenu()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">+ Sección</button>` : ''}
+          <button onclick="confirmarEliminarTodosPlatos()" class="rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-xs font-semibold px-4 py-2">🗑️ Borrar todos los platos</button>
+          ${mostrarCarta ? `<button onclick="confirmarEliminarTodasSecciones()" class="rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-xs font-semibold px-4 py-2">🗑️ Borrar todas las secciones</button>` : ''}
+          ${mostrarMenu ? `<button onclick="abrirAnadirMenuFijo()" class="${menuBtnClass}">+ Añadir menú</button>` : ''}
+          ${mostrarCarta ? `<button onclick="abrirAnadirPlato()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir plato</button>` : ''}
+        </div>
+      </div>`;
+  }
   function renderMenu() {
+    renderMenuHeader();
     const acc = getCurrentAccount();
     const wrap = document.getElementById('menuSeccionesWrap');
     if (!wrap) return;
+    if (!acc.data.ofertaTipo) {
+      wrap.innerHTML = ofertaTipoChooserHtml();
+      return;
+    }
     if (!acc.data.menu.length && !acc.data.menuSecciones.length) {
+      const ayudaVacio = acc.data.ofertaTipo === 'menu'
+        ? 'Pulsa "+ Añadir menú" para crear tu primer menú de precio fijo.'
+        : acc.data.ofertaTipo === 'carta'
+          ? 'Sube una foto de tu carta, pégala, o crea secciones y añade platos para organizarlo.'
+          : 'Sube una foto de tu carta, pégala, o añade platos y menús para organizarlo.';
       wrap.innerHTML = `<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
         <p class="text-sm font-semibold text-navy">Tu carta está vacía</p>
-        <p class="text-xs text-slate-400 mt-1">Sube una foto de tu carta, pégala, o crea secciones y añade platos para organizarlo.</p>
+        <p class="text-xs text-slate-400 mt-1">${ayudaVacio}</p>
       </div>`;
       return;
     }
