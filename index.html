@@ -4135,11 +4135,11 @@
     const btn = document.getElementById('mesasEditarBtn');
     if (!btn) return;
     if (mesasModoEditar) {
-      btn.textContent = '✅ Listo';
+      btn.textContent = 'Listo';
       btn.className = 'mt-5 text-xs font-semibold rounded-full px-3 py-1.5 transition bg-navydeep text-white';
       btn.title = 'Las mesas se pueden arrastrar para cambiar su posición';
     } else {
-      btn.textContent = '✏️ Editar posición de las mesas';
+      btn.textContent = 'Editar posición de las mesas';
       btn.className = 'mt-5 text-xs font-semibold rounded-full px-3 py-1.5 transition bg-slate-100 text-slate-500 hover:bg-slate-200';
       btn.title = 'Activa esto para poder arrastrar las mesas';
     }
