@@ -6893,6 +6893,7 @@
       <button onclick="abrirMasOpcionesCarta()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Más</button>`;
     const toolbarMenu = `
       <button onclick="abrirAnadirMenuFijo()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Añadir menú</button>
+      <button onclick="openModal('upload-menu-fijo')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Subir foto</button>
       <button onclick="abrirMasOpcionesMenu()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Más</button>`;
     wrap.innerHTML = `
       <div class="flex items-center justify-between flex-wrap gap-3">
@@ -6927,7 +6928,6 @@
     document.getElementById('modalBody').innerHTML = `
       <h3 class="text-xl font-bold text-navy">Más opciones de menús</h3>
       <div class="mt-4 space-y-2">
-        <button type="button" onclick="openModal('upload-menu-fijo')" class="w-full text-left rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-3 text-sm font-medium text-navy">Subir foto del menú</button>
         <button type="button" onclick="closeModal(); confirmarEliminarTodosMenus();" class="w-full text-left rounded-lg border border-slate-200 hover:border-rose-300 hover:bg-rose-50 transition px-4 py-3 text-sm font-medium text-rose-600">Borrar todos los menús</button>
       </div>
       <button type="button" onclick="closeModal()" class="mt-4 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>`;
