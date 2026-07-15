@@ -7966,9 +7966,10 @@
   }
   function confirmarEliminarTodosPlatosInventario() {
     const acc = getCurrentAccount();
-    if (!acc.data.menu.length) { showToast('No tienes ningún plato'); return; }
-    if (!confirm('¿Eliminar TODOS los platos y menús (' + acc.data.menu.length + ')? Esto no se puede deshacer.')) return;
-    acc.data.menu = [];
+    const n = acc.data.menu.filter(m => !m.esMenu).length;
+    if (!n) { showToast('No tienes ningún plato'); return; }
+    if (!confirm('¿Eliminar TODOS los platos (' + n + ')? Esto no se puede deshacer.')) return;
+    acc.data.menu = acc.data.menu.filter(m => m.esMenu);
     saveCurrentAccountData(acc.data);
     renderCartaDigitalPreview();
     invPlatoAbierto = null;
@@ -8000,14 +8001,15 @@
 
   function renderInvPlatos(acc, cont) {
     const menu = acc.data.menu;
-    if (!menu.length) {
+    const platos = menu.map((m, i) => ({ m, i })).filter(x => !x.m.esMenu);
+    if (!platos.length) {
       cont.innerHTML = `<div class="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
         <p class="text-sm font-semibold text-navy">Aún no tienes platos</p>
         <p class="text-xs text-slate-400 mt-1">Añade platos en el apartado Carta y aquí podrás asignarles ingredientes y cantidades.</p>
       </div>`;
       return;
     }
-    const filas = menu.map((m, i) => {
+    const filas = platos.map(({ m, i }) => {
       const receta = Array.isArray(m.receta) ? m.receta : [];
       const rac = racionesPosibles(acc, m);
       let chip;
