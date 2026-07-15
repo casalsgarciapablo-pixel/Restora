@@ -1521,9 +1521,9 @@
     <div>
       <p class="text-slate-400 font-medium mb-4">Legal</p>
       <ul class="space-y-3 text-navy font-medium">
-        <li><a href="javascript:void(0)" onclick="showInfoModal('Términos de servicio', 'Restora es una demo funcional. Tus datos (cuenta, mesas, pedidos, menú, personal e inventario) se guardan únicamente en el navegador que estás usando; no se envían a ningún servidor. Al ser una demo, no ofrecemos garantías de disponibilidad ni soporte comercial.')" class="hover:text-accent">Términos de servicio</a></li>
-        <li><a href="javascript:void(0)" onclick="showInfoModal('Política de privacidad', 'No recopilamos ni enviamos tus datos a ningún servidor: todo queda guardado en el almacenamiento local de este navegador, asociado a la cuenta con la que te registraste. Si borras los datos del navegador o cambias de dispositivo, no podremos recuperarlos.')" class="hover:text-accent">Política de privacidad</a></li>
-        <li><a href="javascript:void(0)" onclick="showInfoModal('Seguridad', 'Al ser una demo sin servidor, no hay cifrado ni copias de seguridad en la nube: la información vive solo en tu navegador. No introduzcas datos reales sensibles (contraseñas de otros servicios, datos bancarios reales, etc.).')" class="hover:text-accent">Seguridad</a></li>
+        <li><a href="javascript:void(0)" onclick="showInfoModal('Términos de servicio', 'Restora está en fase inicial. Tus datos (cuenta, mesas, pedidos, menú, personal e inventario) se guardan en una base de datos en la nube asociada a tu cuenta, no solo en este navegador. Al ser un producto en desarrollo, todavía no ofrecemos garantías formales de disponibilidad ni soporte comercial.')" class="hover:text-accent">Términos de servicio</a></li>
+        <li><a href="javascript:void(0)" onclick="showInfoModal('Política de privacidad', 'Tus datos se guardan de forma segura en un servidor en la nube (Supabase), no solo en el almacenamiento local del navegador. El acceso está protegido con tu correo y contraseña, y la conexión con el servidor va siempre cifrada. Solo tu cuenta puede ver sus propios datos.')" class="hover:text-accent">Política de privacidad</a></li>
+        <li><a href="javascript:void(0)" onclick="showInfoModal('Seguridad', 'Los datos viajan siempre cifrados (HTTPS) y se guardan en un servidor en la nube con copias de seguridad, no solo en tu navegador. Las contraseñas nunca se guardan en texto plano. Aun así, no introduzcas datos bancarios reales de terceros ni información que no quieras que quede registrada.')" class="hover:text-accent">Seguridad</a></li>
         <li><a href="javascript:void(0)" onclick="openModal('contacto')" class="hover:text-accent">Hablar con ventas</a></li>
       </ul>
     </div>
@@ -3215,6 +3215,7 @@
   async function logoutReal() {
     if (realtimeChannel) { supabaseClient.removeChannel(realtimeChannel); realtimeChannel = null; }
     if (offlineReintentoTimer) { clearInterval(offlineReintentoTimer); offlineReintentoTimer = null; }
+    borrarSnapshotOffline();
     if (staffSession) {
       staffSession = null;
       borrarSesionStaff();
@@ -5188,7 +5189,7 @@
       } else {
         mesaHtml = r.mesa;
       }
-      return `<tr><td class="px-4 py-2.5" data-label="Fecha">${r.fecha || '—'}</td><td class="px-4 py-2.5" data-label="Hora">${r.hora}</td><td class="px-4 py-2.5" data-label="Cliente">${r.cliente}</td><td class="px-4 py-2.5" data-label="Personas">${r.personas}</td><td class="px-4 py-2.5" data-label="Mesa">${mesaHtml}</td><td class="px-4 py-2.5" data-label="Canal"><span class="${canalInfo.cls} rounded-full px-2 py-0.5 text-xs font-medium">${canalInfo.label}</span></td><td class="px-4 py-2.5" data-label="Estado"><span onclick="cicloEstadoReserva(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${r.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarReserva(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
+      return `<tr><td class="px-4 py-2.5" data-label="Fecha">${r.fecha || '—'}</td><td class="px-4 py-2.5" data-label="Hora">${r.hora}</td><td class="px-4 py-2.5" data-label="Cliente">${svgEsc(r.cliente)}</td><td class="px-4 py-2.5" data-label="Personas">${r.personas}</td><td class="px-4 py-2.5" data-label="Mesa">${mesaHtml}</td><td class="px-4 py-2.5" data-label="Canal"><span class="${canalInfo.cls} rounded-full px-2 py-0.5 text-xs font-medium">${canalInfo.label}</span></td><td class="px-4 py-2.5" data-label="Estado"><span onclick="cicloEstadoReserva(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${r.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarReserva(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
     }).join('');
   }
   function cicloEstadoReserva(i) {
