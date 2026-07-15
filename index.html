@@ -5538,6 +5538,8 @@
     renderMesas();
     renderTPV();
     renderInventario();
+    renderMenu();
+    renderCartaDigitalPreview();
   }
   // ---- TPV ----
   function conectarTPVFormHtml() {
@@ -7150,6 +7152,7 @@
         <div><label class="block text-sm font-medium text-navy mb-1.5">Precio</label><input id="menuPrecio" type="text" placeholder="14,50€" value="${escAttr(m.precio)}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
         <div><label class="block text-sm font-medium text-navy mb-1.5">Estado</label><select id="menuEstado" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"><option value="Disponible" ${m.estado !== 'Agotado' ? 'selected' : ''}>Disponible</option><option value="Agotado" ${m.estado === 'Agotado' ? 'selected' : ''}>Agotado</option></select></div>
       </div>
+      ${Array.isArray(m.receta) && m.receta.length ? `<p class="mt-1.5 text-xs text-slate-400">Este plato tiene receta: se marca "Agotado" solo cuando falte stock de algún ingrediente, y vuelve a "Disponible" en cuanto lo repongas.</p>` : ''}
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Coste del plato (opcional)</label>
       <input id="menuCosto" type="text" placeholder="Ej. 4,20€" value="${escAttr(m.costo || '')}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
       <p class="mt-1 text-xs text-slate-400">Lo que te cuesta prepararlo (ingredientes). Sirve para calcular el margen en los informes.</p>
@@ -7950,6 +7953,19 @@
     }
     return min === Infinity ? null : min;
   }
+  // Mantiene el estado Disponible/Agotado de los platos con receta sincronizado con el stock real:
+  // se llama cada vez que cambia el stock (pedido cocinado, edición manual de ingrediente, importación
+  // CSV o cambio de receta). Los platos sin receta no se tocan — su estado sigue siendo 100% manual.
+  function actualizarDisponibilidadPorStock(acc) {
+    let cambiado = false;
+    acc.data.menu.forEach(m => {
+      if (!Array.isArray(m.receta) || !m.receta.length) return;
+      const raciones = racionesPosibles(acc, m);
+      if (raciones === 0 && m.estado !== 'Agotado') { m.estado = 'Agotado'; cambiado = true; }
+      else if (raciones > 0 && m.estado === 'Agotado') { m.estado = 'Disponible'; cambiado = true; }
+    });
+    return cambiado;
+  }
 
   function setInvVista(v) { invVista = v; invPlatoAbierto = null; renderInventario(); }
   function abrirPlatoInventario(i) { invVista = 'platos'; invPlatoAbierto = i; renderInventario(); }
@@ -8124,8 +8140,11 @@
     const st = invNum(p.stock);
     if (st == null) return showToast('El stock de este ingrediente no es numérico. Edítalo primero.');
     p.stock = Math.max(0, Math.round((st + delta) * 100) / 100);
+    actualizarDisponibilidadPorStock(acc);
     saveCurrentAccountData(acc.data);
     renderInventario();
+    renderMenu();
+    renderCartaDigitalPreview();
   }
 
   function eliminarProducto(i) {
@@ -8133,8 +8152,11 @@
     const nombre = acc.data.inventario[i].producto;
     acc.data.inventario.splice(i, 1);
     acc.data.menu.forEach(m => { if (Array.isArray(m.receta)) m.receta = m.receta.filter(r => r.producto !== nombre); });
+    actualizarDisponibilidadPorStock(acc);
     saveCurrentAccountData(acc.data);
     renderInventario();
+    renderMenu();
+    renderCartaDigitalPreview();
     showToast('Ingrediente eliminado');
   }
 
@@ -8178,8 +8200,11 @@
       acc.data.inventario[i] = { producto, stock, unidad, minimo };
       if (old !== producto) acc.data.menu.forEach(m => (m.receta || []).forEach(r => { if (r.producto === old) r.producto = producto; }));
     }
+    actualizarDisponibilidadPorStock(acc);
     saveCurrentAccountData(acc.data);
     renderInventario();
+    renderMenu();
+    renderCartaDigitalPreview();
     closeModal();
     showToast(i == null ? 'Ingrediente añadido' : 'Ingrediente actualizado');
   }
@@ -8270,10 +8295,13 @@
       if (v && v > 0) receta.push({ producto: f.producto, cantidad: v });
     });
     acc.data.menu[recetaEdit.platoIdx].receta = receta;
+    actualizarDisponibilidadPorStock(acc);
     saveCurrentAccountData(acc.data);
     recetaEdit = null;
     closeModal();
     renderInventario();
+    renderMenu();
+    renderCartaDigitalPreview();
     showToast('Receta guardada');
   }
 
@@ -8301,6 +8329,7 @@
       const restante = invFmt(invNum(ing.stock) || 0) + (ing.unidad ? ' ' + ing.unidad : '');
       pushNotification('⚠️ Cocina: queda poco ' + ing.producto + ' (' + restante + '). Pide más.');
     });
+    actualizarDisponibilidadPorStock(acc);
   }
 
   function excelInventarioFormHtml() {
@@ -8360,8 +8389,11 @@
         count++;
       });
       if (!count) return modalFormError('No se ha encontrado ninguna fila válida en el archivo.');
+      actualizarDisponibilidadPorStock(acc);
       saveCurrentAccountData(acc.data);
       renderInventario();
+      renderMenu();
+      renderCartaDigitalPreview();
       closeModal();
       showToast(count + (count === 1 ? ' ingrediente importado' : ' ingredientes importados'));
     };
