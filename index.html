@@ -616,7 +616,8 @@
      .pinned la añade/quita initTubeNavPin() más abajo). El "tubeLamp" es un div posicionado en
      absoluto que se mueve/redimensiona por JS para coincidir con el enlace activo. */
   .tube-nav { position: relative; display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.7); border: 1px solid #ECECF3; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding: 6px; border-radius: 999px; box-shadow: 0 8px 30px -12px rgba(22,22,29,0.18); }
-  .tube-nav.pinned { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 40; }
+  .tube-nav-float { display: none; position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 40; }
+  .tube-nav-float.show { display: flex; }
   .tube-link { position: relative; display: flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; color: #6B7280; text-decoration: none; white-space: nowrap; transition: color .2s ease; z-index: 1; }
   .tube-link:hover { color: #16161D; }
   .tube-link.active { color: #16161D; }
@@ -632,6 +633,7 @@
     .landing-header { position: relative; }
     .landing-header-actions { display: none !important; }
     .tube-nav { display: none !important; }
+    .tube-nav-float { display: none !important; }
     .landing-mobile-btn { display: inline-flex; align-items: center; justify-content: center; }
     .landing-mobile-panel { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #fff; flex-direction: column; padding: 90px 24px 24px; gap: 4px; z-index: 150; overflow-y: auto; }
     .landing-mobile-panel a { padding: 12px 4px; font-size: 16px; font-weight: 500; color: #0b2142; border-bottom: 1px solid #f1f5f9; }
@@ -770,6 +772,20 @@
     .ia-quick-fab { bottom: 18px; right: 18px; }
   }
 </style>
+<!-- Copia flotante de la barra de secciones de la landing, FUERA de #landingRoot a propósito: ese
+     contenedor tiene un "zoom" aplicado que rompe position:fixed/sticky de sus descendientes en varios
+     navegadores (se quedaba detrás de otro contenido o dejaba de fijarse). Esta copia vive a nivel de
+     body, así que su position:fixed siempre funciona correctamente. initTubeNavPin() la muestra u
+     oculta según el scroll; initTubeNav() mantiene su enlace activo/lámpara sincronizados con el original. -->
+<nav id="tubeNavFloat" class="tube-nav tube-nav-float" aria-label="Navegación principal">
+  <div id="tubeLampFloat" class="tube-lamp" aria-hidden="true"></div>
+  <a href="#inicio" data-tube="inicio" class="tube-link">Inicio</a>
+  <a href="#plantillas" data-tube="plantillas" class="tube-link">Plantillas</a>
+  <a href="#funcionalidades" data-tube="funcionalidades" class="tube-link">Funcionalidades</a>
+  <a href="#precios" data-tube="precios" class="tube-link">Precios</a>
+  <a href="#blog" data-tube="blog" class="tube-link">Blog</a>
+</nav>
+
 <div id="landingRoot" class="font-sans text-navy antialiased">
 
 
@@ -10913,17 +10929,18 @@
   })();
 
   (function initTubeNavPin() {
+    // Muestra la copia flotante (fuera de #landingRoot, ver comentario junto a #tubeNavFloat en el
+    // HTML) en cuanto la barra original, dentro del header, deja de verse por el scroll.
     const nav = document.getElementById('tubeNav');
-    if (!nav) return;
+    const float = document.getElementById('tubeNavFloat');
+    if (!nav || !float) return;
     let umbral = null;
     function medir() {
-      // Mientras está fija no se puede medir su posición original: solo se remide estando "suelta".
-      if (nav.classList.contains('pinned')) return;
       umbral = nav.getBoundingClientRect().top + window.scrollY - 12;
     }
     function actualizar() {
       if (umbral == null) return;
-      nav.classList.toggle('pinned', window.scrollY > umbral);
+      float.classList.toggle('show', window.scrollY > umbral);
     }
     medir();
     actualizar();
@@ -10932,30 +10949,35 @@
   })();
 
   (function initTubeNav() {
-    const nav = document.getElementById('tubeNav');
-    const lamp = document.getElementById('tubeLamp');
-    if (!nav || !lamp) return;
-    const links = Array.from(nav.querySelectorAll('.tube-link'));
-    if (!links.length) return;
-    const secciones = links.map(a => document.getElementById(a.dataset.tube)).filter(Boolean);
+    // Hay dos barras idénticas en el DOM (la del header y la copia flotante #tubeNavFloat, ver
+    // initTubeNavPin): se mantienen sincronizadas moviendo la "lámpara" y el enlace activo en ambas
+    // a la vez, y cualquier clic en cualquiera de las dos actualiza las dos.
+    const variantes = ['tubeNav', 'tubeNavFloat'].map(navId => {
+      const nav = document.getElementById(navId);
+      const lamp = nav && nav.querySelector('.tube-lamp');
+      const links = nav ? Array.from(nav.querySelectorAll('.tube-link')) : [];
+      return { lamp, links };
+    }).filter(v => v.lamp && v.links.length);
+    if (!variantes.length) return;
+    const secciones = variantes[0].links.map(a => document.getElementById(a.dataset.tube)).filter(Boolean);
 
-    function moverLampara(link) {
-      links.forEach(a => a.classList.toggle('active', a === link));
-      lamp.style.left = link.offsetLeft + 'px';
-      lamp.style.width = link.offsetWidth + 'px';
-      lamp.classList.add('on');
-    }
     function activarPorId(id) {
-      const link = links.find(a => a.dataset.tube === id);
-      if (link) moverLampara(link);
+      variantes.forEach(({ lamp, links }) => {
+        const link = links.find(a => a.dataset.tube === id);
+        if (!link) return;
+        links.forEach(a => a.classList.toggle('active', a === link));
+        lamp.style.left = link.offsetLeft + 'px';
+        lamp.style.width = link.offsetWidth + 'px';
+        lamp.classList.add('on');
+      });
     }
-    // Al cargar, marca "Plantillas" (la primera sección) como activa por defecto.
-    moverLampara(links[0]);
+    // Al cargar, marca "Inicio" (el primer enlace) como activo por defecto.
+    activarPorId(variantes[0].links[0].dataset.tube);
     window.addEventListener('resize', () => {
-      const activo = links.find(a => a.classList.contains('active'));
-      if (activo) moverLampara(activo);
+      const activo = variantes[0].links.find(a => a.classList.contains('active'));
+      if (activo) activarPorId(activo.dataset.tube);
     });
-    links.forEach(a => a.addEventListener('click', () => moverLampara(a)));
+    variantes.forEach(({ links }) => links.forEach(a => a.addEventListener('click', () => activarPorId(a.dataset.tube))));
 
     if (!('IntersectionObserver' in window) || !secciones.length) return;
     // Franja fina en el centro vertical de la pantalla: la sección que la cruza es la "activa".
