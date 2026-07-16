@@ -613,7 +613,7 @@
   /* Barra de navegación flotante "tubelight" de la landing (solo escritorio; el móvil usa el menú
      hamburguesa ya existente, ver @media 880px más abajo). El "tubeLamp" es un div posicionado en
      absoluto que se mueve/redimensiona por JS para coincidir con el enlace activo. */
-  .tube-nav { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.7); border: 1px solid #ECECF3; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding: 6px; border-radius: 999px; box-shadow: 0 8px 30px -12px rgba(22,22,29,0.18); }
+  .tube-nav { position: relative; display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.7); border: 1px solid #ECECF3; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding: 6px; border-radius: 999px; box-shadow: 0 8px 30px -12px rgba(22,22,29,0.18); }
   .tube-link { position: relative; display: flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; color: #6B7280; text-decoration: none; white-space: nowrap; transition: color .2s ease; z-index: 1; }
   .tube-link:hover { color: #16161D; }
   .tube-link.active { color: #16161D; }
@@ -802,6 +802,15 @@
       <span class="app-brand-mark" style="width:32px;height:32px;border-radius:9px;font-size:16px;">R</span>
       <span class="brand text-2xl text-navy">Restora</span>
     </a>
+    <!-- Barra de navegación estilo "tubelight": en la posición del antiguo <nav> de enlaces, entre el
+         logo y las acciones. Solo en escritorio, el móvil ya tiene su propio menú hamburguesa. -->
+    <nav id="tubeNav" class="tube-nav" aria-label="Navegación principal">
+      <div id="tubeLamp" class="tube-lamp" aria-hidden="true"></div>
+      <a href="#plantillas" data-tube="plantillas" class="tube-link">Plantillas</a>
+      <a href="#funcionalidades" data-tube="funcionalidades" class="tube-link">Funcionalidades</a>
+      <a href="#precios" data-tube="precios" class="tube-link">Precios</a>
+      <a href="#blog" data-tube="blog" class="tube-link">Blog</a>
+    </nav>
     <div class="landing-header-actions flex items-center gap-3">
       <select id="langSwitcherDesktop" onchange="setLang(this.value)" class="lang-switcher" aria-label="Idioma">
         <option value="es">ES</option>
@@ -816,17 +825,6 @@
       <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
   </header>
-
-  <!-- Barra de navegación flotante ("tubelight"): solo en escritorio, el móvil ya tiene su propio
-       menú hamburguesa. Fija en la parte superior, con un indicador brillante bajo el enlace activo
-       que se mueve según la sección visible al hacer scroll. -->
-  <nav id="tubeNav" class="tube-nav" aria-label="Navegación principal">
-    <div id="tubeLamp" class="tube-lamp" aria-hidden="true"></div>
-    <a href="#plantillas" data-tube="plantillas" class="tube-link">Plantillas</a>
-    <a href="#funcionalidades" data-tube="funcionalidades" class="tube-link">Funcionalidades</a>
-    <a href="#precios" data-tube="precios" class="tube-link">Precios</a>
-    <a href="#blog" data-tube="blog" class="tube-link">Blog</a>
-  </nav>
 
   <!-- Hero -->
   <section class="relative">
