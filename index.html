@@ -641,8 +641,12 @@
   html.tema-oscuro .theme-toggle-fixed,
   html.tema-oscuro #cookieBanner,
   html.tema-oscuro #modalOverlay,
-  html.tema-oscuro #toast,
-  html.tema-oscuro .ia-quick-panel.open { filter: invert(0.94) hue-rotate(180deg); }
+  html.tema-oscuro #toast { filter: invert(0.94) hue-rotate(180deg); }
+  /* #appRoot filtrado se convierte en bloque contenedor de sus elementos position:fixed (panel del
+     asistente, drawer del sidebar en móvil), que al estar ocultos fuera de pantalla desbordarían y
+     dejarían hacer scroll horizontal hasta ellos. Recortamos ese desbordamiento; el scroll vertical
+     real vive en <main> (overflow-y-auto propio), así que no se ve afectado. */
+  html.tema-oscuro #appRoot { overflow: hidden; }
   html.tema-oscuro #landingRoot img,
   html.tema-oscuro #landingRoot video,
   html.tema-oscuro #landingRoot iframe,
@@ -652,8 +656,7 @@
   html.tema-oscuro #appRoot canvas,
   html.tema-oscuro #appRoot iframe,
   html.tema-oscuro #modalOverlay img,
-  html.tema-oscuro #modalOverlay canvas,
-  html.tema-oscuro .ia-quick-panel.open img { filter: invert(1) hue-rotate(180deg); }
+  html.tema-oscuro #modalOverlay canvas { filter: invert(1) hue-rotate(180deg); }
   .landing-mobile-panel .lang-switcher { align-self: flex-start; margin-top: 12px; font-size: 15px; padding: 8px 14px; border-bottom: 1px solid #e2e8f0 !important; }
   .landing-mobile-btn { display: none; background: none; border: none; padding: 6px; color: #0b2142; cursor: pointer; }
   .landing-mobile-panel { display: none; }
