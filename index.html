@@ -610,6 +610,17 @@
   .sidebar-mobile-btn { display: none; background: none; border: none; padding: 4px; margin-right: 4px; color: #0b2142; cursor: pointer; }
   .sidebar-backdrop { display: none; }
 
+  /* Barra de navegación flotante "tubelight" de la landing (solo escritorio; el móvil usa el menú
+     hamburguesa ya existente, ver @media 880px más abajo). El "tubeLamp" es un div posicionado en
+     absoluto que se mueve/redimensiona por JS para coincidir con el enlace activo. */
+  .tube-nav { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.7); border: 1px solid #ECECF3; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding: 6px; border-radius: 999px; box-shadow: 0 8px 30px -12px rgba(22,22,29,0.18); }
+  .tube-link { position: relative; display: flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; color: #6B7280; text-decoration: none; white-space: nowrap; transition: color .2s ease; z-index: 1; }
+  .tube-link:hover { color: #16161D; }
+  .tube-link.active { color: #16161D; }
+  .tube-lamp { position: absolute; top: 6px; left: 0; height: calc(100% - 12px); border-radius: 999px; background: rgba(79,63,255,0.08); transition: left .3s cubic-bezier(.4,0,.2,1), width .3s cubic-bezier(.4,0,.2,1); pointer-events: none; opacity: 0; }
+  .tube-lamp.on { opacity: 1; }
+  .tube-lamp::before { content: ''; position: absolute; top: -8px; left: 50%; translate: -50% 0; width: 32px; height: 4px; background: #4F3FFF; border-radius: 999px 999px 0 0; box-shadow: 0 0 18px 4px rgba(79,63,255,0.5); }
+
   @media (max-width: 880px) {
     #landingRoot { zoom: normal; }
     body { overflow-x: hidden; }
@@ -617,6 +628,7 @@
     /* Landing header / mobile nav */
     .landing-header { position: relative; }
     .landing-header-actions { display: none !important; }
+    .tube-nav { display: none !important; }
     .landing-mobile-btn { display: inline-flex; align-items: center; justify-content: center; }
     .landing-mobile-panel { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #fff; flex-direction: column; padding: 90px 24px 24px; gap: 4px; z-index: 150; overflow-y: auto; }
     .landing-mobile-panel a { padding: 12px 4px; font-size: 16px; font-weight: 500; color: #0b2142; border-bottom: 1px solid #f1f5f9; }
@@ -790,12 +802,6 @@
       <span class="app-brand-mark" style="width:32px;height:32px;border-radius:9px;font-size:16px;">R</span>
       <span class="brand text-2xl text-navy">Restora</span>
     </a>
-    <nav class="landing-nav-links hidden md:flex items-center gap-8 text-[15px] font-medium text-muted">
-      <a href="#plantillas" class="hover:text-navy transition">Plantillas</a>
-      <a href="#funcionalidades" class="hover:text-navy transition">Funcionalidades</a>
-      <a href="#precios" class="hover:text-navy transition">Precios</a>
-      <a href="#blog" class="hover:text-navy transition">Blog</a>
-    </nav>
     <div class="landing-header-actions flex items-center gap-3">
       <select id="langSwitcherDesktop" onchange="setLang(this.value)" class="lang-switcher" aria-label="Idioma">
         <option value="es">ES</option>
@@ -810,6 +816,17 @@
       <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
   </header>
+
+  <!-- Barra de navegación flotante ("tubelight"): solo en escritorio, el móvil ya tiene su propio
+       menú hamburguesa. Fija en la parte superior, con un indicador brillante bajo el enlace activo
+       que se mueve según la sección visible al hacer scroll. -->
+  <nav id="tubeNav" class="tube-nav" aria-label="Navegación principal">
+    <div id="tubeLamp" class="tube-lamp" aria-hidden="true"></div>
+    <a href="#plantillas" data-tube="plantillas" class="tube-link">Plantillas</a>
+    <a href="#funcionalidades" data-tube="funcionalidades" class="tube-link">Funcionalidades</a>
+    <a href="#precios" data-tube="precios" class="tube-link">Precios</a>
+    <a href="#blog" data-tube="blog" class="tube-link">Blog</a>
+  </nav>
 
   <!-- Hero -->
   <section class="relative">
@@ -10891,6 +10908,40 @@
       });
     }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
     items.forEach(el => io.observe(el));
+  })();
+
+  (function initTubeNav() {
+    const nav = document.getElementById('tubeNav');
+    const lamp = document.getElementById('tubeLamp');
+    if (!nav || !lamp) return;
+    const links = Array.from(nav.querySelectorAll('.tube-link'));
+    if (!links.length) return;
+    const secciones = links.map(a => document.getElementById(a.dataset.tube)).filter(Boolean);
+
+    function moverLampara(link) {
+      links.forEach(a => a.classList.toggle('active', a === link));
+      lamp.style.left = link.offsetLeft + 'px';
+      lamp.style.width = link.offsetWidth + 'px';
+      lamp.classList.add('on');
+    }
+    function activarPorId(id) {
+      const link = links.find(a => a.dataset.tube === id);
+      if (link) moverLampara(link);
+    }
+    // Al cargar, marca "Plantillas" (la primera sección) como activa por defecto.
+    moverLampara(links[0]);
+    window.addEventListener('resize', () => {
+      const activo = links.find(a => a.classList.contains('active'));
+      if (activo) moverLampara(activo);
+    });
+    links.forEach(a => a.addEventListener('click', () => moverLampara(a)));
+
+    if (!('IntersectionObserver' in window) || !secciones.length) return;
+    // Franja fina en el centro vertical de la pantalla: la sección que la cruza es la "activa".
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => { if (entry.isIntersecting) activarPorId(entry.target.id); });
+    }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+    secciones.forEach(s => io.observe(s));
   })();
 
   (function initHeroCountUp() {
