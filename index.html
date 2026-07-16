@@ -644,6 +644,8 @@
   html.tema-oscuro #landingRoot video,
   html.tema-oscuro #landingRoot iframe,
   html.tema-oscuro #landingRoot .expand-bg,
+  html.tema-oscuro #landingRoot .negocio3d-caption,
+  html.tema-oscuro #landingRoot .negocio3d-slide-inner::after,
   html.tema-oscuro #appRoot img,
   html.tema-oscuro #appRoot video,
   html.tema-oscuro #appRoot canvas,
@@ -2642,24 +2644,42 @@
 
   let negocioCurrent = 0;
   const NEGOCIO_TOTAL = 4;
-  function negocioApplyState() {
+  let negocioPos = 1;
+  let negocioAnimando = false;
+  function negocioSetHighlight() {
     const track = document.getElementById('negocioCarousel');
     if (!track) return;
-    const slides = track.querySelectorAll('.negocio3d-slide');
-    slides.forEach((li, i) => li.classList.toggle('is-inactive', i !== negocioCurrent));
-    track.style.transform = 'translateX(-' + (negocioCurrent * (100 / NEGOCIO_TOTAL)) + '%)';
+    track.querySelectorAll('.negocio3d-slide').forEach(li => {
+      li.classList.toggle('is-inactive', parseInt(li.dataset.index, 10) !== negocioCurrent);
+    });
+  }
+  function negocioMoveTo(pos, animar) {
+    negocioPos = pos;
+    const track = document.getElementById('negocioCarousel');
+    if (!track) return;
+    if (!animar) track.style.transition = 'none';
+    track.style.transform = 'translateX(-' + (pos * (100 / (NEGOCIO_TOTAL + 2))) + '%)';
+    if (!animar) {
+      void track.offsetWidth;
+      track.style.transition = '';
+    }
   }
   function negocioSlideClick(i) {
-    if (i === negocioCurrent) return;
+    if (i === negocioCurrent || negocioAnimando) return;
     negocioCurrent = i;
-    negocioApplyState();
+    negocioSetHighlight();
+    negocioAnimando = true;
+    negocioMoveTo(i + 1, true);
   }
   function scrollNegocio(dir) {
+    if (negocioAnimando) return;
     let next = negocioCurrent + dir;
     if (next < 0) next = NEGOCIO_TOTAL - 1;
     if (next >= NEGOCIO_TOTAL) next = 0;
     negocioCurrent = next;
-    negocioApplyState();
+    negocioSetHighlight();
+    negocioAnimando = true;
+    negocioMoveTo(negocioPos + dir, true);
   }
   function negocioTiltMove(e, inner) {
     const slide = inner.closest('.negocio3d-slide');
@@ -2677,11 +2697,30 @@
   (function initNegocioCarousel() {
     const track = document.getElementById('negocioCarousel');
     if (!track) return;
+    // Clona el primer y el ultimo slide para poder animar siempre hacia delante (o hacia atras) sin
+    // que la pista "rebote" visualmente al llegar al final; al terminar la transicion sobre un clon,
+    // saltamos sin animacion a la tarjeta real equivalente (se ve identica, el salto es invisible).
+    const originales = Array.from(track.querySelectorAll('.negocio3d-slide'));
+    if (originales.length === NEGOCIO_TOTAL) {
+      const cloneUltimo = originales[NEGOCIO_TOTAL - 1].cloneNode(true);
+      const clonePrimero = originales[0].cloneNode(true);
+      cloneUltimo.setAttribute('aria-hidden', 'true');
+      clonePrimero.setAttribute('aria-hidden', 'true');
+      track.insertBefore(cloneUltimo, originales[0]);
+      track.appendChild(clonePrimero);
+    }
     track.querySelectorAll('.negocio3d-slide-inner').forEach(inner => {
       inner.addEventListener('mousemove', (e) => negocioTiltMove(e, inner));
       inner.addEventListener('mouseleave', () => negocioTiltLeave(inner));
     });
-    negocioApplyState();
+    track.addEventListener('transitionend', (e) => {
+      if (e.propertyName !== 'transform') return;
+      negocioAnimando = false;
+      if (negocioPos === 0) negocioMoveTo(NEGOCIO_TOTAL, false);
+      else if (negocioPos === NEGOCIO_TOTAL + 1) negocioMoveTo(1, false);
+    });
+    negocioSetHighlight();
+    negocioMoveTo(1, false);
   })();
 
 // ---- Auth & per-account persistence (Supabase) ----
