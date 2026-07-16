@@ -428,8 +428,16 @@
   }
 
   /* Modal: deeper, softer elevation */
-  #modalCard { border-radius: 18px; box-shadow: 0 1px 2px rgba(22,22,29,0.08), 0 24px 60px -16px rgba(22,22,29,0.35); }
+  #modalCard { border-radius: 18px; box-shadow: 0 1px 2px rgba(22,22,29,0.08), 0 24px 60px -16px rgba(22,22,29,0.35); max-height: 88vh; overflow-y: auto; }
   .modal-overlay { backdrop-filter: blur(4px); }
+
+  /* Aviso de cookies */
+  #cookieBanner { position: fixed; left: 0; right: 0; bottom: 0; z-index: 200; background: #16161D; color: #fff; padding: 18px 20px; display: none; }
+  #cookieBanner.open { display: block; }
+  #cookieBanner .cb-wrap { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  #cookieBanner p { font-size: 13px; color: #C7C7D1; flex: 1 1 320px; margin: 0; }
+  #cookieBanner a { color: #fff; text-decoration: underline; }
+  #cookieBanner .cb-btns { display: flex; gap: 10px; flex-wrap: wrap; }
 
   .dash-two-col { grid-template-columns: 1fr; }
   @media (min-width: 881px) { .dash-two-col { grid-template-columns: 1fr 1fr; } }
@@ -1522,7 +1530,8 @@
       <p class="text-slate-400 font-medium mb-4">Legal</p>
       <ul class="space-y-3 text-navy font-medium">
         <li><a href="javascript:void(0)" onclick="showInfoModal('Términos de servicio', 'Restora está en fase inicial. Tus datos (cuenta, mesas, pedidos, menú, personal e inventario) se guardan en una base de datos en la nube asociada a tu cuenta, no solo en este navegador. Al ser un producto en desarrollo, todavía no ofrecemos garantías formales de disponibilidad ni soporte comercial.')" class="hover:text-accent">Términos de servicio</a></li>
-        <li><a href="javascript:void(0)" onclick="showInfoModal('Política de privacidad', 'Tus datos se guardan de forma segura en un servidor en la nube (Supabase), no solo en el almacenamiento local del navegador. El acceso está protegido con tu correo y contraseña, y la conexión con el servidor va siempre cifrada. Solo tu cuenta puede ver sus propios datos.')" class="hover:text-accent">Política de privacidad</a></li>
+        <li><a href="javascript:void(0)" onclick="mostrarPoliticaPrivacidad()" class="hover:text-accent">Política de privacidad</a></li>
+        <li><a href="javascript:void(0)" onclick="mostrarPoliticaCookies()" class="hover:text-accent">Cookies</a></li>
         <li><a href="javascript:void(0)" onclick="showInfoModal('Seguridad', 'Los datos viajan siempre cifrados (HTTPS) y se guardan en un servidor en la nube con copias de seguridad, no solo en tu navegador. Las contraseñas nunca se guardan en texto plano. Aun así, no introduzcas datos bancarios reales de terceros ni información que no quieras que quede registrada.')" class="hover:text-accent">Seguridad</a></li>
         <li><a href="javascript:void(0)" onclick="openModal('contacto')" class="hover:text-accent">Hablar con ventas</a></li>
       </ul>
@@ -2169,6 +2178,18 @@
 
 <div id="toast" class="toast"></div>
 
+<!-- Aviso de cookies: se muestra hasta que el visitante elige, y bloquea cualquier cookie/almacenamiento
+     no esencial hasta entonces (ver gestionConsentimientoAnaliticas más abajo). -->
+<div id="cookieBanner" role="dialog" aria-label="Aviso de cookies">
+  <div class="cb-wrap">
+    <p>Usamos únicamente cookies técnicas necesarias para que Restora funcione (mantener tu sesión, tu pedido en curso, etc.). No usamos cookies de analítica ni publicidad. Puedes leer más en nuestra <a href="javascript:void(0)" onclick="mostrarPoliticaCookies()">Política de cookies</a>.</p>
+    <div class="cb-btns">
+      <button type="button" onclick="rechazarCookiesNoEsenciales()" class="rounded-full bg-transparent border border-white/30 hover:bg-white/10 transition text-white text-sm font-semibold px-4 py-2">Rechazar no esenciales</button>
+      <button type="button" onclick="aceptarCookies()" class="rounded-full bg-white hover:bg-slate-100 transition text-navy text-sm font-semibold px-5 py-2">Aceptar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Public menu (opened by scanning a table QR) -->
 <div id="publicMenuRoot" class="min-h-screen font-sans text-navy antialiased" style="display:none; background:#F7F8FC">
   <div class="max-w-lg mx-auto px-5 py-10">
@@ -2406,6 +2427,107 @@
       <button onclick="closeModal()" class="mt-6 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>
     `;
     document.getElementById('modalOverlay').classList.add('open');
+  }
+  // Igual que showInfoModal, pero para textos legales largos: admite HTML con varios párrafos/listas
+  // (por eso usa un <div> y no un <p>) y abre el modal ancho para que se lea mejor.
+  function showLegalModal(title, htmlBody, extraBotones) {
+    document.getElementById('modalCard').classList.add('modal-wide');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">${title}</h3>
+      <div class="mt-3 text-sm text-slate-500 space-y-1">${htmlBody}</div>
+      ${extraBotones || ''}
+      <button onclick="closeModal(); document.getElementById('modalCard').classList.remove('modal-wide');" class="mt-6 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>
+    `;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  // ---- Consentimiento de cookies ----
+  // No usamos, a día de hoy, ninguna cookie/almacenamiento no esencial (analítica, publicidad, etc.).
+  // El almacenamiento que ya usa la app (sesión de Supabase, carrito del pedido, snapshot offline...) es
+  // estrictamente técnico/necesario para el servicio y no requiere consentimiento (art. 22.2 LSSI y
+  // guías del RGPD sobre cookies exentas). Este banner deja constancia de la elección del visitante y
+  // sirve de interruptor para el día en que se añada analítica: cualquier script de ese tipo debe
+  // comprobar tieneConsentimientoAnaliticas() antes de cargarse o de escribir ninguna cookie/almacenamiento.
+  const COOKIE_CONSENT_KEY = 'restora_cookie_consent';
+  const COOKIE_CONSENT_VERSION = 1;
+  function obtenerConsentimientoCookies() {
+    try {
+      const raw = localStorage.getItem(COOKIE_CONSENT_KEY);
+      if (!raw) return null;
+      const v = JSON.parse(raw);
+      return v && v.version === COOKIE_CONSENT_VERSION ? v : null;
+    } catch (e) { return null; }
+  }
+  function tieneConsentimientoAnaliticas() {
+    const c = obtenerConsentimientoCookies();
+    return !!(c && c.analiticas);
+  }
+  function guardarConsentimientoCookies(analiticas) {
+    try {
+      localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify({ version: COOKIE_CONSENT_VERSION, analiticas, fecha: new Date().toISOString() }));
+    } catch (e) {}
+    const banner = document.getElementById('cookieBanner');
+    if (banner) banner.classList.remove('open');
+  }
+  function aceptarCookies() { guardarConsentimientoCookies(true); showToast('Preferencia de cookies guardada'); }
+  function rechazarCookiesNoEsenciales() { guardarConsentimientoCookies(false); showToast('Solo se usarán las cookies necesarias'); }
+  function mostrarBannerCookiesSiHaceFalta() {
+    if (obtenerConsentimientoCookies()) return;
+    const banner = document.getElementById('cookieBanner');
+    if (banner) banner.classList.add('open');
+  }
+  function cambiarConsentimientoCookies() {
+    closeModal();
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    const banner = document.getElementById('cookieBanner');
+    if (banner) banner.classList.add('open');
+  }
+
+  function mostrarPoliticaCookies() {
+    showLegalModal('Política de cookies', `
+      <p><b>¿Qué son las cookies?</b> Son pequeños archivos (o tecnologías equivalentes, como el almacenamiento local del navegador) que se guardan en tu dispositivo al usar una web o aplicación, y sirven para recordar información entre visitas.</p>
+      <p class="mt-3"><b>¿Qué usa Restora hoy?</b> Solo almacenamiento técnico, estrictamente necesario para que el servicio funcione y exento de pedir tu consentimiento (art. 22.2 de la LSSI y el RGPD):</p>
+      <ul class="list-disc pl-5 space-y-0.5">
+        <li>Mantener tu sesión iniciada en tu cuenta.</li>
+        <li>El pedido/carrito que estás montando desde el QR de una mesa.</li>
+        <li>Una copia local de tus datos por si se pierde la conexión a internet.</li>
+        <li>Tu propia elección en este aviso de cookies.</li>
+      </ul>
+      <p class="mt-3">No usamos, a día de hoy, cookies de analítica, publicidad ni de terceros con fines de seguimiento.</p>
+      <p class="mt-3"><b>¿Qué pasa si rechazo?</b> Como no usamos cookies no esenciales, tu elección no cambia el funcionamiento de Restora. Si en el futuro incorporamos analítica u otros terceros no esenciales, actualizaremos este aviso y pediremos tu consentimiento explícito antes de activarlos.</p>
+      <p class="mt-3"><b>¿Cómo cambio mi elección?</b> Pulsa el botón de abajo cuando quieras.</p>
+      <p class="mt-3 text-xs text-slate-400">Última actualización: julio de 2026.</p>
+    `, `<button type="button" onclick="cambiarConsentimientoCookies()" class="mt-4 w-full rounded-full border border-slate-200 hover:bg-slate-50 transition text-navy text-sm font-semibold px-5 py-2.5">Cambiar mi elección de cookies</button>`);
+  }
+
+  function mostrarPoliticaPrivacidad() {
+    showLegalModal('Política de privacidad', `
+      <p><b>Responsable del tratamiento.</b> [Nombre completo o razón social] · NIF: [NIF/CIF] · Dirección: [dirección postal] · Contacto: [email de contacto].</p>
+      <p class="mt-3"><b>¿Qué datos tratamos?</b></p>
+      <ul class="list-disc pl-5 space-y-0.5">
+        <li>De tu cuenta: nombre del restaurante, email, contraseña (guardada cifrada, nunca en texto plano), dirección, teléfono y, si los introduces, datos bancarios (titular e IBAN) para cobros.</li>
+        <li>De tu personal, si das de alta empleados: nombre, email, rol, código de acceso, horario y fichajes.</li>
+        <li>De los clientes de tu restaurante: nombre y número de comensales en reservas, mesa y notas de pedidos (alergias, peticiones) que ellos mismos introducen al reservar o pedir desde el QR/enlace público.</li>
+        <li>Datos técnicos recogidos automáticamente por motivos de seguridad (dirección IP, navegador, dispositivo).</li>
+      </ul>
+      <p class="mt-3"><b>¿Con qué finalidad?</b> Prestarte el servicio de gestión de tu restaurante; permitir que tus clientes reserven o pidan desde el QR/enlace público; generar recomendaciones, transcripciones de carta e informes mediante inteligencia artificial a partir de los datos que tú introduces; enviarte comunicaciones sobre el servicio; y cumplir obligaciones legales (fiscales, contables).</p>
+      <p class="mt-3"><b>Base legal.</b> Ejecución del contrato de servicio (art. 6.1.b RGPD); consentimiento para funcionalidades opcionales que actives tú mismo, como Google Calendar o las plataformas de delivery (art. 6.1.a); interés legítimo en la seguridad de la plataforma (art. 6.1.f); y obligación legal para datos fiscales/contables (art. 6.1.c).</p>
+      <p class="mt-3"><b>¿A quién se comunican tus datos?</b> Trabajamos con encargados de tratamiento que solo acceden a los datos para prestarnos su servicio técnico:</p>
+      <ul class="list-disc pl-5 space-y-0.5">
+        <li><b>Supabase, Inc.</b> — alojamiento de la base de datos y autenticación (puede implicar transferencia internacional amparada por Cláusulas Contractuales Tipo de la Comisión Europea).</li>
+        <li><b>Anthropic, PBC</b> — inteligencia artificial del asistente, transcripción de carta e informes, solo con los datos que tú decides enviarle usando esas funciones.</li>
+        <li><b>Cloudflare, Inc.</b> — alojamiento y entrega del sitio web.</li>
+        <li><b>Google LLC</b> — solo si conectas voluntariamente la sincronización con Google Calendar.</li>
+        <li><b>Glovo, Uber Eats, Just Eat</b> — solo si conectas voluntariamente estas plataformas de delivery.</li>
+      </ul>
+      <p class="mt-3">No vendemos ni cedemos tus datos a terceros con fines publicitarios.</p>
+      <p class="mt-3"><b>¿Cuánto tiempo los conservamos?</b> Mientras tu cuenta esté activa. Si la das de baja, conservaremos únicamente lo que la ley exija (p. ej. documentación fiscal, hasta 6 años según el Código de Comercio) y eliminaremos el resto.</p>
+      <p class="mt-3"><b>Tus derechos.</b> Puedes ejercer en cualquier momento tus derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad escribiendo a [email de contacto]. Tienes también derecho a reclamar ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es" target="_blank" rel="noopener">www.aepd.es</a>) si consideras que no hemos tratado tus datos correctamente.</p>
+      <p class="mt-3"><b>Seguridad.</b> Aplicamos medidas técnicas y organizativas para proteger tus datos: cifrado en tránsito (HTTPS), contraseñas nunca almacenadas en texto plano, y acceso restringido a cada cuenta mediante autenticación.</p>
+      <p class="mt-3"><b>Menores de edad.</b> Restora no está dirigido a menores de 14 años.</p>
+      <p class="mt-3"><b>Cambios.</b> Podemos actualizar esta política para adaptarla a novedades legislativas o del servicio; te avisaremos de cambios sustanciales.</p>
+      <p class="mt-3 text-xs text-slate-400">Última actualización: julio de 2026.</p>
+    `);
   }
 
   function scrollNegocio(dir) {
@@ -10652,6 +10774,7 @@
   })();
 
   (async function initAuth() {
+    mostrarBannerCookiesSiHaceFalta();
     const params = new URLSearchParams(location.search);
     const funcionKey = params.get('funcion');
     if (FUNC_PAGES_ACTIVAS && funcionKey && FUNCIONES_INFO[funcionKey]) {
