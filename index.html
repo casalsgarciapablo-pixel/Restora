@@ -617,10 +617,12 @@
      por JS para coincidir con el enlace activo. */
   .tube-nav { position: relative; display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.7); border: 1px solid #ECECF3; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding: 6px; border-radius: 999px; box-shadow: 0 8px 30px -12px rgba(22,22,29,0.18); }
   .tube-nav-float { position: fixed; top: 34px; left: 50%; transform: translateX(-50%); z-index: 40; }
-  /* Empuja los botones de la derecha hasta el borde libre de la pantalla, aprovechando el margen que
-     queda a la derecha del contenedor (max-w-7xl = 1280px). Así se ven completos y dejan aire a la
-     barra central, sin mover el logo ni provocar scroll horizontal (el clamp nunca excede ese margen). */
-  .landing-header-actions { transform: translateX(clamp(0px, calc((100vw - 1280px) / 2), 96px)); }
+  /* Empuja los botones de la derecha casi hasta el borde de la pantalla para que se vean completos y
+     dejen bastante aire a la barra central, sin mover el logo. Ojo: #landingRoot tiene zoom:0.9, así
+     que (a) el contenedor de 1280px se ve a 1152px y deja más margen del aparente, y (b) el propio
+     translate se reduce un 10%; por eso se calcula sobre 1152px y se divide entre 0.9. El -24px deja un
+     pequeño hueco con el borde y el clamp evita que se salga (scroll horizontal). */
+  .landing-header-actions { transform: translateX(clamp(0px, calc(((100vw - 1152px) / 2 - 24px) / 0.9), 260px)); }
   .tube-link { position: relative; display: flex; align-items: center; gap: 6px; padding: 9px 15px; border-radius: 999px; font-size: 14px; font-weight: 600; color: #6B7280; text-decoration: none; white-space: nowrap; transition: color .2s ease; z-index: 1; }
   .tube-link:hover { color: #16161D; }
   .tube-link.active { color: #16161D; }
