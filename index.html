@@ -611,12 +611,14 @@
   .sidebar-backdrop { display: none; }
 
   /* Barra de navegación flotante "tubelight" de la landing (solo escritorio; el móvil usa el menú
-     hamburguesa ya existente, ver @media 880px más abajo). El logo y los botones de la cabecera NO se
-     mueven de su sitio; solo esta barra se "despega" y queda fija arriba al hacer scroll (la clase
-     .pinned la añade/quita initTubeNavPin() más abajo). El "tubeLamp" es un div posicionado en
-     absoluto que se mueve/redimensiona por JS para coincidir con el enlace activo. */
+     hamburguesa ya existente, ver @media 880px más abajo). Está fija y centrada en horizontal; su
+     posición vertical (top) la fija alinearTubeNav() por JS para que quede a la misma altura que los
+     botones de la cabecera. El "tubeLamp" es un div posicionado en absoluto que se mueve/redimensiona
+     por JS para coincidir con el enlace activo. */
   .tube-nav { position: relative; display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.7); border: 1px solid #ECECF3; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding: 6px; border-radius: 999px; box-shadow: 0 8px 30px -12px rgba(22,22,29,0.18); }
-  .tube-nav-float { position: fixed; top: 18px; left: 50%; transform: translateX(-50%); z-index: 40; }
+  .tube-nav-float { position: fixed; top: 34px; left: 50%; transform: translateX(-50%); z-index: 40; }
+  /* Los botones de la derecha, un poco más hacia el borde para dejar aire a la barra central. */
+  .landing-header-actions { margin-right: -1rem; }
   .tube-link { position: relative; display: flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; color: #6B7280; text-decoration: none; white-space: nowrap; transition: color .2s ease; z-index: 1; }
   .tube-link:hover { color: #16161D; }
   .tube-link.active { color: #16161D; }
@@ -815,7 +817,7 @@
   </div>
 
   <!-- Nav -->
-  <header class="landing-header mx-auto flex items-center justify-between px-6 py-6 relative z-10" style="max-width:1600px;">
+  <header class="landing-header max-w-7xl mx-auto flex items-center justify-between px-6 py-6 relative z-10">
     <a href="#" class="flex items-center gap-2.5">
       <span class="app-brand-mark" style="width:32px;height:32px;border-radius:9px;font-size:16px;">R</span>
       <span class="brand text-2xl text-navy">Restora</span>
@@ -10917,6 +10919,26 @@
       });
     }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
     items.forEach(el => io.observe(el));
+  })();
+
+  (function alinearTubeNav() {
+    // Coloca la barra fija a la misma altura (centro vertical) que los botones de la cabecera. Solo se
+    // mide con la página arriba del todo, para no recalcular con posiciones ya desplazadas por scroll.
+    const bar = document.getElementById('tubeNavFloat');
+    const actions = document.querySelector('.landing-header-actions');
+    if (!bar || !actions) return;
+    function alinear() {
+      if (window.scrollY > 5) return;
+      const r = actions.getBoundingClientRect();
+      if (!r.height) return; // oculto (móvil): no tocar
+      const top = r.top + r.height / 2 - bar.offsetHeight / 2;
+      bar.style.top = Math.max(8, Math.round(top)) + 'px';
+    }
+    alinear();
+    window.addEventListener('resize', alinear);
+    window.addEventListener('load', alinear);
+    requestAnimationFrame(alinear);
+    setTimeout(alinear, 300);
   })();
 
   (function initTubeNav() {
