@@ -610,7 +610,7 @@
   .expand-media { position: relative; z-index: 5; border-radius: 20px; overflow: hidden; box-shadow: 0 30px 80px -20px rgba(11,15,30,0.55); width: 320px; height: 400px; }
   .expand-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
   .expand-veil { position: absolute; inset: 0; background: #0b0f1e; opacity: 0.4; pointer-events: none; }
-  .expand-titles { position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center; gap: 20px; pointer-events: none; }
+  .expand-titles { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; pointer-events: none; }
   .expand-title { font-weight: 800; font-size: 62px; letter-spacing: -0.03em; color: #fff; text-shadow: 0 4px 24px rgba(11,15,30,0.5); white-space: nowrap; }
   .expand-hint { position: absolute; z-index: 6; bottom: 28px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 13px; font-weight: 600; opacity: 0.85; }
   @media (max-width: 880px) { .expand-sec { height: 200vh; } .expand-title { font-size: 32px; } }
@@ -1349,8 +1349,8 @@
       <div id="expandVeil" class="expand-veil"></div>
     </div>
     <div class="expand-titles" aria-hidden="true">
-      <span id="expandTitleL" class="expand-title">Restora</span>
-      <span id="expandTitleR" class="expand-title">en acción</span>
+      <span id="expandTitleL" class="expand-title">La mejor gestión</span>
+      <span id="expandTitleR" class="expand-title">Restora</span>
     </div>
     <p id="expandHint" class="expand-hint">Sigue bajando</p>
   </div>
