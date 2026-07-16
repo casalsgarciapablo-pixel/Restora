@@ -207,6 +207,12 @@
   /* Topbar: subtle separation from content */
   .app-topbar { box-shadow: 0 1px 0 rgba(16,24,40,0.05), 0 2px 10px -6px rgba(16,24,40,0.08); position: relative; z-index: 30; }
 
+  /* Fluidez de scroll: inercia en iOS y sin "encadenar" el scroll con el resto de la página al llegar
+     al final de un área desplazable (se siente más como una app nativa). */
+  .app-main, .modal-overlay, .ia-quick-panel, #iaChat, #iaConversacionesList { -webkit-overflow-scrolling: touch; }
+  .app-main, .ia-quick-panel, #iaChat, .modal-overlay { overscroll-behavior: contain; }
+  .negocio-carousel { overscroll-behavior-x: contain; }
+
   /* Tables: refined header row */
   #appRoot table thead tr th { font-size: 10.5px; letter-spacing: 0.045em; text-transform: uppercase; font-weight: 700; }
   #appRoot table tbody tr:hover { background-color: #f8fafc; }
@@ -603,11 +609,11 @@
   .expand-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; }
   .expand-bg { position: absolute; inset: 0; background: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1920&auto=format&fit=crop') center/cover no-repeat; }
   .expand-bg::after { content: ''; position: absolute; inset: 0; background: rgba(11,15,30,0.45); }
-  .expand-media { position: relative; z-index: 5; border-radius: 20px; overflow: hidden; box-shadow: 0 30px 80px -20px rgba(11,15,30,0.55); width: 320px; height: 400px; }
+  .expand-media { position: relative; z-index: 5; border-radius: 20px; overflow: hidden; box-shadow: 0 30px 80px -20px rgba(11,15,30,0.55); width: 320px; height: 400px; transform-origin: center center; will-change: transform; backface-visibility: hidden; }
   .expand-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
   .expand-veil { position: absolute; inset: 0; background: #0b0f1e; opacity: 0.4; pointer-events: none; }
   .expand-titles { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; pointer-events: none; }
-  .expand-title { font-weight: 800; font-size: 62px; letter-spacing: -0.03em; color: #fff; text-shadow: 0 4px 24px rgba(11,15,30,0.5); white-space: nowrap; }
+  .expand-title { font-weight: 800; font-size: 62px; letter-spacing: -0.03em; color: #fff; text-shadow: 0 4px 24px rgba(11,15,30,0.5); white-space: nowrap; will-change: transform; }
   .expand-hint { position: absolute; z-index: 6; bottom: 28px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 13px; font-weight: 600; opacity: 0.85; }
   @media (max-width: 880px) { .expand-sec { height: 200vh; } .expand-title { font-size: 32px; } }
 
@@ -659,6 +665,10 @@
   html:not(.tema-oscuro) #landingRoot button,
   html:not(.tema-oscuro) #landingRoot a.rounded-full,
   html:not(.tema-oscuro) #landingRoot [class*="rounded-full"][onclick] { box-shadow: 0 0 0 1px rgba(79,63,255,0.12), 0 8px 26px -6px rgba(79,63,255,0.4); }
+  /* Los botones del selector de periodo (Día/Semana/Mes/Año) no llevan ese resplandor: mantienen su
+     sombra sutil original de control segmentado. */
+  html:not(.tema-oscuro) #landingRoot .dash-seg button { box-shadow: none; }
+  html:not(.tema-oscuro) #landingRoot .dash-seg button.active { box-shadow: 0 1px 2px rgba(22,22,29,0.09), 0 1px 3px rgba(22,22,29,0.05); }
   .landing-mobile-panel .lang-switcher { align-self: flex-start; margin-top: 12px; font-size: 15px; padding: 8px 14px; border-bottom: 1px solid #e2e8f0 !important; }
   .landing-mobile-btn { display: none; background: none; border: none; padding: 6px; color: #0b2142; cursor: pointer; }
   .landing-mobile-panel { display: none; }
@@ -11125,20 +11135,29 @@
     const tR = document.getElementById('expandTitleR');
     const hint = document.getElementById('expandHint');
     if (!sec || !stage || !media) return;
+    // Medimos el tamaño máximo (y fijamos el vídeo a ese tamaño) solo al cargar y al redimensionar.
+    // Durante el scroll únicamente se cambia transform:scale/opacity, que no recalculan layout → fluido.
+    let maxW = 0, maxH = 0, stageH = 0;
+    function medir() {
+      // El zoom de #landingRoot (0.9 en escritorio) escala lo que pintamos: se compensa dividiendo
+      // para que el tamaño final del vídeo llene el viewport real y no el "encogido".
+      const zoom = window.innerWidth <= 880 ? 1 : 0.9;
+      maxW = window.innerWidth * 0.94 / zoom;
+      maxH = window.innerHeight * 0.86 / zoom;
+      stageH = stage.getBoundingClientRect().height;
+      media.style.width = Math.round(maxW) + 'px';
+      media.style.height = Math.round(maxH) + 'px';
+    }
     let raf = null;
     function aplicar() {
       raf = null;
       const rect = sec.getBoundingClientRect();
-      const total = rect.height - stage.getBoundingClientRect().height;
+      const total = rect.height - stageH;
       if (total <= 0) return;
       const p = Math.min(1, Math.max(0, -rect.top / total));
-      // El zoom de #landingRoot (0.9 en escritorio) escala lo que pintamos: se compensa dividiendo
-      // para que el tamaño final del vídeo llene el viewport real y no el "encogido".
-      const zoom = window.innerWidth <= 880 ? 1 : 0.9;
-      const maxW = window.innerWidth * 0.94 / zoom;
-      const maxH = window.innerHeight * 0.86 / zoom;
-      media.style.width = Math.round(320 + p * (maxW - 320)) + 'px';
-      media.style.height = Math.round(400 + p * (maxH - 400)) + 'px';
+      const sx = (320 + p * (maxW - 320)) / maxW;
+      const sy = (400 + p * (maxH - 400)) / maxH;
+      media.style.transform = 'scale(' + sx.toFixed(4) + ',' + sy.toFixed(4) + ')';
       if (bg) bg.style.opacity = String(1 - p);
       if (veil) veil.style.opacity = String(Math.max(0.05, 0.4 - p * 0.35));
       const despl = p * 46;
@@ -11147,9 +11166,10 @@
       if (hint) hint.style.opacity = String(Math.max(0, 0.85 - p * 1.7));
     }
     function onScroll() { if (raf == null) raf = requestAnimationFrame(aplicar); }
+    medir();
     aplicar();
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
+    window.addEventListener('resize', function () { medir(); onScroll(); });
   })();
 
   (function initHeroCountUp() {
