@@ -604,6 +604,8 @@
   .platos-grid { column-gap: 3rem; }
   .lang-switcher { background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 6px 10px; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; outline: none; }
   .lang-switcher:hover { border-color: #cbd5e1; }
+  /* Selector de idioma fijo, siempre visible abajo a la derecha de la pantalla. */
+  .lang-switcher-fixed { position: fixed; bottom: 20px; right: 20px; z-index: 45; box-shadow: 0 6px 20px -6px rgba(22,22,29,0.25); }
   .landing-mobile-panel .lang-switcher { align-self: flex-start; margin-top: 12px; font-size: 15px; padding: 8px 14px; border-bottom: 1px solid #e2e8f0 !important; }
   .landing-mobile-btn { display: none; background: none; border: none; padding: 6px; color: #0b2142; cursor: pointer; }
   .landing-mobile-panel { display: none; }
@@ -617,6 +619,10 @@
      por JS para coincidir con el enlace activo. */
   .tube-nav { position: relative; display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.7); border: 1px solid #ECECF3; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding: 6px; border-radius: 999px; box-shadow: 0 8px 30px -12px rgba(22,22,29,0.18); }
   .tube-nav-float { position: fixed; top: 34px; left: 50%; transform: translateX(-50%); z-index: 40; }
+  /* Cuando la landing no está visible (app, carta pública, reservas…), oculta su barra y su selector de
+     idioma flotantes para que no aparezcan por encima de esas vistas. */
+  #landingRoot[style*="display: none"] ~ #tubeNavFloat,
+  #landingRoot[style*="display: none"] ~ .lang-switcher-fixed { display: none !important; }
   /* Empuja los botones de la derecha casi hasta el borde de la pantalla para que se vean completos y
      dejen bastante aire a la barra central, sin mover el logo. Ojo: #landingRoot tiene zoom:0.9, así
      que (a) el contenedor de 1280px se ve a 1152px y deja más margen del aparente, y (b) el propio
@@ -639,6 +645,7 @@
     .landing-header-actions { display: none !important; }
     .tube-nav { display: none !important; }
     .tube-nav-float { display: none !important; }
+    .lang-switcher-fixed { display: none !important; }
     .landing-mobile-btn { display: inline-flex; align-items: center; justify-content: center; }
     .landing-mobile-panel { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #fff; flex-direction: column; padding: 90px 24px 24px; gap: 4px; z-index: 150; overflow-y: auto; }
     .landing-mobile-panel a { padding: 12px 4px; font-size: 16px; font-weight: 500; color: #0b2142; border-bottom: 1px solid #f1f5f9; }
@@ -777,20 +784,6 @@
     .ia-quick-fab { bottom: 18px; right: 18px; }
   }
 </style>
-<!-- Barra de secciones de la landing: fija y centrada en horizontal SIEMPRE (arriba del todo también),
-     nunca cambia de sitio al hacer scroll. Vive FUERA de #landingRoot a propósito: ese contenedor tiene
-     un "zoom" aplicado que rompe position:fixed de sus descendientes en varios navegadores. Al vivir a
-     nivel de body, su position:fixed funciona de forma fiable. initTubeNav() lleva la "lámpara"/enlace
-     activo. -->
-<nav id="tubeNavFloat" class="tube-nav tube-nav-float" aria-label="Navegación principal">
-  <div id="tubeLampFloat" class="tube-lamp" aria-hidden="true"></div>
-  <a href="#inicio" data-tube="inicio" class="tube-link">Inicio</a>
-  <a href="#plantillas" data-tube="plantillas" class="tube-link">Plantillas</a>
-  <a href="#funcionalidades" data-tube="funcionalidades" class="tube-link">Funcionalidades</a>
-  <a href="#precios" data-tube="precios" class="tube-link">Precios</a>
-  <a href="#blog" data-tube="blog" class="tube-link">Blog</a>
-</nav>
-
 <div id="landingRoot" class="font-sans text-navy antialiased">
 
 
@@ -822,17 +815,10 @@
 
   <!-- Nav -->
   <header class="landing-header max-w-7xl mx-auto flex items-center justify-between px-6 py-6 relative z-10">
-    <div class="flex items-center gap-4">
-      <a href="#" class="flex items-center gap-2.5">
-        <span class="app-brand-mark" style="width:32px;height:32px;border-radius:9px;font-size:16px;">R</span>
-        <span class="brand text-2xl text-navy">Restora</span>
-      </a>
-      <select id="langSwitcherDesktop" onchange="setLang(this.value)" class="lang-switcher" aria-label="Idioma">
-        <option value="es">ES</option>
-        <option value="ca">CA</option>
-        <option value="en">EN</option>
-      </select>
-    </div>
+    <a href="#" class="flex items-center gap-2.5">
+      <span class="app-brand-mark" style="width:32px;height:32px;border-radius:9px;font-size:16px;">R</span>
+      <span class="brand text-2xl text-navy">Restora</span>
+    </a>
     <div class="landing-header-actions flex items-center gap-3">
       <a href="javascript:void(0)" onclick="openModal('staff-login')" class="text-slate-400 hover:text-navy transition text-xs sm:text-sm font-medium px-1 sm:px-2 whitespace-nowrap">Entrar como trabajador</a>
       <a href="javascript:void(0)" onclick="openModal('login')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Iniciar sesión</a>
@@ -1584,6 +1570,24 @@
 </footer>
 
 </div><!-- /landingRoot -->
+
+<!-- Barra de secciones y selector de idioma de la landing: fijos, FUERA de #landingRoot a propósito
+     (ese contenedor tiene un "zoom" que rompe position:fixed). Van DESPUÉS de #landingRoot para poder
+     ocultarlos por CSS cuando la landing no está visible (regla #landingRoot[style*="display: none"] ~ …),
+     y así no aparecen sobre la app ni sobre las páginas públicas (carta/reservas). -->
+<nav id="tubeNavFloat" class="tube-nav tube-nav-float" aria-label="Navegación principal">
+  <div id="tubeLampFloat" class="tube-lamp" aria-hidden="true"></div>
+  <a href="#inicio" data-tube="inicio" class="tube-link">Inicio</a>
+  <a href="#plantillas" data-tube="plantillas" class="tube-link">Plantillas</a>
+  <a href="#funcionalidades" data-tube="funcionalidades" class="tube-link">Funcionalidades</a>
+  <a href="#precios" data-tube="precios" class="tube-link">Precios</a>
+  <a href="#blog" data-tube="blog" class="tube-link">Blog</a>
+</nav>
+<select id="langSwitcherDesktop" onchange="setLang(this.value)" class="lang-switcher lang-switcher-fixed" aria-label="Idioma">
+  <option value="es">ES</option>
+  <option value="ca">CA</option>
+  <option value="en">EN</option>
+</select>
 
 <div id="landingMobilePanel" class="landing-mobile-panel">
   <button type="button" onclick="toggleLandingMobileNav(false)" class="landing-mobile-panel-close" aria-label="Cerrar menú">
