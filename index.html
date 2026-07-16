@@ -822,18 +822,18 @@
 
   <!-- Nav -->
   <header class="landing-header max-w-7xl mx-auto flex items-center justify-between px-6 py-6 relative z-10">
-    <a href="#" class="flex items-center gap-2.5">
-      <span class="app-brand-mark" style="width:32px;height:32px;border-radius:9px;font-size:16px;">R</span>
-      <span class="brand text-2xl text-navy">Restora</span>
-    </a>
-    <!-- Barra de navegación estilo "tubelight": en la posición del antiguo <nav> de enlaces, entre el
-         logo y las acciones. Solo en escritorio, el móvil ya tiene su propio menú hamburguesa. -->
-    <div class="landing-header-actions flex items-center gap-3">
+    <div class="flex items-center gap-4">
+      <a href="#" class="flex items-center gap-2.5">
+        <span class="app-brand-mark" style="width:32px;height:32px;border-radius:9px;font-size:16px;">R</span>
+        <span class="brand text-2xl text-navy">Restora</span>
+      </a>
       <select id="langSwitcherDesktop" onchange="setLang(this.value)" class="lang-switcher" aria-label="Idioma">
         <option value="es">ES</option>
         <option value="ca">CA</option>
         <option value="en">EN</option>
       </select>
+    </div>
+    <div class="landing-header-actions flex items-center gap-3">
       <a href="javascript:void(0)" onclick="openModal('staff-login')" class="text-slate-400 hover:text-navy transition text-xs sm:text-sm font-medium px-1 sm:px-2 whitespace-nowrap">Entrar como trabajador</a>
       <a href="javascript:void(0)" onclick="openModal('login')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Iniciar sesión</a>
       <a href="javascript:void(0)" onclick="openModal('signup')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5 whitespace-nowrap">Prueba gratis -></a>
