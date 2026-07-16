@@ -637,7 +637,7 @@
   html.tema-oscuro .lang-switcher-fixed,
   html.tema-oscuro .theme-toggle-fixed,
   html.tema-oscuro #cookieBanner,
-  html.tema-oscuro #modalOverlay,
+  html.tema-oscuro #modalCard,
   html.tema-oscuro #toast { filter: invert(0.94) hue-rotate(180deg); }
   /* #appRoot filtrado se convierte en bloque contenedor de sus elementos position:fixed (panel del
      asistente, drawer del sidebar en móvil), que al estar ocultos fuera de pantalla desbordarían y
@@ -654,6 +654,13 @@
   html.tema-oscuro #appRoot iframe,
   html.tema-oscuro #modalOverlay img,
   html.tema-oscuro #modalOverlay canvas { filter: invert(1) hue-rotate(180deg); }
+  /* Modo claro: brillo/resplandor en el texto navy y en los botones, similar al efecto que da la
+     inversión de colores del modo oscuro. Solo se aplica cuando NO está activo .tema-oscuro, para no
+     alterar el aspecto ya existente en modo oscuro. */
+  html:not(.tema-oscuro) #landingRoot .text-navy { text-shadow: 0 0 16px rgba(79,63,255,0.22), 0 1px 0 rgba(255,255,255,0.6); }
+  html:not(.tema-oscuro) #landingRoot button,
+  html:not(.tema-oscuro) #landingRoot a.rounded-full,
+  html:not(.tema-oscuro) #landingRoot [class*="rounded-full"][onclick] { box-shadow: 0 0 0 1px rgba(79,63,255,0.12), 0 8px 26px -6px rgba(79,63,255,0.4); }
   .landing-mobile-panel .lang-switcher { align-self: flex-start; margin-top: 12px; font-size: 15px; padding: 8px 14px; border-bottom: 1px solid #e2e8f0 !important; }
   .landing-mobile-btn { display: none; background: none; border: none; padding: 6px; color: #0b2142; cursor: pointer; }
   .landing-mobile-panel { display: none; }
