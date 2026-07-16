@@ -602,6 +602,22 @@
 
   /* ============ Mobile / tablet responsive layer (desktop >880px untouched) ============ */
   .platos-grid { column-gap: 3rem; }
+  /* Sección de vídeo que se expande con el scroll (adaptación vanilla del "scroll-expansion-hero"):
+     la sección mide más de una pantalla y su escenario interior queda pegado (sticky) mientras se
+     recorre; el progreso del scroll agranda el vídeo de tarjeta a pantalla casi completa, desvanece la
+     foto de fondo y separa las dos mitades del título hacia los lados. Todo lo mueve initExpandVideo(). */
+  .expand-sec { position: relative; height: 240vh; }
+  .expand-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .expand-bg { position: absolute; inset: 0; background: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1920&auto=format&fit=crop') center/cover no-repeat; }
+  .expand-bg::after { content: ''; position: absolute; inset: 0; background: rgba(11,15,30,0.45); }
+  .expand-media { position: relative; z-index: 5; border-radius: 20px; overflow: hidden; box-shadow: 0 30px 80px -20px rgba(11,15,30,0.55); width: 320px; height: 400px; }
+  .expand-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .expand-veil { position: absolute; inset: 0; background: #0b0f1e; opacity: 0.4; pointer-events: none; }
+  .expand-titles { position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center; gap: 20px; pointer-events: none; }
+  .expand-title { font-weight: 800; font-size: 62px; letter-spacing: -0.03em; color: #fff; text-shadow: 0 4px 24px rgba(11,15,30,0.5); white-space: nowrap; }
+  .expand-hint { position: absolute; z-index: 6; bottom: 28px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 13px; font-weight: 600; opacity: 0.85; }
+  @media (max-width: 880px) { .expand-sec { height: 200vh; } .expand-title { font-size: 32px; } }
+
   .lang-switcher { background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 6px 10px; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; outline: none; }
   .lang-switcher:hover { border-color: #cbd5e1; }
   /* Selector de idioma fijo, siempre visible abajo a la derecha de la pantalla. */
@@ -1277,6 +1293,22 @@
         <p class="mt-2 text-slate-500 text-sm">Chat interno en tiempo real entre todos los dispositivos del restaurante, sin grupos de WhatsApp.</p>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- Vídeo que se expande al hacer scroll (el vídeo es un marcador de posición, pendiente de sustituir) -->
+<section id="videoExpand" class="expand-sec">
+  <div class="expand-stage">
+    <div id="expandBg" class="expand-bg"></div>
+    <div id="expandMedia" class="expand-media">
+      <video id="expandVideo" src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" autoplay muted loop playsinline preload="metadata"></video>
+      <div id="expandVeil" class="expand-veil"></div>
+    </div>
+    <div class="expand-titles" aria-hidden="true">
+      <span id="expandTitleL" class="expand-title">Restora</span>
+      <span id="expandTitleR" class="expand-title">en acción</span>
+    </div>
+    <p id="expandHint" class="expand-hint">Sigue bajando</p>
   </div>
 </section>
 
@@ -10979,6 +11011,43 @@
       entries.forEach(entry => { if (entry.isIntersecting) activarPorId(entry.target.id); });
     }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
     secciones.forEach(s => io.observe(s));
+  })();
+
+  (function initExpandVideo() {
+    const sec = document.getElementById('videoExpand');
+    const stage = sec && sec.querySelector('.expand-stage');
+    const media = document.getElementById('expandMedia');
+    const bg = document.getElementById('expandBg');
+    const veil = document.getElementById('expandVeil');
+    const tL = document.getElementById('expandTitleL');
+    const tR = document.getElementById('expandTitleR');
+    const hint = document.getElementById('expandHint');
+    if (!sec || !stage || !media) return;
+    let raf = null;
+    function aplicar() {
+      raf = null;
+      const rect = sec.getBoundingClientRect();
+      const total = rect.height - stage.getBoundingClientRect().height;
+      if (total <= 0) return;
+      const p = Math.min(1, Math.max(0, -rect.top / total));
+      // El zoom de #landingRoot (0.9 en escritorio) escala lo que pintamos: se compensa dividiendo
+      // para que el tamaño final del vídeo llene el viewport real y no el "encogido".
+      const zoom = window.innerWidth <= 880 ? 1 : 0.9;
+      const maxW = window.innerWidth * 0.94 / zoom;
+      const maxH = window.innerHeight * 0.86 / zoom;
+      media.style.width = Math.round(320 + p * (maxW - 320)) + 'px';
+      media.style.height = Math.round(400 + p * (maxH - 400)) + 'px';
+      if (bg) bg.style.opacity = String(1 - p);
+      if (veil) veil.style.opacity = String(Math.max(0.05, 0.4 - p * 0.35));
+      const despl = p * 46;
+      if (tL) tL.style.transform = 'translateX(-' + despl + 'vw)';
+      if (tR) tR.style.transform = 'translateX(' + despl + 'vw)';
+      if (hint) hint.style.opacity = String(Math.max(0, 0.85 - p * 1.7));
+    }
+    function onScroll() { if (raf == null) raf = requestAnimationFrame(aplicar); }
+    aplicar();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
   })();
 
   (function initHeroCountUp() {
