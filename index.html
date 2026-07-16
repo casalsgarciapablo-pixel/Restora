@@ -33,7 +33,6 @@
   .reveal.in-view { opacity: 1; transform: translateY(0); }
   .text-amber-400 { color: #fbbf24; }
   .tracking-wider { letter-spacing: 0.05em; }
-  .marquee-wrap { overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent); mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent); }
   .negocio3d-wrap { perspective: 1400px; overflow: hidden; padding: 0.5rem 0 1rem; }
   .negocio3d-track { display: flex; transition: transform .7s cubic-bezier(.4,0,.2,1); will-change: transform; }
   .negocio3d-slide { flex: 0 0 auto; width: min(78vw, 380px); height: min(78vw, 380px); margin: 0 1.25rem; cursor: pointer; }
@@ -110,9 +109,6 @@
   .func-paso { position: relative; display: flex; align-items: flex-start; gap: 16px; }
   .func-paso-num { position: relative; z-index: 1; width: 28px; height: 28px; border-radius: 9999px; background: linear-gradient(135deg, #16295a, #0a1830); color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 10px -2px rgba(10,24,48,0.4); }
   .func-kicker { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #4F3FFF; text-align: center; }
-  .marquee-track { display: flex; align-items: center; gap: 3rem; width: max-content; animation: marquee-right 32s linear infinite; }
-  .marquee-wrap:hover .marquee-track { animation-play-state: paused; }
-  @keyframes marquee-right { from { transform: translateX(-50%); } to { transform: translateX(0%); } }
   @media (min-width: 640px) { .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .nav-item { transition: background-color .15s, color .15s; cursor: pointer; color: #101014; font-weight: 500; border-radius: 10px; }
   .nav-item:hover { background: #F4F5F9; }
@@ -363,7 +359,7 @@
   @keyframes chipFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
   #landingRoot .float-chip { animation: chipFloat 4.5s ease-in-out infinite; }
   @media (prefers-reduced-motion: reduce) {
-    #landingRoot .hero-glow path, #landingRoot .hero-title, #landingRoot .hero-sub, #landingRoot .hero-mock-wrap, #landingRoot .float-chip, .marquee-track { animation: none !important; }
+    #landingRoot .hero-glow path, #landingRoot .hero-title, #landingRoot .hero-sub, #landingRoot .hero-mock-wrap, #landingRoot .float-chip { animation: none !important; }
   }
 
   /* ============ SaaS design system: neutral ink, hairline borders, layered depth (landing untouched) ============ */
@@ -1019,43 +1015,6 @@
   </div>
   </section>
 </div>
-
-<!-- Trust bar -->
-<section class="max-w-6xl mx-auto px-6 pb-24 text-center reveal">
-  <p class="text-sm text-slate-500 mb-8">Ayudando a estos restaurantes a crecer más rápido</p>
-  <div class="marquee-wrap">
-    <div class="marquee-track opacity-90 text-slate-500">
-      <span class="italic text-xl" style="font-family:cursive">Sabora</span>
-      <span class="font-black text-xl tracking-tight">FOGÓN</span>
-      <span class="font-semibold text-lg flex items-center gap-1"><span class="w-4 h-4 rounded bg-slate-700 inline-block"></span>ComandaBar</span>
-      <span class="font-bold text-lg tracking-wide">▷ DELICIA</span>
-      <span class="font-serif italic text-xl">brasa</span>
-      <span class="font-medium text-lg flex items-center gap-1">◎ terraza</span>
-      <span class="font-bold text-lg">⌂ hostal+</span>
-      <span class="font-semibold text-lg">⬡ Nuevo</span>
-      <span class="font-bold text-base tracking-[0.2em]">FONDINA</span>
-      <span class="font-semibold text-lg">☰ Platillo</span>
-      <span class="font-bold text-lg">◉ Sazón</span>
-      <span class="font-serif text-xl">Solera</span>
-      <span class="font-bold text-lg">◈ trek foods</span>
-      <span class="font-extrabold text-lg">cantina</span>
-      <span class="italic text-xl" style="font-family:cursive" aria-hidden="true">Sabora</span>
-      <span class="font-black text-xl tracking-tight" aria-hidden="true">FOGÓN</span>
-      <span class="font-semibold text-lg flex items-center gap-1" aria-hidden="true"><span class="w-4 h-4 rounded bg-slate-700 inline-block"></span>ComandaBar</span>
-      <span class="font-bold text-lg tracking-wide" aria-hidden="true">▷ DELICIA</span>
-      <span class="font-serif italic text-xl" aria-hidden="true">brasa</span>
-      <span class="font-medium text-lg flex items-center gap-1" aria-hidden="true">◎ terraza</span>
-      <span class="font-bold text-lg" aria-hidden="true">⌂ hostal+</span>
-      <span class="font-semibold text-lg" aria-hidden="true">⬡ Nuevo</span>
-      <span class="font-bold text-base tracking-[0.2em]" aria-hidden="true">FONDINA</span>
-      <span class="font-semibold text-lg" aria-hidden="true">☰ Platillo</span>
-      <span class="font-bold text-lg" aria-hidden="true">◉ Sazón</span>
-      <span class="font-serif text-xl" aria-hidden="true">Solera</span>
-      <span class="font-bold text-lg" aria-hidden="true">◈ trek foods</span>
-      <span class="font-extrabold text-lg" aria-hidden="true">cantina</span>
-    </div>
-  </div>
-</section>
 
 <!-- Tipos de negocio -->
 <section class="max-w-6xl mx-auto px-6 py-20 reveal">
@@ -11254,7 +11213,6 @@
     "Pasa el cursor por una barra o pulsa una serie": ["Passa el cursor per una barra o prem una sèrie", "Hover over a bar or click a series"],
     "Ago": ["Ag", "Aug"], "Sep": ["Set", "Sep"], "Dic": ["Des", "Dec"], "Ene": ["Gen", "Jan"], "Abr": ["Abr", "Apr"], "Mar": ["Març", "Mar"],
     // Landing: logos y tipos de negocio
-    "Ayudando a estos restaurantes a crecer más rápido": ["Ajudant aquests restaurants a créixer més ràpid", "Helping these restaurants grow faster"],
     "Pensado para": ["Pensat per a", "Built for"],
     "tu tipo de negocio": ["el teu tipus de negoci", "your type of business"],
     "Restora se adapta a la forma en la que trabaja tu local, sea cual sea.": ["Restora s'adapta a la manera com treballa el teu local, sigui quina sigui.", "Restora adapts to the way your venue works, whatever that is."],
