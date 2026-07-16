@@ -33,7 +33,6 @@
   .reveal.in-view { opacity: 1; transform: translateY(0); }
   .text-amber-400 { color: #fbbf24; }
   .tracking-wider { letter-spacing: 0.05em; }
-  .marquee-wrap { overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent); mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent); }
   .negocio3d-wrap { perspective: 1400px; overflow: hidden; padding: 0.5rem 0 1rem; }
   .negocio3d-track { display: flex; transition: transform .7s cubic-bezier(.4,0,.2,1); will-change: transform; }
   .negocio3d-slide { flex: 0 0 auto; width: min(78vw, 380px); height: min(78vw, 380px); margin: 0 1.25rem; cursor: pointer; }
@@ -41,9 +40,9 @@
   .negocio3d-slide.is-inactive .negocio3d-slide-inner { transform: scale(0.94) rotateX(8deg); }
   .negocio3d-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; transition: opacity .5s ease, transform .2s ease-out; }
   .negocio3d-slide:not(.is-inactive) .negocio3d-img { opacity: 1; }
-  .negocio3d-slide-inner::after { content:""; position:absolute; inset:0; background: linear-gradient(to top, rgba(6,9,20,.92), rgba(6,9,20,.15) 60%, rgba(6,9,20,.35)); opacity: 0; transition: opacity .6s ease; }
+  .negocio3d-slide-inner::after { content:""; position:absolute; inset:0; background: linear-gradient(to top, rgba(6,9,20,.97) 0%, rgba(6,9,20,.78) 32%, rgba(6,9,20,.28) 62%, rgba(6,9,20,0) 82%); opacity: 0; transition: opacity .6s ease; }
   .negocio3d-slide:not(.is-inactive) .negocio3d-slide-inner::after { opacity: 1; }
-  .negocio3d-caption { position: absolute; left:0; right:0; bottom:0; padding: 1.5rem 1.5rem 1.75rem; color:#fff; text-shadow: 0 1px 3px rgba(0,0,0,0.45); opacity: 0; visibility: hidden; transition: opacity .6s ease; }
+  .negocio3d-caption { position: absolute; left:0; right:0; bottom:0; padding: 1.5rem 1.5rem 1.75rem; color:#fff; text-shadow: 0 2px 10px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.7); opacity: 0; visibility: hidden; transition: opacity .6s ease; }
   .negocio3d-slide:not(.is-inactive) .negocio3d-caption { opacity: 1; visibility: visible; }
   .negocio3d-arrow { transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s ease; }
   .negocio3d-arrow:hover { transform: scale(1.08); box-shadow: 0 8px 20px -6px rgba(11,27,51,0.3); }
@@ -110,9 +109,6 @@
   .func-paso { position: relative; display: flex; align-items: flex-start; gap: 16px; }
   .func-paso-num { position: relative; z-index: 1; width: 28px; height: 28px; border-radius: 9999px; background: linear-gradient(135deg, #16295a, #0a1830); color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 10px -2px rgba(10,24,48,0.4); }
   .func-kicker { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #3D7FFF; text-align: center; }
-  .marquee-track { display: flex; align-items: center; gap: 3rem; width: max-content; animation: marquee-right 32s linear infinite; }
-  .marquee-wrap:hover .marquee-track { animation-play-state: paused; }
-  @keyframes marquee-right { from { transform: translateX(-50%); } to { transform: translateX(0%); } }
   @media (min-width: 640px) { .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .nav-item { transition: background-color .15s, color .15s; cursor: pointer; color: #101014; font-weight: 500; border-radius: 10px; }
   .nav-item:hover { background: #F5F7FA; }
@@ -210,6 +206,12 @@
 
   /* Topbar: subtle separation from content */
   .app-topbar { box-shadow: 0 1px 0 rgba(16,24,40,0.05), 0 2px 10px -6px rgba(16,24,40,0.08); position: relative; z-index: 30; }
+
+  /* Fluidez de scroll: inercia en iOS y sin "encadenar" el scroll con el resto de la página al llegar
+     al final de un área desplazable (se siente más como una app nativa). */
+  .app-main, .modal-overlay, .ia-quick-panel, #iaChat, #iaConversacionesList { -webkit-overflow-scrolling: touch; }
+  .app-main, .ia-quick-panel, #iaChat, .modal-overlay { overscroll-behavior: contain; }
+  .negocio-carousel { overscroll-behavior-x: contain; }
 
   /* Tables: refined header row */
   #appRoot table thead tr th { font-size: 10.5px; letter-spacing: 0.045em; text-transform: uppercase; font-weight: 700; }
@@ -363,7 +365,7 @@
   @keyframes chipFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
   #landingRoot .float-chip { animation: chipFloat 4.5s ease-in-out infinite; }
   @media (prefers-reduced-motion: reduce) {
-    #landingRoot .hero-glow path, #landingRoot .hero-title, #landingRoot .hero-sub, #landingRoot .hero-mock-wrap, #landingRoot .float-chip, .marquee-track { animation: none !important; }
+    #landingRoot .hero-glow path, #landingRoot .hero-title, #landingRoot .hero-sub, #landingRoot .hero-mock-wrap, #landingRoot .float-chip { animation: none !important; }
   }
 
   /* ============ SaaS design system: neutral ink, hairline borders, layered depth (landing untouched) ============ */
@@ -641,10 +643,12 @@
   .expand-media { position: relative; z-index: 5; border-radius: 20px; overflow: hidden; box-shadow: 0 30px 80px -20px rgba(11,27,51,0.55); width: 320px; height: 400px; }
   .expand-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
   .expand-veil { position: absolute; inset: 0; background: #0B1B33; opacity: 0.4; pointer-events: none; }
-  .expand-titles { position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center; gap: 20px; pointer-events: none; }
-  .expand-title { font-weight: 800; font-size: 62px; letter-spacing: -0.03em; color: #fff; text-shadow: 0 4px 24px rgba(11,27,51,0.5); white-space: nowrap; }
+  .expand-titles { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; pointer-events: none; padding: 0 16px; text-align: center; }
+  /* Tamaño adaptable: en pantallas anchas se ve grande como antes (tope 62px) y en estrechas se
+     encoge para no salirse por los lados. */
+  .expand-title { font-weight: 800; font-size: clamp(30px, 7vw, 62px); letter-spacing: -0.03em; color: #fff; text-shadow: 0 4px 24px rgba(11,27,51,0.5); white-space: nowrap; max-width: 100%; }
   .expand-hint { position: absolute; z-index: 6; bottom: 28px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 13px; font-weight: 600; opacity: 0.85; }
-  @media (max-width: 880px) { .expand-sec { height: 200vh; } .expand-title { font-size: 32px; } }
+  @media (max-width: 880px) { .expand-sec { height: 200vh; } }
 
   .lang-switcher { background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 6px 10px; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; outline: none; }
   .lang-switcher:hover { border-color: #cbd5e1; }
@@ -668,7 +672,7 @@
   html.tema-oscuro .lang-switcher-fixed,
   html.tema-oscuro .theme-toggle-fixed,
   html.tema-oscuro #cookieBanner,
-  html.tema-oscuro #modalOverlay,
+  html.tema-oscuro #modalCard,
   html.tema-oscuro #toast { filter: invert(0.94) hue-rotate(180deg); }
   /* #appRoot filtrado se convierte en bloque contenedor de sus elementos position:fixed (panel del
      asistente, drawer del sidebar en móvil), que al estar ocultos fuera de pantalla desbordarían y
@@ -679,12 +683,25 @@
   html.tema-oscuro #landingRoot video,
   html.tema-oscuro #landingRoot iframe,
   html.tema-oscuro #landingRoot .expand-bg,
+  html.tema-oscuro #landingRoot .negocio3d-caption,
+  html.tema-oscuro #landingRoot .negocio3d-slide-inner::after,
   html.tema-oscuro #appRoot img,
   html.tema-oscuro #appRoot video,
   html.tema-oscuro #appRoot canvas,
   html.tema-oscuro #appRoot iframe,
   html.tema-oscuro #modalOverlay img,
   html.tema-oscuro #modalOverlay canvas { filter: invert(1) hue-rotate(180deg); }
+  /* Modo claro: brillo/resplandor en el texto navy y en los botones, similar al efecto que da la
+     inversión de colores del modo oscuro. Solo se aplica cuando NO está activo .tema-oscuro, para no
+     alterar el aspecto ya existente en modo oscuro. */
+  html:not(.tema-oscuro) #landingRoot .text-navy { text-shadow: 0 0 16px rgba(79,63,255,0.22), 0 1px 0 rgba(255,255,255,0.6); }
+  html:not(.tema-oscuro) #landingRoot button,
+  html:not(.tema-oscuro) #landingRoot a.rounded-full,
+  html:not(.tema-oscuro) #landingRoot [class*="rounded-full"][onclick] { box-shadow: 0 0 0 1px rgba(79,63,255,0.12), 0 8px 26px -6px rgba(79,63,255,0.4); }
+  /* Los botones del selector de periodo (Día/Semana/Mes/Año) no llevan ese resplandor: mantienen su
+     sombra sutil original de control segmentado. */
+  html:not(.tema-oscuro) #landingRoot .dash-seg button { box-shadow: none; }
+  html:not(.tema-oscuro) #landingRoot .dash-seg button.active { box-shadow: 0 1px 2px rgba(22,22,29,0.09), 0 1px 3px rgba(22,22,29,0.05); }
   .landing-mobile-panel .lang-switcher { align-self: flex-start; margin-top: 12px; font-size: 15px; padding: 8px 14px; border-bottom: 1px solid #e2e8f0 !important; }
   .landing-mobile-btn { display: none; background: none; border: none; padding: 6px; color: #0b2142; cursor: pointer; }
   .landing-mobile-panel { display: none; }
@@ -1044,43 +1061,6 @@
   </section>
 </div>
 
-<!-- Trust bar -->
-<section class="max-w-6xl mx-auto px-6 pb-24 text-center reveal">
-  <p class="text-sm text-slate-500 mb-8">Ayudando a estos restaurantes a crecer más rápido</p>
-  <div class="marquee-wrap">
-    <div class="marquee-track opacity-90 text-slate-500">
-      <span class="italic text-xl" style="font-family:cursive">Sabora</span>
-      <span class="font-black text-xl tracking-tight">FOGÓN</span>
-      <span class="font-semibold text-lg flex items-center gap-1"><span class="w-4 h-4 rounded bg-slate-700 inline-block"></span>ComandaBar</span>
-      <span class="font-bold text-lg tracking-wide">▷ DELICIA</span>
-      <span class="font-serif italic text-xl">brasa</span>
-      <span class="font-medium text-lg flex items-center gap-1">◎ terraza</span>
-      <span class="font-bold text-lg">⌂ hostal+</span>
-      <span class="font-semibold text-lg">⬡ Nuevo</span>
-      <span class="font-bold text-base tracking-[0.2em]">FONDINA</span>
-      <span class="font-semibold text-lg">☰ Platillo</span>
-      <span class="font-bold text-lg">◉ Sazón</span>
-      <span class="font-serif text-xl">Solera</span>
-      <span class="font-bold text-lg">◈ trek foods</span>
-      <span class="font-extrabold text-lg">cantina</span>
-      <span class="italic text-xl" style="font-family:cursive" aria-hidden="true">Sabora</span>
-      <span class="font-black text-xl tracking-tight" aria-hidden="true">FOGÓN</span>
-      <span class="font-semibold text-lg flex items-center gap-1" aria-hidden="true"><span class="w-4 h-4 rounded bg-slate-700 inline-block"></span>ComandaBar</span>
-      <span class="font-bold text-lg tracking-wide" aria-hidden="true">▷ DELICIA</span>
-      <span class="font-serif italic text-xl" aria-hidden="true">brasa</span>
-      <span class="font-medium text-lg flex items-center gap-1" aria-hidden="true">◎ terraza</span>
-      <span class="font-bold text-lg" aria-hidden="true">⌂ hostal+</span>
-      <span class="font-semibold text-lg" aria-hidden="true">⬡ Nuevo</span>
-      <span class="font-bold text-base tracking-[0.2em]" aria-hidden="true">FONDINA</span>
-      <span class="font-semibold text-lg" aria-hidden="true">☰ Platillo</span>
-      <span class="font-bold text-lg" aria-hidden="true">◉ Sazón</span>
-      <span class="font-serif text-xl" aria-hidden="true">Solera</span>
-      <span class="font-bold text-lg" aria-hidden="true">◈ trek foods</span>
-      <span class="font-extrabold text-lg" aria-hidden="true">cantina</span>
-    </div>
-  </div>
-</section>
-
 <!-- Tipos de negocio -->
 <section class="max-w-6xl mx-auto px-6 py-20 reveal">
   <h2 class="text-4xl font-extrabold text-navy text-center">Pensado para <span class="text-accent italic">tu tipo de negocio</span></h2>
@@ -1376,12 +1356,12 @@
   <div class="expand-stage">
     <div id="expandBg" class="expand-bg"></div>
     <div id="expandMedia" class="expand-media">
-      <video id="expandVideo" src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" autoplay muted loop playsinline preload="metadata"></video>
+      <video id="expandVideo" src="/202607162019.mp4" autoplay muted loop playsinline preload="metadata"></video>
       <div id="expandVeil" class="expand-veil"></div>
     </div>
     <div class="expand-titles" aria-hidden="true">
-      <span id="expandTitleL" class="expand-title">Restora</span>
-      <span id="expandTitleR" class="expand-title">en acción</span>
+      <span id="expandTitleL" class="expand-title">La mejor gestión con</span>
+      <span id="expandTitleR" class="expand-title">Restora</span>
     </div>
     <p id="expandHint" class="expand-hint">Sigue bajando</p>
   </div>
@@ -1765,22 +1745,22 @@
   <!-- Sidebar -->
   <aside class="app-sidebar w-56 shrink-0 border-r border-slate-200 bg-white px-3 py-5 text-sm flex flex-col">
     <ul class="space-y-1 text-slate-600">
-      <li data-sec="dashboard" onclick="showSection('dashboard', this)" class="nav-item active flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.3"/><rect x="14" y="3" width="7" height="5" rx="1.3"/><rect x="14" y="12" width="7" height="9" rx="1.3"/><rect x="3" y="16" width="7" height="5" rx="1.3"/></svg></span>Dashboard</li>
-      <li data-sec="reservas" onclick="showSection('reservas', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-sky-50 text-sky-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M8 3v4M16 3v4M3 10h18"/></svg></span>Reservas</li>
-      <li data-sec="pedidos" onclick="showSection('pedidos', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path stroke-linecap="round" d="M9 8h6M9 12h6"/></svg></span>Pedidos</li>
-      <li data-sec="tpv" onclick="showSection('tpv', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-lime-50 text-lime-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path stroke-linecap="round" d="M8 7V5a4 4 0 018 0v2"/><path stroke-linecap="round" d="M7 12h2M15 12h2"/></svg></span>TPV</li>
-      <li data-sec="mesas" onclick="showSection('mesas', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-violet-100 text-violet-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M3 8h18M5 8v10M19 8v10M9 8v3M15 8v3"/></svg></span>Mesas</li>
-      <li data-sec="menu" onclick="showSection('menu', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 016.5 3H12v18H6.5A2.5 2.5 0 014 18.5v-13zM20 5.5A2.5 2.5 0 0017.5 3H12v18h5.5a2.5 2.5 0 002.5-2.5v-13z"/></svg></span>Carta</li>
-      <li data-sec="delivery" onclick="showSection('delivery', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-rose-50 text-rose-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M2 9h3M2 13h2M2 17h2"/><rect x="8" y="6" width="13" height="12" rx="2"/><path stroke-linecap="round" d="M8 10h13"/></svg></span>Delivery</li>
-      <li data-sec="inventario" onclick="showSection('inventario', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8L12 3 3 8l9 5 9-5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 8v8l9 5 9-5V8M12 13v8"/></svg></span>Inventario</li>
-      <li data-sec="ia" onclick="showSection('ia', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-fuchsia-50 text-fuchsia-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L20 9.5l-6.1 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.9L12 2z"/></svg></span>Ayudante IA</li>
-      <li data-sec="restaurante" onclick="showSection('restaurante', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-orange-50 text-orange-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 11l9-8 9 8"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 10v10h14V10"/></svg></span>Mi restaurante</li>
-      <li data-sec="personal" onclick="showSection('personal', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-teal-50 text-teal-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path stroke-linecap="round" d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.3"/><path stroke-linecap="round" d="M15.5 14.2c2.6.5 4.5 2.6 4.5 5.8"/></svg></span>Personal</li>
-      <li data-sec="chat" onclick="showSection('chat', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-green-50 text-green-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></span>Chat<span id="chatNavBadge" class="hidden ml-auto bg-emerald-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">0</span></li>
+      <li data-sec="dashboard" onclick="showSection('dashboard', this)" class="nav-item active flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="8.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.6"/><rect x="13.5" y="10.5" width="7.5" height="10.5" rx="1.6"/><rect x="3" y="14" width="7.5" height="7" rx="1.6"/></svg></span>Dashboard</li>
+      <li data-sec="reservas" onclick="showSection('reservas', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-sky-50 text-sky-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16.5" rx="2.4"/><path d="M3 9.5h18"/><path d="M8 2.5v4M16 2.5v4"/><path d="M8.4 15l2.3 2.2L15 13"/></svg></span>Reservas</li>
+      <li data-sec="pedidos" onclick="showSection('pedidos', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2.5h12a1 1 0 0 1 1 1v17.5l-2.7-1.7-2.6 1.7-2.7-1.7-2.6 1.7L5 20.5V3.5a1 1 0 0 1 1-1Z"/><path d="M9 8h6M9 11.5h6M9 15h4"/></svg></span>Pedidos</li>
+      <li data-sec="tpv" onclick="showSection('tpv', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-lime-50 text-lime-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="2.5" width="15" height="19" rx="2.2"/><rect x="7.5" y="5.5" width="9" height="4.5" rx="1"/><path d="M8 14h1.5M11.25 14h1.5M14.5 14h1.5M8 17.5h1.5M11.25 17.5h1.5M14.5 17.5h1.5"/></svg></span>TPV</li>
+      <li data-sec="mesas" onclick="showSection('mesas', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-violet-100 text-violet-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7.5" width="18" height="2.8" rx="1.1"/><path d="M5.5 10.3V19M18.5 10.3V19M9 10.3v3.4M15 10.3v3.4"/></svg></span>Mesas</li>
+      <li data-sec="menu" onclick="showSection('menu', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10.5 5 8 4.4 4.2 4.4 3.5 4.4 3 5 3 5.6v12.3c0 .6.5 1 1.2 1 3.8 0 6.3.6 7.8 2 1.5-1.4 4-2 7.8-2 .7 0 1.2-.4 1.2-1V5.6c0-.6-.5-1.2-1.2-1.2C16 4.4 13.5 5 12 6.5Z"/><path d="M12 6.5V21"/></svg></span>Carta</li>
+      <li data-sec="delivery" onclick="showSection('delivery', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-rose-50 text-rose-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17" r="2.6"/><circle cx="18.5" cy="17" r="2.6"/><path d="M8.1 17h5l2.2-7H18"/><path d="M13.1 10l1.4 7"/><path d="M15.3 6H18l1 4"/><rect x="3" y="8.3" width="4.6" height="3.6" rx="0.7"/></svg></span>Delivery</li>
+      <li data-sec="inventario" onclick="showSection('inventario', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12.5" width="8" height="8" rx="1.2"/><rect x="13" y="12.5" width="8" height="8" rx="1.2"/><rect x="8" y="3.5" width="8" height="8" rx="1.2"/></svg></span>Inventario</li>
+      <li data-sec="ia" onclick="showSection('ia', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-fuchsia-50 text-fuchsia-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.4l1.85 5.35L19.2 9.6l-5.35 1.85L12 16.8l-1.85-5.35L4.8 9.6l5.35-1.85L12 2.4Z"/><path d="M18.6 14.6l.72 2.08 2.08.72-2.08.72-.72 2.08-.72-2.08-2.08-.72 2.08-.72.72-2.08Z"/></svg></span>Ayudante IA</li>
+      <li data-sec="restaurante" onclick="showSection('restaurante', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-orange-50 text-orange-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v9.5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V10"/><path d="M2.5 9.5 4.5 4.2A1 1 0 0 1 5.45 3.5h13.1a1 1 0 0 1 .95.7l2 5.3"/><path d="M2.5 9.5a2.7 2.7 0 0 0 5.25 0 2.7 2.7 0 0 0 5.25 0 2.7 2.7 0 0 0 5.25 0 2.7 2.7 0 0 0 3.25 0"/><path d="M9.5 20.5v-4.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v4.5"/></svg></span>Mi restaurante</li>
+      <li data-sec="personal" onclick="showSection('personal', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-teal-50 text-teal-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.4 2.5-5.9 5.5-5.9s5.5 2.5 5.5 5.9"/><path d="M16.2 4.9a3 3 0 0 1 0 6.1"/><path d="M17.6 14.4c2.2.6 3.9 2.7 3.9 5.6"/></svg></span>Personal</li>
+      <li data-sec="chat" onclick="showSection('chat', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-green-50 text-green-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H9.5L5 20v-3.5H4A1.5 1.5 0 0 1 2.5 15V7A1.5 1.5 0 0 1 4 5.5Z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></svg></span>Chat<span id="chatNavBadge" class="hidden ml-auto bg-emerald-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">0</span></li>
     </ul>
     <ul class="mt-auto pt-3 border-t border-slate-100 text-slate-600">
-      <li data-sec="apps" onclick="showSection('apps', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.3"/><rect x="14" y="3" width="7" height="7" rx="1.3"/><rect x="3" y="14" width="7" height="7" rx="1.3"/><rect x="14" y="14" width="7" height="7" rx="1.3"/></svg></span>Apps</li>
-      <li data-sec="config" onclick="showSection('config', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-slate-100 text-slate-500 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" d="M12 2v3M12 19v3M4.2 4.2l2.2 2.2M17.6 17.6l2.2 2.2M2 12h3M19 12h3M4.2 19.8l2.2-2.2M17.6 6.4l2.2-2.2"/></svg></span>Configuración</li>
+      <li data-sec="apps" onclick="showSection('apps', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg></span>Apps</li>
+      <li data-sec="config" onclick="showSection('config', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-slate-100 text-slate-500 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.1"/><path d="M19.4 13.5a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span>Configuración</li>
     </ul>
   </aside>
 
@@ -2707,24 +2687,39 @@
 
   let negocioCurrent = 0;
   const NEGOCIO_TOTAL = 4;
-  function negocioApplyState() {
+  let negocioPos = 1;
+  let negocioAnimando = false;
+  function negocioSetHighlight() {
     const track = document.getElementById('negocioCarousel');
     if (!track) return;
-    const slides = track.querySelectorAll('.negocio3d-slide');
-    slides.forEach((li, i) => li.classList.toggle('is-inactive', i !== negocioCurrent));
-    track.style.transform = 'translateX(-' + (negocioCurrent * (100 / NEGOCIO_TOTAL)) + '%)';
+    track.querySelectorAll('.negocio3d-slide').forEach(li => {
+      li.classList.toggle('is-inactive', parseInt(li.dataset.index, 10) !== negocioCurrent);
+    });
+  }
+  function negocioMoveTo(pos, animar) {
+    negocioPos = pos;
+    const track = document.getElementById('negocioCarousel');
+    if (!track) return;
+    if (!animar) track.style.transition = 'none';
+    track.style.transform = 'translateX(-' + (pos * (100 / (NEGOCIO_TOTAL + 2))) + '%)';
+    if (!animar) {
+      void track.offsetWidth;
+      track.style.transition = '';
+    }
   }
   function negocioSlideClick(i) {
-    if (i === negocioCurrent) return;
-    negocioCurrent = i;
-    negocioApplyState();
+    // Cada clic en el carrusel avanza al siguiente tipo de negocio (igual que la flecha derecha).
+    scrollNegocio(1);
   }
   function scrollNegocio(dir) {
+    if (negocioAnimando) return;
     let next = negocioCurrent + dir;
     if (next < 0) next = NEGOCIO_TOTAL - 1;
     if (next >= NEGOCIO_TOTAL) next = 0;
     negocioCurrent = next;
-    negocioApplyState();
+    negocioSetHighlight();
+    negocioAnimando = true;
+    negocioMoveTo(negocioPos + dir, true);
   }
   function negocioTiltMove(e, inner) {
     const slide = inner.closest('.negocio3d-slide');
@@ -2742,11 +2737,28 @@
   (function initNegocioCarousel() {
     const track = document.getElementById('negocioCarousel');
     if (!track) return;
-    track.querySelectorAll('.negocio3d-slide-inner').forEach(inner => {
-      inner.addEventListener('mousemove', (e) => negocioTiltMove(e, inner));
-      inner.addEventListener('mouseleave', () => negocioTiltLeave(inner));
+    // Clona el primer y el ultimo slide para poder animar siempre hacia delante (o hacia atras) sin
+    // que la pista "rebote" visualmente al llegar al final; al terminar la transicion sobre un clon,
+    // saltamos sin animacion a la tarjeta real equivalente (se ve identica, el salto es invisible).
+    const originales = Array.from(track.querySelectorAll('.negocio3d-slide'));
+    if (originales.length === NEGOCIO_TOTAL) {
+      const cloneUltimo = originales[NEGOCIO_TOTAL - 1].cloneNode(true);
+      const clonePrimero = originales[0].cloneNode(true);
+      cloneUltimo.setAttribute('aria-hidden', 'true');
+      clonePrimero.setAttribute('aria-hidden', 'true');
+      track.insertBefore(cloneUltimo, originales[0]);
+      track.appendChild(clonePrimero);
+    }
+    // (Se quitó el efecto de parallax/desplazamiento de la foto al mover el ratón: movía la imagen bajo
+    //  el texto y dificultaba leerlo.)
+    track.addEventListener('transitionend', (e) => {
+      if (e.propertyName !== 'transform') return;
+      negocioAnimando = false;
+      if (negocioPos === 0) negocioMoveTo(NEGOCIO_TOTAL, false);
+      else if (negocioPos === NEGOCIO_TOTAL + 1) negocioMoveTo(1, false);
     });
-    negocioApplyState();
+    negocioSetHighlight();
+    negocioMoveTo(1, false);
   })();
 
 // ---- Auth & per-account persistence (Supabase) ----
@@ -11326,7 +11338,6 @@
     "Pasa el cursor por una barra o pulsa una serie": ["Passa el cursor per una barra o prem una sèrie", "Hover over a bar or click a series"],
     "Ago": ["Ag", "Aug"], "Sep": ["Set", "Sep"], "Dic": ["Des", "Dec"], "Ene": ["Gen", "Jan"], "Abr": ["Abr", "Apr"], "Mar": ["Març", "Mar"],
     // Landing: logos y tipos de negocio
-    "Ayudando a estos restaurantes a crecer más rápido": ["Ajudant aquests restaurants a créixer més ràpid", "Helping these restaurants grow faster"],
     "Pensado para": ["Pensat per a", "Built for"],
     "tu tipo de negocio": ["el teu tipus de negoci", "your type of business"],
     "Restora se adapta a la forma en la que trabaja tu local, sea cual sea.": ["Restora s'adapta a la manera com treballa el teu local, sigui quina sigui.", "Restora adapts to the way your venue works, whatever that is."],
