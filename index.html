@@ -610,17 +610,13 @@
   .sidebar-mobile-btn { display: none; background: none; border: none; padding: 4px; margin-right: 4px; color: #0b2142; cursor: pointer; }
   .sidebar-backdrop { display: none; }
 
-  /* Cabecera de la landing: se queda pegada arriba al hacer scroll (la barra de anuncio, que va por
-     encima en el flujo normal, se desplaza fuera de la pantalla como siempre). Sin fondo al principio
-     (para no tapar el hero); en cuanto se hace scroll, applyLandingHeaderScroll() añade ".scrolled"
-     para que tenga un fondo translúcido y no se vea el contenido pasando por detrás. */
-  .landing-header { position: sticky; top: 0; z-index: 30; transition: background-color .25s ease, box-shadow .25s ease; }
-  .landing-header.scrolled { background: rgba(247,248,252,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 1px 0 rgba(16,24,40,0.05), 0 8px 24px -14px rgba(16,24,40,0.18); }
-
   /* Barra de navegación flotante "tubelight" de la landing (solo escritorio; el móvil usa el menú
-     hamburguesa ya existente, ver @media 880px más abajo). El "tubeLamp" es un div posicionado en
+     hamburguesa ya existente, ver @media 880px más abajo). El logo y los botones de la cabecera NO se
+     mueven de su sitio; solo esta barra se "despega" y queda fija arriba al hacer scroll (la clase
+     .pinned la añade/quita initTubeNavPin() más abajo). El "tubeLamp" es un div posicionado en
      absoluto que se mueve/redimensiona por JS para coincidir con el enlace activo. */
   .tube-nav { position: relative; display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.7); border: 1px solid #ECECF3; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding: 6px; border-radius: 999px; box-shadow: 0 8px 30px -12px rgba(22,22,29,0.18); }
+  .tube-nav.pinned { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 40; }
   .tube-link { position: relative; display: flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; color: #6B7280; text-decoration: none; white-space: nowrap; transition: color .2s ease; z-index: 1; }
   .tube-link:hover { color: #16161D; }
   .tube-link.active { color: #16161D; }
@@ -10915,12 +10911,23 @@
     items.forEach(el => io.observe(el));
   })();
 
-  (function initLandingHeaderScroll() {
-    const header = document.querySelector('.landing-header');
-    if (!header) return;
-    const actualizar = () => header.classList.toggle('scrolled', window.scrollY > 12);
+  (function initTubeNavPin() {
+    const nav = document.getElementById('tubeNav');
+    if (!nav) return;
+    let umbral = null;
+    function medir() {
+      // Mientras está fija no se puede medir su posición original: solo se remide estando "suelta".
+      if (nav.classList.contains('pinned')) return;
+      umbral = nav.getBoundingClientRect().top + window.scrollY - 12;
+    }
+    function actualizar() {
+      if (umbral == null) return;
+      nav.classList.toggle('pinned', window.scrollY > umbral);
+    }
+    medir();
     actualizar();
     window.addEventListener('scroll', actualizar, { passive: true });
+    window.addEventListener('resize', medir);
   })();
 
   (function initTubeNav() {
