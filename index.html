@@ -622,6 +622,26 @@
   .lang-switcher:hover { border-color: #cbd5e1; }
   /* Selector de idioma fijo, siempre visible abajo a la derecha de la pantalla. */
   .lang-switcher-fixed { position: fixed; bottom: 20px; right: 20px; z-index: 45; box-shadow: 0 6px 20px -6px rgba(22,22,29,0.25); }
+  /* Botón de modo claro/oscuro, a la izquierda del selector de idioma. */
+  .theme-toggle-fixed { position: fixed; bottom: 20px; right: 78px; z-index: 45; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; color: #475569; cursor: pointer; box-shadow: 0 6px 20px -6px rgba(22,22,29,0.25); }
+  .theme-toggle-fixed:hover { border-color: #cbd5e1; }
+  .theme-toggle-fixed svg { width: 16px; height: 16px; }
+
+  /* Modo oscuro de la landing: inversión de colores con giro de tono (la técnica de los lectores
+     oscuros) sobre los contenedores de la landing; las fotos, vídeos e iframes se vuelven a invertir
+     para que se vean con sus colores reales. Se activa con la clase .tema-oscuro en <html>
+     (alternarTema()), y solo afecta a la landing — la app y las páginas públicas no cambian. */
+  html.tema-oscuro body { background: #0d0f16; }
+  html.tema-oscuro #landingRoot,
+  html.tema-oscuro #landingMobilePanel,
+  html.tema-oscuro #tubeNavFloat,
+  html.tema-oscuro .lang-switcher-fixed,
+  html.tema-oscuro .theme-toggle-fixed,
+  html.tema-oscuro #cookieBanner { filter: invert(0.94) hue-rotate(180deg); }
+  html.tema-oscuro #landingRoot img,
+  html.tema-oscuro #landingRoot video,
+  html.tema-oscuro #landingRoot iframe,
+  html.tema-oscuro #landingRoot .expand-bg { filter: invert(1) hue-rotate(180deg); }
   .landing-mobile-panel .lang-switcher { align-self: flex-start; margin-top: 12px; font-size: 15px; padding: 8px 14px; border-bottom: 1px solid #e2e8f0 !important; }
   .landing-mobile-btn { display: none; background: none; border: none; padding: 6px; color: #0b2142; cursor: pointer; }
   .landing-mobile-panel { display: none; }
@@ -638,7 +658,8 @@
   /* Cuando la landing no está visible (app, carta pública, reservas…), oculta su barra y su selector de
      idioma flotantes para que no aparezcan por encima de esas vistas. */
   #landingRoot[style*="display: none"] ~ #tubeNavFloat,
-  #landingRoot[style*="display: none"] ~ .lang-switcher-fixed { display: none !important; }
+  #landingRoot[style*="display: none"] ~ .lang-switcher-fixed,
+  #landingRoot[style*="display: none"] ~ .theme-toggle-fixed { display: none !important; }
   /* Empuja los botones de la derecha casi hasta el borde de la pantalla para que se vean completos y
      dejen bastante aire a la barra central, sin mover el logo. Ojo: #landingRoot tiene zoom:0.9, así
      que (a) el contenedor de 1280px se ve a 1152px y deja más margen del aparente, y (b) el propio
@@ -662,6 +683,7 @@
     .tube-nav { display: none !important; }
     .tube-nav-float { display: none !important; }
     .lang-switcher-fixed { display: none !important; }
+    .theme-toggle-fixed { bottom: 16px; right: 16px; }
     .landing-mobile-btn { display: inline-flex; align-items: center; justify-content: center; }
     .landing-mobile-panel { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #fff; flex-direction: column; padding: 90px 24px 24px; gap: 4px; z-index: 150; overflow-y: auto; }
     .landing-mobile-panel a { padding: 12px 4px; font-size: 16px; font-weight: 500; color: #0b2142; border-bottom: 1px solid #f1f5f9; }
@@ -1620,6 +1642,10 @@
   <option value="ca">CA</option>
   <option value="en">EN</option>
 </select>
+<button id="themeToggle" type="button" onclick="alternarTema()" class="theme-toggle-fixed" aria-label="Cambiar entre modo claro y oscuro" title="Modo claro / oscuro">
+  <svg id="themeIconLuna" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+  <svg id="themeIconSol" class="w-4 h-4" style="display:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+</button>
 
 <div id="landingMobilePanel" class="landing-mobile-panel">
   <button type="button" onclick="toggleLandingMobileNav(false)" class="landing-mobile-panel-close" aria-label="Cerrar menú">
@@ -2508,6 +2534,22 @@
     `;
     document.getElementById('modalOverlay').classList.add('open');
   }
+
+  // ---- Modo claro / oscuro de la landing ----
+  const TEMA_KEY = 'restora_tema';
+  function aplicarTema(oscuro) {
+    document.documentElement.classList.toggle('tema-oscuro', oscuro);
+    const luna = document.getElementById('themeIconLuna');
+    const sol = document.getElementById('themeIconSol');
+    if (luna) luna.style.display = oscuro ? 'none' : '';
+    if (sol) sol.style.display = oscuro ? '' : 'none';
+  }
+  function alternarTema() {
+    const oscuro = !document.documentElement.classList.contains('tema-oscuro');
+    aplicarTema(oscuro);
+    try { localStorage.setItem(TEMA_KEY, oscuro ? 'oscuro' : 'claro'); } catch (e) {}
+  }
+  try { aplicarTema(localStorage.getItem(TEMA_KEY) === 'oscuro'); } catch (e) {}
 
   // ---- Consentimiento de cookies ----
   // No usamos, a día de hoy, ninguna cookie/almacenamiento no esencial (analítica, publicidad, etc.).
