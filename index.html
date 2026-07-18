@@ -570,6 +570,7 @@
   .pubcal-hora { border: 1.5px solid #E5E4EE; border-radius: 8px; padding: 9px 2px; font-size: 10.5px; font-weight: 600; color: #0B1B33; background: #fff; cursor: pointer; transition: border-color .15s ease, background-color .15s ease, color .15s ease; }
   .pubcal-hora:hover { border-color: #C9C5E8; }
   .pubcal-hora.sel { background: var(--saas-accent, #3D7FFF); border-color: var(--saas-accent, #3D7FFF); color: #fff; }
+  .pubcal-hora.full, .pubcal-hora:disabled { color: #D7DBE3; border-color: #EEEDF5; text-decoration: line-through; cursor: not-allowed; background: #fff; }
 
   /* ============ Web pública del restaurante (QR) ============ */
   .pweb-hero { position: relative; min-height: 62vh; display: flex; flex-direction: column; color: #fff; overflow: hidden; }
@@ -579,7 +580,6 @@
   .pweb-nav-cta { background: rgba(255,255,255,0.16); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.35); color: #fff; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 999px; flex-shrink: 0; }
   .pweb-hero-inner { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 44px 24px 56px; }
   .pweb-hero-inner h1 { font-size: clamp(34px, 7vw, 56px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; margin-top: 14px; text-shadow: 0 2px 18px rgba(0,0,0,0.35); }
-  .pweb-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.16); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.28); font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 999px; }
   .pweb-tagline { font-size: clamp(15px, 3vw, 19px); font-style: italic; color: rgba(255,255,255,0.92); margin-top: 12px; max-width: 560px; }
   .pweb-hero-ctas { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 26px; }
   .pweb-btn-primary { color: #fff; font-size: 14px; font-weight: 700; padding: 13px 26px; border-radius: 999px; box-shadow: 0 10px 24px -8px rgba(0,0,0,0.45); }
@@ -1012,8 +1012,8 @@
               <p class="text-2xl font-bold text-navy mt-2.5 tabular-nums leading-none" data-countup="99.7" data-decimals="2" data-suffix="€">99,70€</p>
             </div>
             <div class="kpi-tile rounded-2xl border border-slate-200 bg-white p-4">
-              <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path stroke-linecap="round" d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.3"/><path stroke-linecap="round" d="M15.5 14.2c2.6.5 4.5 2.6 4.5 5.8"/></svg></span><span class="kpi-label">Comensales</span></div>
-              <p class="text-2xl font-bold text-navy mt-2.5 tabular-nums leading-none" data-countup="33">33</p>
+              <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M8 3v4M16 3v4M3 10h18"/></svg></span><span class="kpi-label">Reservas</span></div>
+              <p class="text-2xl font-bold text-navy mt-2.5 tabular-nums leading-none" data-countup="12">12</p>
             </div>
           </div>
 
@@ -1752,7 +1752,7 @@
       <li data-sec="mesas" onclick="showSection('mesas', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-violet-100 text-violet-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7.5" width="18" height="2.8" rx="1.1"/><path d="M5.5 10.3V19M18.5 10.3V19M9 10.3v3.4M15 10.3v3.4"/></svg></span>Mesas</li>
       <li data-sec="menu" onclick="showSection('menu', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10.5 5 8 4.4 4.2 4.4 3.5 4.4 3 5 3 5.6v12.3c0 .6.5 1 1.2 1 3.8 0 6.3.6 7.8 2 1.5-1.4 4-2 7.8-2 .7 0 1.2-.4 1.2-1V5.6c0-.6-.5-1.2-1.2-1.2C16 4.4 13.5 5 12 6.5Z"/><path d="M12 6.5V21"/></svg></span>Carta</li>
       <li data-sec="delivery" onclick="showSection('delivery', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-rose-50 text-rose-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17" r="2.6"/><circle cx="18.5" cy="17" r="2.6"/><path d="M8.1 17h5l2.2-7H18"/><path d="M13.1 10l1.4 7"/><path d="M15.3 6H18l1 4"/><rect x="3" y="8.3" width="4.6" height="3.6" rx="0.7"/></svg></span>Delivery</li>
-      <li data-sec="inventario" onclick="showSection('inventario', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12.5" width="8" height="8" rx="1.2"/><rect x="13" y="12.5" width="8" height="8" rx="1.2"/><rect x="8" y="3.5" width="8" height="8" rx="1.2"/></svg></span>Inventario</li>
+      <li data-sec="inventario" onclick="showSection('inventario', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12.5" width="8" height="8" rx="1.2"/><rect x="13" y="12.5" width="8" height="8" rx="1.2"/><rect x="8" y="3.5" width="8" height="8" rx="1.2"/></svg></span>Inventario<span id="invNavBadge" class="hidden ml-auto bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">0</span></li>
       <li data-sec="ia" onclick="showSection('ia', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-fuchsia-50 text-fuchsia-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.4l1.85 5.35L19.2 9.6l-5.35 1.85L12 16.8l-1.85-5.35L4.8 9.6l5.35-1.85L12 2.4Z"/><path d="M18.6 14.6l.72 2.08 2.08.72-2.08.72-.72 2.08-.72-2.08-2.08-.72 2.08-.72.72-2.08Z"/></svg></span>Ayudante IA</li>
       <li data-sec="restaurante" onclick="showSection('restaurante', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-orange-50 text-orange-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v9.5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V10"/><path d="M2.5 9.5 4.5 4.2A1 1 0 0 1 5.45 3.5h13.1a1 1 0 0 1 .95.7l2 5.3"/><path d="M2.5 9.5a2.7 2.7 0 0 0 5.25 0 2.7 2.7 0 0 0 5.25 0 2.7 2.7 0 0 0 5.25 0 2.7 2.7 0 0 0 3.25 0"/><path d="M9.5 20.5v-4.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v4.5"/></svg></span>Mi restaurante</li>
       <li data-sec="personal" onclick="showSection('personal', this)" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md"><span class="w-6 h-6 rounded-md bg-teal-50 text-teal-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.4 2.5-5.9 5.5-5.9s5.5 2.5 5.5 5.9"/><path d="M16.2 4.9a3 3 0 0 1 0 6.1"/><path d="M17.6 14.4c2.2.6 3.9 2.7 3.9 5.6"/></svg></span>Personal</li>
@@ -1811,11 +1811,11 @@
         </div>
         <div class="kpi-tile rounded-2xl border border-slate-200 bg-white p-4">
           <div class="flex items-center gap-2.5">
-            <span class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path stroke-linecap="round" d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.3"/><path stroke-linecap="round" d="M15.5 14.2c2.6.5 4.5 2.6 4.5 5.8"/></svg></span>
-            <p class="kpi-label">Comensales</p>
+            <span class="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M8 3v4M16 3v4M3 10h18"/></svg></span>
+            <p class="kpi-label">Reservas</p>
           </div>
-          <p id="kpiComensales" class="text-2xl font-bold text-navy mt-3 tabular-nums leading-none">0</p>
-          <p id="kpiComensalesTrend" class="kpi-delta hidden mt-2"></p>
+          <p id="kpiReservas" class="text-2xl font-bold text-navy mt-3 tabular-nums leading-none">0</p>
+          <p id="kpiReservasTrend" class="kpi-delta hidden mt-2"></p>
         </div>
       </div>
 
@@ -1866,9 +1866,9 @@
           <div id="dashChartTicket" style="position:relative"></div>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-white p-5" style="position:relative">
-          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Comensales por día</p>
-          <p class="text-xs text-slate-400 mt-1 mb-3">Afluencia diaria de tu restaurante</p>
-          <div id="dashChartComensales" style="position:relative"></div>
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Reservas por día</p>
+          <p class="text-xs text-slate-400 mt-1 mb-3">Reservas registradas cada día</p>
+          <div id="dashChartReservas" style="position:relative"></div>
         </div>
       </div>
 
@@ -1902,9 +1902,10 @@
         <p class="text-sm font-semibold text-navy">Configura tus mesas</p>
         <p class="text-xs text-slate-400 mt-1">¿Cuántas mesas tiene tu restaurante?</p>
         <div class="mt-4 flex items-center justify-center gap-2">
-          <input id="mesasSetupCount" type="number" min="1" max="60" placeholder="Ej. 12" class="w-24 rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+          <input id="mesasSetupCount" type="number" min="1" max="60" placeholder="Ej. 12" oninput="renderMesasSetupNombres()" class="w-24 rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
           <button onclick="crearMesas()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Crear mesas</button>
         </div>
+        <div id="mesasSetupNombres" class="mt-4 flex flex-col gap-2 max-w-xs mx-auto"></div>
         <button id="mesasSetupVolver" onclick="cancelarCambiarMesas()" class="text-sm font-semibold text-slate-500 hover:text-navy transition" style="margin-top:2rem;">← Volver al panel</button>
       </div>
 
@@ -1961,7 +1962,7 @@
       <div id="reservasTableWrap" class="mt-5 rounded-xl border border-slate-200 overflow-hidden bg-white">
         <table class="w-full text-sm">
           <thead class="bg-slate-50 text-slate-500 text-xs">
-            <tr><th class="text-left font-medium px-4 py-2.5">Fecha</th><th class="text-left font-medium px-4 py-2.5">Hora</th><th class="text-left font-medium px-4 py-2.5">Cliente</th><th class="text-left font-medium px-4 py-2.5">Personas</th><th class="text-left font-medium px-4 py-2.5">Mesa</th><th class="text-left font-medium px-4 py-2.5">Canal</th><th class="text-left font-medium px-4 py-2.5">Estado</th><th class="px-4 py-2.5 w-10"></th></tr>
+            <tr><th class="text-left font-medium px-4 py-2.5">Fecha</th><th class="text-left font-medium px-4 py-2.5">Hora</th><th class="text-left font-medium px-4 py-2.5">Cliente</th><th class="text-left font-medium px-4 py-2.5">Contacto</th><th class="text-left font-medium px-4 py-2.5">Personas</th><th class="text-left font-medium px-4 py-2.5">Mesa</th><th class="text-left font-medium px-4 py-2.5">Canal</th><th class="text-left font-medium px-4 py-2.5">Estado</th><th class="px-4 py-2.5 w-10"></th></tr>
           </thead>
           <tbody id="reservasBody" class="divide-y divide-slate-100"></tbody>
         </table>
@@ -3173,16 +3174,19 @@
     data.mesaPosiciones = Array.isArray(data.mesaPosiciones) ? data.mesaPosiciones : [];
     data.mesaOcupadaDesde = Array.isArray(data.mesaOcupadaDesde) ? data.mesaOcupadaDesde : [];
     data.mesaEstados.forEach((s, i) => { if (s !== 'Ocupada') data.mesaOcupadaDesde[i] = null; });
-    data.espacios = (Array.isArray(data.espacios) && data.espacios.length) ? data.espacios : [{ nombre: 'Sala principal', mesaIndices: [] }];
+    // Migración de cuentas antiguas (de antes de que existiera el concepto de "espacios"): sus mesas
+    // no estaban repartidas en ningún espacio, así que la primera vez se adoptan todas en "Sala
+    // principal". Solo se hace esta adopción automática esa primera vez: si luego el usuario borra un
+    // espacio, sus mesas deben quedar borradas de verdad y no resucitar solas en la siguiente carga.
+    const eraCuentaSinEspacios = !(Array.isArray(data.espacios) && data.espacios.length);
+    data.espacios = eraCuentaSinEspacios ? [{ nombre: 'Sala principal', mesaIndices: [] }] : data.espacios;
     data.espacios.forEach(e => {
       e.nombre = e.nombre || 'Sala';
       e.mesaIndices = Array.isArray(e.mesaIndices) ? e.mesaIndices : [];
     });
-    (function migrarMesasSinEspacio() {
-      const asignados = new Set(data.espacios.reduce((acc, e) => acc.concat(e.mesaIndices), []));
-      const huerfanos = data.mesaEstados.map((_, i) => i).filter(i => !asignados.has(i));
-      if (huerfanos.length) data.espacios[0].mesaIndices = data.espacios[0].mesaIndices.concat(huerfanos);
-    })();
+    if (eraCuentaSinEspacios) {
+      data.espacios[0].mesaIndices = data.mesaEstados.map((_, i) => i);
+    }
     data.reservas = Array.isArray(data.reservas) ? data.reservas : [];
     data.reservasWebUrl = data.reservasWebUrl || '';
     data.pedidos = Array.isArray(data.pedidos) ? data.pedidos : [];
@@ -4379,21 +4383,40 @@
     const cap = acc.data.mesaCapacidades[i];
     return (cap && cap > 0) ? cap : 4;
   }
+  // Índices globales que pertenecen a algún espacio ahora mismo (las mesas "vivas"); cualquier
+  // índice fuera de este conjunto es un hueco libre para reutilizar en la próxima mesa que se cree.
+  function indicesMesasActivos(acc) {
+    return new Set(acc.data.espacios.reduce((a, e) => a.concat(e.mesaIndices), []));
+  }
+  function primerIndiceMesaLibre(acc) {
+    const activos = indicesMesasActivos(acc);
+    const n = acc.data.mesaEstados.length;
+    for (let i = 0; i < n; i++) if (!activos.has(i)) return i;
+    return n;
+  }
+  function resetMesaSlot(acc, idx) {
+    acc.data.mesaEstados[idx] = 'Sin definir';
+    acc.data.mesaNombres[idx] = '';
+    acc.data.mesaCapacidades[idx] = 4;
+    acc.data.mesaFormas[idx] = 'rectangular';
+    acc.data.mesaPosiciones[idx] = null;
+    acc.data.mesaOcupadaDesde[idx] = null;
+  }
   // Asigna automáticamente la mesa más pequeña que quepan los comensales; si ninguna es lo
   // bastante grande, como mejor esfuerzo coge la de mayor capacidad. Vacío si no hay mesas.
   function mejorMesaParaPersonas(acc, personas) {
-    const n = acc.data.mesaEstados.length;
-    if (!n) return '';
+    const indices = Array.from(indicesMesasActivos(acc)).sort((a, b) => a - b);
+    if (!indices.length) return '';
     let mejorIdx = -1, mejorCap = null;
-    for (let i = 0; i < n; i++) {
+    indices.forEach(i => {
       const cap = getMesaCapacidad(i);
       if (cap >= personas && (mejorCap === null || cap < mejorCap)) { mejorCap = cap; mejorIdx = i; }
-    }
+    });
     if (mejorIdx === -1) {
-      for (let i = 0; i < n; i++) {
+      indices.forEach(i => {
         const cap = getMesaCapacidad(i);
         if (mejorCap === null || cap > mejorCap) { mejorCap = cap; mejorIdx = i; }
-      }
+      });
     }
     return mejorIdx === -1 ? '' : ('Mesa ' + (mejorIdx + 1));
   }
@@ -4416,7 +4439,7 @@
     const target = ('mesa ' + (i + 1)).toLowerCase();
     let mejor = null;
     (acc.data.reservas || []).forEach(r => {
-      if (r.fecha !== hoyStr || !r.hora || (r.mesa || '').toLowerCase() !== target) return;
+      if (r.fecha !== hoyStr || !r.hora || r.estado !== 'Confirmada' || (r.mesa || '').toLowerCase() !== target) return;
       const [hh, mm] = r.hora.split(':').map(n => parseInt(n, 10));
       const horaReserva = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), hh, mm);
       const minParaReserva = (horaReserva - ahora) / 60000;
@@ -4430,6 +4453,26 @@
     if (!r) return;
     const idx = acc.data.reservas.indexOf(r);
     if (idx !== -1) acc.data.reservas.splice(idx, 1);
+  }
+  function fechaHoraReserva(r) {
+    const [y, m, d] = (r.fecha || '').split('-').map(n => parseInt(n, 10));
+    const [hh, mm] = (r.hora || '0:0').split(':').map(n => parseInt(n, 10));
+    return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0);
+  }
+  // Reservas de una mesa que todavía no han pasado (hoy más tarde o días futuros), ordenadas por fecha
+  // y hora: para que, al abrir el detalle de la mesa, se pueda comprobar si está libre a cierta hora.
+  function reservasProximasDeMesa(i) {
+    const acc = getCurrentAccount();
+    const target = ('mesa ' + (i + 1)).toLowerCase();
+    const ahora = new Date();
+    return (acc.data.reservas || [])
+      .filter(r => (r.mesa || '').toLowerCase() === target)
+      .map(r => ({ r, dt: fechaHoraReserva(r) }))
+      // Incluye también la reserva que acaba de pasar pero sigue dentro del margen de gracia (por
+      // eso la mesa todavía puede estar "Reservada"): si no, el detalle contradice ese estado.
+      .filter(x => !isNaN(x.dt) && (ahora - x.dt) / 60000 < RESERVA_GRACIA_MIN)
+      .sort((a, b) => a.dt - b.dt)
+      .map(x => x.r);
   }
   // Cuánto tiempo lleva ocupada una mesa: usa la marca guardada al ocuparla, y si no existe (mesas ya
   // ocupadas antes de esta función, o clientes que ocuparon vía QR) recurre a la fecha del pedido
@@ -4488,6 +4531,7 @@
       <span class="mesas-tab ${i === mesasEspacioActivo ? 'active' : ''}">
         <button type="button" onclick="cambiarEspacioMesas(${i})">${svgEsc(e.nombre)}</button>
         <button type="button" onclick="event.stopPropagation(); renombrarEspacioMesas(${i})" class="mesas-tab-edit" title="Cambiar nombre">✎</button>
+        ${acc.data.espacios.length > 1 ? `<button type="button" onclick="event.stopPropagation(); eliminarEspacioMesas(${i})" class="mesas-tab-edit" title="Eliminar espacio">🗑</button>` : ''}
       </span>
     `).join('') + `<button type="button" onclick="anadirEspacioMesas()" class="mesas-tab-add">+ Añadir espacio</button>`;
   }
@@ -4511,6 +4555,33 @@
     mesasEspacioActivo = acc.data.espacios.length - 1;
     saveCurrentAccountData(acc.data);
     renderMesas();
+  }
+  // Elimina un espacio Y sus mesas de verdad: no se mueven a otro espacio, se borran (estado,
+  // nombre, capacidad, forma, posición y sus reservas). Si alguna de esas mesas tiene un pedido
+  // activo sin cobrar, se bloquea el borrado para no perder una comanda en curso.
+  function eliminarEspacioMesas(i) {
+    const acc = getCurrentAccount();
+    if (acc.data.espacios.length <= 1) { showToast('Necesitas al menos un espacio'); return; }
+    const espacio = acc.data.espacios[i];
+    const n = espacio.mesaIndices.length;
+    const ocupada = espacio.mesaIndices.find(idx => findPedidoDeMesa(idx + 1));
+    if (ocupada !== undefined) {
+      showToast('"' + getMesaNombre(ocupada) + '" tiene un pedido activo: cóbralo o anúlalo antes de borrar el espacio');
+      return;
+    }
+    const msg = n
+      ? '¿Eliminar "' + espacio.nombre + '"? Se eliminarán permanentemente sus ' + n + (n === 1 ? ' mesa y su' : ' mesas y sus') + ' reservas.'
+      : '¿Eliminar "' + espacio.nombre + '"?';
+    if (!confirm(msg)) return;
+    const targets = new Set(espacio.mesaIndices.map(idx => 'mesa ' + (idx + 1)));
+    acc.data.reservas = acc.data.reservas.filter(r => !targets.has((r.mesa || '').trim().toLowerCase()));
+    espacio.mesaIndices.forEach(idx => resetMesaSlot(acc, idx));
+    acc.data.espacios.splice(i, 1);
+    if (mesasEspacioActivo >= acc.data.espacios.length) mesasEspacioActivo = 0;
+    saveCurrentAccountData(acc.data);
+    renderMesas();
+    renderReservas();
+    showToast('Espacio eliminado');
   }
   function renderMesas() {
     const acc = getCurrentAccount();
@@ -4659,6 +4730,23 @@
       : `<div class="mt-3 rounded-lg border border-dashed border-slate-200 p-3 text-center">
           <p class="text-xs text-slate-400">Esta mesa no tiene ningún pedido activo ahora mismo.</p>
         </div>`;
+    const proximasReservas = reservasProximasDeMesa(i);
+    const hoyStrDetalle = (() => { const a = new Date(); return a.getFullYear() + '-' + String(a.getMonth() + 1).padStart(2, '0') + '-' + String(a.getDate()).padStart(2, '0'); })();
+    const reservasHtml = proximasReservas.length
+      ? `<div class="mt-3 rounded-lg border border-slate-200 p-3 text-left">
+          <p class="text-sm font-semibold text-navy mb-2">Próximas reservas de esta mesa</p>
+          ${proximasReservas.map(r => {
+            const dt = fechaHoraReserva(r);
+            const fechaLabel = r.fecha === hoyStrDetalle ? 'Hoy' : (dt.getDate() + ' ' + DASH_MESES[dt.getMonth()]);
+            return `<div class="flex items-center justify-between text-xs py-1 border-b border-slate-100 last:border-0">
+              <span class="font-medium text-navy">${fechaLabel} · ${svgEsc(r.hora)}</span>
+              <span class="text-slate-500">${svgEsc(r.cliente)} (${svgEsc(String(r.personas))})</span>
+            </div>`;
+          }).join('')}
+        </div>`
+      : `<div class="mt-3 rounded-lg border border-dashed border-slate-200 p-3 text-center">
+          <p class="text-xs text-slate-400">Esta mesa no tiene próximas reservas.</p>
+        </div>`;
     const qrUrl = location.origin + location.pathname + '?cuenta=' + encodeURIComponent(acc.userId) + '&mesa=' + numero;
     const qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(qrUrl);
     const capacidad = getMesaCapacidad(i);
@@ -4675,6 +4763,7 @@
       </div>
       <p class="text-xs text-slate-400 mt-1">Toca el estado para cambiarlo.</p>
       ${pedidoHtml}
+      ${reservasHtml}
       <div class="mt-4 rounded-lg border border-slate-200 p-4">
         <div class="flex items-center justify-between">
           <p class="text-sm font-semibold text-navy">Capacidad</p>
@@ -4724,6 +4813,19 @@
     renderMesas();
     openMesaDetalle(i);
   }
+  // Pinta un input de nombre por cada mesa NUEVA que se va a crear (las que ya existen en el
+  // espacio no se tocan aquí, solo se renombran desde la ficha de la mesa).
+  function renderMesasSetupNombres() {
+    const acc = getCurrentAccount();
+    const wrap = document.getElementById('mesasSetupNombres');
+    if (!wrap) return;
+    const n = parseInt(document.getElementById('mesasSetupCount').value, 10);
+    const actuales = espacioActivoMesas(acc).mesaIndices.length;
+    const nuevas = (n && n > actuales) ? (n - actuales) : 0;
+    wrap.innerHTML = nuevas
+      ? Array.from({ length: nuevas }, (_, k) => `<input id="mesasSetupNombre${k}" type="text" placeholder="Nombre de la mesa nueva (opcional)" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">`).join('')
+      : '';
+  }
   function crearMesas() {
     const n = parseInt(document.getElementById('mesasSetupCount').value, 10);
     if (!n || n < 1) return;
@@ -4734,16 +4836,25 @@
     } else {
       const faltan = n - espacio.mesaIndices.length;
       for (let k = 0; k < faltan; k++) {
-        espacio.mesaIndices.push(acc.data.mesaEstados.length);
-        acc.data.mesaEstados.push('Sin definir');
-        acc.data.mesaNombres.push('');
-        acc.data.mesaCapacidades.push(4);
-        acc.data.mesaFormas.push('rectangular');
-        acc.data.mesaPosiciones.push(null);
-        acc.data.mesaOcupadaDesde.push(null);
+        const idx = primerIndiceMesaLibre(acc);
+        if (idx === acc.data.mesaEstados.length) {
+          acc.data.mesaEstados.push('Sin definir');
+          acc.data.mesaNombres.push('');
+          acc.data.mesaCapacidades.push(4);
+          acc.data.mesaFormas.push('rectangular');
+          acc.data.mesaPosiciones.push(null);
+          acc.data.mesaOcupadaDesde.push(null);
+        } else {
+          resetMesaSlot(acc, idx);
+        }
+        const nombreInput = document.getElementById('mesasSetupNombre' + k);
+        if (nombreInput && nombreInput.value.trim()) acc.data.mesaNombres[idx] = nombreInput.value.trim();
+        espacio.mesaIndices.push(idx);
       }
     }
     saveCurrentAccountData(acc.data);
+    const wrap = document.getElementById('mesasSetupNombres');
+    if (wrap) wrap.innerHTML = '';
     renderMesas();
   }
   function mostrarCambiarMesas() {
@@ -4751,6 +4862,7 @@
     document.getElementById('mesasSetup').classList.remove('hidden');
     document.getElementById('mesasContent').classList.add('hidden');
     document.getElementById('mesasSetupCount').value = espacioActivoMesas(acc).mesaIndices.length || '';
+    renderMesasSetupNombres();
   }
   function cancelarCambiarMesas() {
     const acc = getCurrentAccount();
@@ -4790,7 +4902,7 @@
       const horaReserva = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), hh, mm);
       const minParaReserva = (horaReserva - ahora) / 60000;
       const estadoActual = acc.data.mesaEstados[idx];
-      if (minParaReserva <= RESERVA_ANTELACION_MIN && minParaReserva > -RESERVA_GRACIA_MIN && (estadoActual === 'Libre' || estadoActual === 'Sin definir')) {
+      if (r.estado === 'Confirmada' && minParaReserva <= RESERVA_ANTELACION_MIN && minParaReserva > -RESERVA_GRACIA_MIN && (estadoActual === 'Libre' || estadoActual === 'Sin definir')) {
         marcarEstadoMesa(acc, idx, 'Reservada');
         cambiado = true;
       } else if (minParaReserva <= -RESERVA_GRACIA_MIN && estadoActual === 'Reservada') {
@@ -4802,6 +4914,35 @@
       saveCurrentAccountData(acc.data);
       renderMesas();
     }
+  }
+  // Al confirmar (o crear ya confirmada) una reserva para HOY con una mesa concreta, refleja el
+  // estado al instante (no hace falta esperar a la ventana de 30 min de arriba): si la hora ya ha
+  // llegado, la persona se da por sentada (Ocupada); si es más tarde, la mesa queda marcada como
+  // Reservada ya mismo. Una reserva sin confirmar todavía no debe reclamar la mesa.
+  function marcarMesaAlCrearReserva(reserva) {
+    const acc = getCurrentAccount();
+    if (!acc || !reserva.hora || reserva.estado !== 'Confirmada') return;
+    const ahora = new Date();
+    const hoyStr = ahora.getFullYear() + '-' + String(ahora.getMonth() + 1).padStart(2, '0') + '-' + String(ahora.getDate()).padStart(2, '0');
+    if (reserva.fecha !== hoyStr) return;
+    const mMatch = /^Mesa (\d+)$/i.exec(reserva.mesa || '');
+    if (!mMatch) return;
+    const idx = parseInt(mMatch[1], 10) - 1;
+    const estadoActual = acc.data.mesaEstados[idx];
+    if (estadoActual !== 'Libre' && estadoActual !== 'Sin definir') return;
+    const [hh, mm] = reserva.hora.split(':').map(n => parseInt(n, 10));
+    const horaReserva = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), hh, mm);
+    marcarEstadoMesa(acc, idx, horaReserva <= ahora ? 'Ocupada' : 'Reservada');
+  }
+  // Si la reserva borrada era la que tenía la mesa en "Reservada", al eliminarla se libera la mesa (ya
+  // no hay motivo para seguir mostrándola como reservada). No toca mesas ya "Ocupada" de verdad.
+  function liberarMesaSiEraEstaReserva(acc, reserva) {
+    if (!reserva) return;
+    const mMatch = /^Mesa (\d+)$/i.exec(reserva.mesa || '');
+    if (!mMatch) return;
+    const idx = parseInt(mMatch[1], 10) - 1;
+    if (acc.data.mesaEstados[idx] !== 'Reservada') return;
+    if (!reservaVigenteDeMesa(idx)) marcarEstadoMesa(acc, idx, 'Libre');
   }
 
   // ---- Nav, toasts ----
@@ -4934,7 +5075,7 @@
     return {
       restaurantName: acc.restaurantName,
       perfil: d.perfil,
-      mesas: d.mesaEstados.map((estado, i) => ({ numero: i + 1, nombre: d.mesaNombres[i] || null, capacidad: d.mesaCapacidades[i] || null, estado })),
+      mesas: Array.from(indicesMesasActivos(acc)).sort((a, b) => a - b).map(i => ({ numero: i + 1, nombre: d.mesaNombres[i] || null, capacidad: d.mesaCapacidades[i] || null, estado: d.mesaEstados[i] })),
       pedidos: d.pedidos,
       reservas: d.reservas,
       menu: d.menu.map(m => ({ nombre: m.nombre, precio: m.precio, estado: m.estado, seccion: m.categoria || '' })),
@@ -5212,14 +5353,10 @@
     domingo.setHours(23, 59, 59, 999);
     return { inicio: lunes, fin: domingo };
   }
-  function getRangoSemanaAnterior() {
-    const rangoActual = getRangoSemanaDe(new Date());
-    const lunesAnterior = new Date(rangoActual.inicio);
-    lunesAnterior.setDate(lunesAnterior.getDate() - 7);
-    return getRangoSemanaDe(lunesAnterior);
-  }
-  function getUltimoDomingoCompleto() {
-    return getRangoSemanaAnterior().fin;
+  // Límite de semanas seleccionables en el informe: hasta el domingo de la semana ACTUAL (aunque
+  // todavía no haya terminado), para poder pedir el informe de esta semana con los datos de hasta hoy.
+  function getFinSemanaActual() {
+    return getRangoSemanaDe(new Date()).fin;
   }
   function fmtFechaCorta(d) {
     return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -5231,7 +5368,11 @@
   // Calcula los KPIs profesionales de la semana con cifras exactas (nada de pedirle a la IA que
   // sume/reste sobre datos en bruto: los números se calculan aquí y se le pasan ya hechos).
   function calcularKpisSemana(pedidosSemana, reservasSemana, acc, inicio, fin) {
-    const dias = Math.max(1, Math.round((fin - inicio) / 86400000) + 1);
+    // Si la semana todavía está en curso, los promedios (p.ej. rotación de mesas) se dividen entre los
+    // días ya transcurridos, no entre los 7 días completos — si no, saldrían artificialmente bajos.
+    const ahora = new Date();
+    const finTranscurrido = fin > ahora ? ahora : fin;
+    const dias = Math.max(1, Math.round((finTranscurrido - inicio) / 86400000) + 1);
     const pagados = pedidosSemana.filter(p => p.estado === 'Pagado');
     const ingresosTotales = pagados.reduce((s, p) => s + (p.total || 0), 0);
     const numPedidos = pagados.length;
@@ -5286,7 +5427,7 @@
     const primeCostPct = (foodCostPct != null && laborCostPct != null) ? foodCostPct + laborCostPct : null;
 
     // Rotación de mesas: pedidos servidos en mesa física (sala + QR) por mesa y por día.
-    const numMesas = (acc.data.mesaEstados || []).length;
+    const numMesas = indicesMesasActivos(acc).size;
     const pedidosMesaFisica = pagados.filter(p => !p.origen || p.origen === 'qr').length;
     const rotacionMesas = numMesas > 0 ? round2(pedidosMesaFisica / numMesas / dias) : null;
 
@@ -5314,7 +5455,7 @@
   async function abrirInformeSemanal() {
     document.getElementById('appRoot').style.display = 'none';
     document.getElementById('informeRoot').style.display = 'block';
-    const { inicio, fin } = getRangoSemanaAnterior();
+    const { inicio, fin } = getRangoSemanaDe(new Date());
     await cargarInformeSemana(inicio, fin);
   }
   function cambiarSemanaInforme(fechaStr) {
@@ -5322,9 +5463,9 @@
     const partes = fechaStr.split('-').map(n => parseInt(n, 10));
     const fechaRef = new Date(partes[0], partes[1] - 1, partes[2]);
     const { inicio, fin } = getRangoSemanaDe(fechaRef);
-    const ultimoDomingo = getUltimoDomingoCompleto();
-    if (inicio > ultimoDomingo) {
-      showToast('Solo puedes ver informes de semanas ya terminadas.');
+    const finSeleccionable = getFinSemanaActual();
+    if (inicio > finSeleccionable) {
+      showToast('Esa semana todavía no ha empezado.');
       return;
     }
     cargarInformeSemana(inicio, fin);
@@ -5333,7 +5474,7 @@
   function moverSemanaInforme(inicioActualISO, dir) {
     const nuevaRef = new Date(new Date(inicioActualISO).getTime() + dir * 8 * 86400000);
     const { inicio, fin } = getRangoSemanaDe(nuevaRef);
-    if (inicio > getUltimoDomingoCompleto()) { showToast('Esa semana todavía no ha terminado.'); return; }
+    if (inicio > getFinSemanaActual()) { showToast('Esa semana todavía no ha empezado.'); return; }
     cargarInformeSemana(inicio, fin);
   }
   let informeCargando = false;
@@ -5441,7 +5582,8 @@
     const acc = getCurrentAccount();
     const todos = acc.data.iaInformes.slice().sort((a, b) => new Date(a.inicio) - new Date(b.inicio));
     const anteriores = todos.filter(inf => inf.id !== informe.id).slice().reverse();
-    const esUltimaSemana = fin >= getUltimoDomingoCompleto();
+    const esUltimaSemana = fin >= getFinSemanaActual();
+    const semanaEnCurso = new Date(informe.fin) > new Date();
     const listaAnteriores = anteriores.length
       ? `<div class="informe-no-print mt-10 pt-6 border-t border-slate-200">
           <p class="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide">Informes anteriores (${anteriores.length})</p>
@@ -5468,13 +5610,13 @@
         <button type="button" onclick="moverSemanaInforme('${inicio.toISOString()}', -1)" class="w-8 h-8 rounded-full border border-slate-200 hover:bg-slate-50 transition flex items-center justify-center text-slate-500" title="Semana anterior">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/></svg>
         </button>
-        <input type="date" class="text-xs border border-slate-200 rounded-md px-1.5 py-1.5" value="${fmtFechaInput(inicio)}" max="${fmtFechaInput(getUltimoDomingoCompleto())}" onchange="cambiarSemanaInforme(this.value)" title="Elegir otra semana">
+        <input type="date" class="text-xs border border-slate-200 rounded-md px-1.5 py-1.5" value="${fmtFechaInput(inicio)}" max="${fmtFechaInput(getFinSemanaActual())}" onchange="cambiarSemanaInforme(this.value)" title="Elegir otra semana">
         <button type="button" onclick="moverSemanaInforme('${inicio.toISOString()}', 1)" ${esUltimaSemana ? 'disabled' : ''} class="w-8 h-8 rounded-full border border-slate-200 hover:bg-slate-50 transition flex items-center justify-center text-slate-500 disabled:opacity-30 disabled:pointer-events-none" title="Semana siguiente">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
         </button>
         <button type="button" onclick="cargarInformeSemana(new Date('${inicio.toISOString()}'), new Date('${fin.toISOString()}'), true)" class="ml-1 text-xs font-semibold text-accent border border-accent/30 hover:bg-accent/5 transition rounded-full px-3 py-1.5" title="Volver a generar este informe con los datos más recientes">🔄 Regenerar</button>
       </div>
-      <p class="text-center text-sm text-slate-500 mt-2">${fmtFechaCorta(new Date(informe.inicio))} — ${fmtFechaCorta(new Date(informe.fin))} · ${acc.restaurantName || ''}</p>
+      <p class="text-center text-sm text-slate-500 mt-2">${fmtFechaCorta(new Date(informe.inicio))} — ${fmtFechaCorta(new Date(informe.fin))} · ${acc.restaurantName || ''}${semanaEnCurso ? ' · <span class="text-accent font-medium">semana en curso, datos hasta hoy</span>' : ''}</p>
       ${informe.generadoEn ? `<p class="informe-no-print text-center text-[11px] text-slate-300 mt-0.5">Generado el ${new Date(informe.generadoEn).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>` : ''}
       <div class="mt-6">${kpiCardsHtml(informe.kpis)}</div>
       <div class="mt-8 text-sm text-slate-600 text-left">${markdownSimpleHtml(informe.contenido)}</div>
@@ -5501,32 +5643,43 @@
     const acc = getCurrentAccount();
     const list = acc.data.reservas;
     if (!list.length) {
-      document.getElementById('reservasBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="8">Sin reservas todavía</td></tr>`;
+      document.getElementById('reservasBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="9">Sin reservas todavía</td></tr>`;
       return;
     }
-    const numMesas = acc.data.mesaEstados.length;
+    const indicesMesas = Array.from(indicesMesasActivos(acc)).sort((a, b) => a - b);
     document.getElementById('reservasBody').innerHTML = list.map((r,i) => {
       const estadoCls = r.estado === 'Confirmada' ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50';
       const canalInfo = RESERVA_CANAL_INFO[r.canal] || RESERVA_CANAL_INFO.manual;
+      const contactoHtml = [
+        r.telefono ? `<a href="tel:${escAttr(r.telefono)}" class="hover:text-accent block">${svgEsc(r.telefono)}</a>` : '',
+        r.email ? `<a href="mailto:${escAttr(r.email)}" class="hover:text-accent block">${svgEsc(r.email)}</a>` : '',
+      ].filter(Boolean).join('') || '—';
       let mesaHtml;
-      if (numMesas) {
-        const opciones = Array.from({ length: numMesas }, (_, idx) => 'Mesa ' + (idx + 1));
+      if (indicesMesas.length) {
+        const opciones = indicesMesas.map(idx => 'Mesa ' + (idx + 1));
         const extra = opciones.includes(r.mesa) ? '' : `<option value="${r.mesa}" selected>${r.mesa}</option>`;
         mesaHtml = `<select onchange="cambiarMesaReserva(${i}, this.value)" class="text-xs border border-slate-200 rounded-md px-1.5 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
           ${extra}
-          ${opciones.map((val, idx) => `<option value="${val}" ${r.mesa === val ? 'selected' : ''}>${getMesaSelectLabel(idx)}</option>`).join('')}
+          ${indicesMesas.map((idx, pos) => `<option value="${opciones[pos]}" ${r.mesa === opciones[pos] ? 'selected' : ''}>${getMesaSelectLabel(idx)}</option>`).join('')}
         </select>`;
       } else {
         mesaHtml = r.mesa;
       }
-      return `<tr><td class="px-4 py-2.5" data-label="Fecha">${r.fecha || '—'}</td><td class="px-4 py-2.5" data-label="Hora">${r.hora}</td><td class="px-4 py-2.5" data-label="Cliente">${svgEsc(r.cliente)}</td><td class="px-4 py-2.5" data-label="Personas">${r.personas}</td><td class="px-4 py-2.5" data-label="Mesa">${mesaHtml}</td><td class="px-4 py-2.5" data-label="Canal"><span class="${canalInfo.cls} rounded-full px-2 py-0.5 text-xs font-medium">${canalInfo.label}</span></td><td class="px-4 py-2.5" data-label="Estado"><span onclick="cicloEstadoReserva(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${r.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarReserva(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
+      return `<tr><td class="px-4 py-2.5" data-label="Fecha">${r.fecha || '—'}</td><td class="px-4 py-2.5" data-label="Hora">${r.hora}</td><td class="px-4 py-2.5" data-label="Cliente">${svgEsc(r.cliente)}</td><td class="px-4 py-2.5 text-xs text-slate-500" data-label="Contacto">${contactoHtml}</td><td class="px-4 py-2.5" data-label="Personas">${r.personas}</td><td class="px-4 py-2.5" data-label="Mesa">${mesaHtml}</td><td class="px-4 py-2.5" data-label="Canal"><span class="${canalInfo.cls} rounded-full px-2 py-0.5 text-xs font-medium">${canalInfo.label}</span></td><td class="px-4 py-2.5" data-label="Estado"><span onclick="cicloEstadoReserva(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${r.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarReserva(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
     }).join('');
   }
   function cicloEstadoReserva(i) {
     const acc = getCurrentAccount();
-    acc.data.reservas[i].estado = acc.data.reservas[i].estado === 'Confirmada' ? 'Pendiente' : 'Confirmada';
+    const reserva = acc.data.reservas[i];
+    reserva.estado = reserva.estado === 'Confirmada' ? 'Pendiente' : 'Confirmada';
+    if (reserva.estado === 'Confirmada') {
+      marcarMesaAlCrearReserva(reserva);
+    } else {
+      liberarMesaSiEraEstaReserva(acc, reserva);
+    }
     saveCurrentAccountData(acc.data);
     renderReservas();
+    renderMesas();
   }
   function cambiarMesaReserva(i, nuevaMesa) {
     const acc = getCurrentAccount();
@@ -5538,9 +5691,13 @@
   }
   function eliminarReserva(i) {
     const acc = getCurrentAccount();
+    const reserva = acc.data.reservas[i];
     acc.data.reservas.splice(i, 1);
+    liberarMesaSiEraEstaReserva(acc, reserva);
     saveCurrentAccountData(acc.data);
     renderReservas();
+    renderDashboardStats();
+    renderMesas();
     showToast('Reserva eliminada');
   }
   // Solo rellena la mesa si el campo está vacío, para no pisar lo que el personal haya escrito a mano.
@@ -5586,8 +5743,11 @@
     const acc = getCurrentAccount();
     const reserva = { fecha, hora, cliente, personas, mesa, estado, canal: 'manual' };
     acc.data.reservas.push(reserva);
+    marcarMesaAlCrearReserva(reserva);
     saveCurrentAccountData(acc.data);
     renderReservas();
+    renderDashboardStats();
+    renderMesas();
     actualizarMesasPorReservas();
     closeModal();
     showToast('Reserva añadida');
@@ -6622,8 +6782,8 @@
   let ventaRapidaEnCurso = null;
   function ventaRapidaFormHtml() {
     const acc = getCurrentAccount();
-    const mesas = acc.data.mesaEstados;
-    const opciones = mesas.map((s, i) => `<option value="${i + 1}">${getMesaSelectLabel(i)}</option>`).join('');
+    const indicesMesas = Array.from(indicesMesasActivos(acc)).sort((a, b) => a - b);
+    const opciones = indicesMesas.map(i => `<option value="${i + 1}">${getMesaSelectLabel(i)}</option>`).join('');
     return `
       <h3 class="text-xl font-bold text-navy">Venta rápida</h3>
       <p class="mt-1 text-sm text-slate-500">Cobra una venta directa en barra o para llevar, sin pasar por Pedidos.</p>
@@ -6718,7 +6878,7 @@
   function getMesaSelectLabel(i) {
     const acc = getCurrentAccount();
     const nombre = acc.data.mesaNombres[i] && acc.data.mesaNombres[i].trim();
-    return nombre ? (nombre + ' (Mesa ' + (i + 1) + ')') : ('Mesa ' + (i + 1));
+    return nombre || ('Mesa ' + (i + 1));
   }
   function precioToNumero(precio) {
     return parseFloat(String(precio).replace('€', '').replace(',', '.')) || 0;
@@ -6857,17 +7017,17 @@
   }
   function addPedidoFormHtml() {
     const acc = getCurrentAccount();
-    const mesas = acc.data.mesaEstados;
-    const opciones = mesas.map((s, i) => `<option value="${i + 1}">${getMesaSelectLabel(i)}</option>`).join('');
+    const indicesMesas = Array.from(indicesMesasActivos(acc)).sort((a, b) => a - b);
+    const opciones = indicesMesas.map(i => `<option value="${i + 1}">${getMesaSelectLabel(i)}</option>`).join('');
     return `
       <h3 class="text-xl font-bold text-navy">Nuevo pedido</h3>
-      ${mesas.length ? '' : '<p class="mt-2 text-sm text-rose-600">Configura tus mesas primero en la sección Mesas.</p>'}
+      ${indicesMesas.length ? '' : '<p class="mt-2 text-sm text-rose-600">Configura tus mesas primero en la sección Mesas.</p>'}
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Mesa</label>
-      <select id="pedMesa" onchange="actualizarPersonasSegunMesa()" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" ${mesas.length ? '' : 'disabled'}>${opciones}</select>
+      <select id="pedMesa" onchange="actualizarPersonasSegunMesa()" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" ${indicesMesas.length ? '' : 'disabled'}>${opciones}</select>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Personas</label>
-      <input id="pedPersonas" type="number" min="1" placeholder="2" value="${mesas.length ? getMesaCapacidad(0) : ''}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <input id="pedPersonas" type="number" min="1" placeholder="2" value="${indicesMesas.length ? getMesaCapacidad(indicesMesas[0]) : ''}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
       <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
-      <button type="button" onclick="submitPedidoPaso1()" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5" ${mesas.length ? '' : 'disabled'}>Elegir platos →</button>
+      <button type="button" onclick="submitPedidoPaso1()" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5" ${indicesMesas.length ? '' : 'disabled'}>Elegir platos →</button>
     `;
   }
   function actualizarPersonasSegunMesa() {
@@ -7453,6 +7613,8 @@
   let platoFotosEdicion = [];
   let platoFotosClientesEdicion = [];
   let platoEditandoIdx = -1;
+  let platoRecetaEdicion = [];
+  let platoEstadoBase = 'Disponible';
   function platoFotosGaleriaHtml() {
     const thumbs = platoFotosEdicion.map((url, i) => `
       <div class="wiz-thumb" style="position:relative;">
@@ -7521,6 +7683,86 @@
     if (cont) cont.innerHTML = platoFotosGaleriaHtml();
     showToast('Foto eliminada');
   }
+  function platoEstadoControlHtml(acc) {
+    const rac = racionesPosibles(acc, { receta: platoRecetaEdicion });
+    if (rac == null) {
+      return `<select id="menuEstado" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"><option value="Disponible" ${platoEstadoBase !== 'Agotado' ? 'selected' : ''}>Disponible</option><option value="Agotado" ${platoEstadoBase === 'Agotado' ? 'selected' : ''}>Agotado</option></select>`;
+    }
+    const agotado = rac === 0;
+    return `<div class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-semibold ${agotado ? 'text-rose-500 bg-rose-50' : 'text-emerald-600 bg-emerald-50'}">${agotado ? 'Agotado' : 'Disponible'}</div>`;
+  }
+  function platoEstadoHintHtml(acc) {
+    const rac = racionesPosibles(acc, { receta: platoRecetaEdicion });
+    return rac == null ? '' : `<p class="mt-1.5 text-xs text-slate-400">Este plato tiene receta: se marca "Agotado" solo cuando falte stock de algún ingrediente, y vuelve a "Disponible" en cuanto lo repongas.</p>`;
+  }
+  function renderPlatoEstadoSeccion() {
+    const acc = getCurrentAccount();
+    const selEl = document.getElementById('menuEstado');
+    if (selEl) platoEstadoBase = selEl.value;
+    const wrapEstado = document.getElementById('menuEstadoWrap');
+    if (wrapEstado) wrapEstado.innerHTML = platoEstadoControlHtml(acc);
+    const wrapHint = document.getElementById('platoEstadoHintWrap');
+    if (wrapHint) wrapHint.innerHTML = platoEstadoHintHtml(acc);
+  }
+  function platoIngredientesHtml(acc) {
+    const usados = platoRecetaEdicion.map(f => String(f.producto).trim().toLowerCase());
+    const disponibles = acc.data.inventario.filter(p => !usados.includes(String(p.producto).trim().toLowerCase()));
+    let tabla;
+    if (!platoRecetaEdicion.length) {
+      tabla = `<p class="text-sm text-slate-400 py-4 text-center border border-dashed border-slate-200 rounded-lg">Este plato aún no tiene ingredientes asignados.</p>`;
+    } else {
+      const filas = platoRecetaEdicion.map((f, idx) => {
+        const ing = findIngrediente(acc, f.producto);
+        const unidad = ing && ing.unidad ? ing.unidad : '';
+        return `<div class="flex items-center gap-2 py-2 border-b border-slate-100">
+          <span class="text-sm text-navy flex-1">${f.producto}</span>
+          <input type="number" step="any" min="0" value="${f.cantidad}" oninput="platoRecetaSetCantidad(${idx}, this.value)" placeholder="0" class="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+          <span class="text-xs text-slate-400 text-left" style="min-width:2.2rem">${unidad}</span>
+          <button onclick="platoRecetaRemoveFila(${idx})" class="text-slate-300 hover:text-rose-500 transition text-sm" title="Quitar">✕</button>
+        </div>`;
+      }).join('');
+      tabla = `<div class="max-h-56 overflow-y-auto pr-1">
+        <div class="flex items-center gap-2 pb-1.5 border-b border-slate-200 text-[11px] font-semibold text-slate-400">
+          <span class="flex-1">Ingrediente</span><span class="w-20 text-right">Por ración</span><span style="min-width:2.2rem"></span><span class="w-4"></span>
+        </div>
+        ${filas}
+      </div>`;
+    }
+    let anadir;
+    if (!acc.data.inventario.length) {
+      anadir = `<p class="mt-3 text-xs text-slate-400">Aún no tienes ingredientes en tu inventario. Añádelos desde la sección Inventario para poder asignarlos aquí.</p>`;
+    } else if (disponibles.length) {
+      const opciones = disponibles.map(p => `<option value="${String(p.producto).replace(/"/g, '&quot;')}">${p.producto}${p.unidad ? ' (' + p.unidad + ')' : ''}</option>`).join('');
+      anadir = `<div class="mt-3 flex items-center gap-2">
+        <select id="platoNuevoIng" class="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${opciones}</select>
+        <button type="button" onclick="platoRecetaAddFila()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2 shrink-0">+ Añadir</button>
+      </div>`;
+    } else {
+      anadir = `<p class="mt-3 text-xs text-slate-400">Ya has añadido todos los ingredientes de tu inventario.</p>`;
+    }
+    return `${tabla}${anadir}`;
+  }
+  function renderPlatoRecetaSeccion() {
+    const acc = getCurrentAccount();
+    const wrap = document.getElementById('platoIngredientesWrap');
+    if (wrap) wrap.innerHTML = platoIngredientesHtml(acc);
+    renderPlatoEstadoSeccion();
+  }
+  function platoRecetaAddFila() {
+    const sel = document.getElementById('platoNuevoIng');
+    if (!sel || !sel.value) return;
+    if (platoRecetaEdicion.some(f => String(f.producto).trim().toLowerCase() === sel.value.trim().toLowerCase())) return;
+    platoRecetaEdicion.push({ producto: sel.value, cantidad: '' });
+    renderPlatoRecetaSeccion();
+  }
+  function platoRecetaRemoveFila(idx) {
+    platoRecetaEdicion.splice(idx, 1);
+    renderPlatoRecetaSeccion();
+  }
+  function platoRecetaSetCantidad(idx, val) {
+    if (platoRecetaEdicion[idx]) platoRecetaEdicion[idx].cantidad = val;
+    renderPlatoEstadoSeccion();
+  }
   function platoFormFieldsHtml(acc, m) {
     m = m || { nombre: '', precio: '', descripcion: '', categoria: '', estado: 'Disponible', foto: '', costo: '' };
     return `
@@ -7528,9 +7770,12 @@
       <input id="menuNombre" type="text" placeholder="Paella valenciana" value="${escAttr(m.nombre)}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
       <div class="grid grid-cols-2 gap-3 mt-4">
         <div><label class="block text-sm font-medium text-navy mb-1.5">Precio</label><input id="menuPrecio" type="text" placeholder="14,50€" value="${escAttr(m.precio)}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
-        <div><label class="block text-sm font-medium text-navy mb-1.5">Estado</label><select id="menuEstado" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"><option value="Disponible" ${m.estado !== 'Agotado' ? 'selected' : ''}>Disponible</option><option value="Agotado" ${m.estado === 'Agotado' ? 'selected' : ''}>Agotado</option></select></div>
+        <div><label class="block text-sm font-medium text-navy mb-1.5">Estado</label><div id="menuEstadoWrap">${platoEstadoControlHtml(acc)}</div></div>
       </div>
-      ${Array.isArray(m.receta) && m.receta.length ? `<p class="mt-1.5 text-xs text-slate-400">Este plato tiene receta: se marca "Agotado" solo cuando falte stock de algún ingrediente, y vuelve a "Disponible" en cuanto lo repongas.</p>` : ''}
+      <div id="platoEstadoHintWrap">${platoEstadoHintHtml(acc)}</div>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Ingredientes de la receta (opcional)</label>
+      <p class="mt-1 text-xs text-slate-400">Si indicas los ingredientes y la cantidad que lleva una ración, el estado Disponible/Agotado se calculará solo según tu stock en Inventario.</p>
+      <div id="platoIngredientesWrap">${platoIngredientesHtml(acc)}</div>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Coste del plato (opcional)</label>
       <input id="menuCosto" type="text" placeholder="Ej. 4,20€" value="${escAttr(m.costo || '')}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
       <p class="mt-1 text-xs text-slate-400">Lo que te cuesta prepararlo (ingredientes). Sirve para calcular el margen en los informes.</p>
@@ -7546,6 +7791,8 @@
     platoFotosEdicion = [];
     platoFotosClientesEdicion = [];
     platoEditandoIdx = -1;
+    platoRecetaEdicion = [];
+    platoEstadoBase = 'Disponible';
     document.getElementById('modalCard').classList.remove('modal-wide');
     document.getElementById('modalBody').innerHTML = `
       <h3 class="text-xl font-bold text-navy">Añadir plato</h3>
@@ -7562,6 +7809,8 @@
     platoFotosEdicion = (m.fotosRestaurante && m.fotosRestaurante.length) ? m.fotosRestaurante.slice() : (m.foto ? [m.foto] : []);
     platoFotosClientesEdicion = (m.fotosClientes || []).map(f => typeof f === 'string' ? { url: f, clienteId: null } : f).slice();
     platoEditandoIdx = i;
+    platoRecetaEdicion = (Array.isArray(m.receta) ? m.receta : []).map(r => ({ producto: r.producto, cantidad: invNum(r.cantidad) != null ? invNum(r.cantidad) : '' }));
+    platoEstadoBase = m.estado === 'Agotado' ? 'Agotado' : 'Disponible';
     document.getElementById('modalCard').classList.remove('modal-wide');
     document.getElementById('modalBody').innerHTML = `
       <h3 class="text-xl font-bold text-navy">Editar plato</h3>
@@ -7575,24 +7824,32 @@
     const acc = getCurrentAccount();
     const nombre = document.getElementById('menuNombre').value.trim();
     const precio = document.getElementById('menuPrecio').value.trim();
-    const estado = document.getElementById('menuEstado').value;
     const categoria = document.getElementById('menuCategoria').value;
     const descripcion = document.getElementById('menuDescripcion').value.trim();
     const costo = document.getElementById('menuCosto').value.trim();
     if (!nombre || !precio) return modalFormError('Escribe al menos el nombre y el precio.');
+    const receta = platoRecetaEdicion.reduce((out, f) => {
+      const v = invNum(f.cantidad);
+      if (v && v > 0) out.push({ producto: f.producto, cantidad: v });
+      return out;
+    }, []);
+    const estado = receta.length ? 'Disponible' : document.getElementById('menuEstado').value;
     // La foto principal (icono del plato) es siempre la primera de la galería; el resto queda como
     // fotos adicionales. Se cambia arrastrando el ★ "Hacer principal" — nunca desde aquí un fichero suelto.
     const fotosRestaurante = platoFotosEdicion.slice();
     const foto = fotosRestaurante[0] || '';
     if (i === -1) {
-      acc.data.menu.push({ nombre, precio, estado, categoria, descripcion, costo, foto, fotosRestaurante, fotosClientes: [] });
+      acc.data.menu.push({ nombre, precio, estado, categoria, descripcion, costo, foto, fotosRestaurante, fotosClientes: [], receta });
     } else {
       const m = acc.data.menu[i];
-      Object.assign(m, { nombre, precio, estado, categoria, descripcion, costo, foto, fotosRestaurante });
+      Object.assign(m, { nombre, precio, estado, categoria, descripcion, costo, foto, fotosRestaurante, receta });
     }
+    actualizarDisponibilidadPorStock(acc);
     platoFotosEdicion = [];
+    platoRecetaEdicion = [];
     saveCurrentAccountData(acc.data);
     renderMenu();
+    renderInventario();
     renderCartaDigitalPreview();
     closeModal();
     showToast(i === -1 ? 'Plato añadido' : 'Plato actualizado');
@@ -8342,7 +8599,20 @@
       if (raciones === 0 && m.estado !== 'Agotado') { m.estado = 'Agotado'; cambiado = true; }
       else if (raciones > 0 && m.estado === 'Agotado') { m.estado = 'Disponible'; cambiado = true; }
     });
+    actualizarBadgeInventarioNav();
     return cambiado;
+  }
+  function actualizarBadgeInventarioNav() {
+    const badge = document.getElementById('invNavBadge');
+    if (!badge) return;
+    const acc = getCurrentAccount();
+    const bajos = acc ? acc.data.inventario.filter(p => inventarioEstado(p.stock, p.minimo).label === 'Bajo').length : 0;
+    if (bajos > 0) {
+      badge.textContent = bajos > 9 ? '9+' : String(bajos);
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
   }
 
   function setInvVista(v) { invVista = v; invPlatoAbierto = null; renderInventario(); }
@@ -8388,6 +8658,7 @@
         ? `<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600 font-medium">${bajos.length === 1 ? '1 ingrediente está por debajo del mínimo' : bajos.length + ' ingredientes están por debajo del mínimo'}: ${bajos.map(p => p.producto).join(', ')}. Pide más antes del próximo servicio.</div>`
         : '';
     }
+    actualizarBadgeInventarioNav();
     if (invVista === 'ingredientes') return renderInvIngredientes(acc, cont);
     if (invPlatoAbierto != null && acc.data.menu[invPlatoAbierto]) return renderInvPlatoDetalle(acc, cont);
     invPlatoAbierto = null;
@@ -8793,6 +9064,14 @@
     if (dashRango === '12m') { d.setMonth(d.getMonth() - 12); return d; }
     return null;
   }
+  // Las reservas (a diferencia de los pedidos) sí pueden tener fecha futura, así que aquí se acota
+  // también el límite superior (hoy incluido) para que "Hoy"/"Últimos X días" no arrastre reservas
+  // de fechas todavía por venir. 'all' (Desde el principio) se deja sin límites, ni por abajo ni por arriba.
+  function dashRangoHasta() {
+    if (dashRango === 'all') return null;
+    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + 1);
+    return d;
+  }
   // Fecha "real" del dinero de un pedido: la de cobro si ya está pagado (puede ser distinta del día
   // en que se creó el pedido), o la de creación como respaldo. Todo el Dashboard/Informes se basa en
   // esta fecha para que "ingresos de hoy" coincida siempre con lo que Caja/TPV dice que se ha cobrado hoy.
@@ -8803,6 +9082,14 @@
     const desde = dashRangoDesde();
     if (!desde) return pedidos;
     return pedidos.filter(p => { const d = new Date(fechaEfectivaPedido(p)); return !isNaN(d) && d >= desde; });
+  }
+  function reservasEnRango(reservas) {
+    const desde = dashRangoDesde();
+    const hasta = dashRangoHasta();
+    return reservas.filter(r => {
+      const d = new Date(r.fecha);
+      return !isNaN(d) && (!desde || d >= desde) && (!hasta || d < hasta);
+    });
   }
   function dashRangeLabelText() {
     if (dashRango === 'all') return 'Desde el principio';
@@ -8843,19 +9130,20 @@
     // Solo pedidos ya COBRADOS: así "Ingresos" (y el resto de gráficos derivados de esta lista) coincide
     // siempre con lo que Caja/TPV dice que se ha cobrado, en vez de incluir pedidos aún en cocina/sin pagar.
     const pedidos = pedidosEnRango(acc.data.pedidos.filter(p => p.estado === 'Pagado'));
+    const reservas = reservasEnRango(acc.data.reservas);
     const ingresos = pedidos.reduce((sum, p) => sum + (p.total || 0), 0);
-    const comensales = pedidos.reduce((sum, p) => sum + (p.personas || 0), 0);
     const ticket = pedidos.length ? ingresos / pedidos.length : 0;
     pulseKpi('kpiIngresos', ingresos.toFixed(2).replace('.', ',') + '€');
     pulseKpi('kpiPedidos', pedidos.length);
     pulseKpi('kpiTicket', ticket.toFixed(2).replace('.', ',') + '€');
-    pulseKpi('kpiComensales', comensales);
+    pulseKpi('kpiReservas', reservas.length);
     const dias = pedidosPorDia(pedidos);
     renderKpiExtra('kpiIngresos', dias.map(d => d.ingresos));
     renderKpiExtra('kpiPedidos', dias.map(d => d.count));
     renderKpiExtra('kpiTicket', dias.map(d => d.count ? d.ingresos / d.count : 0), true);
-    renderKpiExtra('kpiComensales', dias.map(d => d.comensales));
-    renderAllDashboardCharts(pedidos);
+    const diasReservas = reservasPorDia(reservas);
+    renderKpiExtra('kpiReservas', diasReservas.map(d => d.count));
+    renderAllDashboardCharts(pedidos, reservas);
   }
   function renderKpiExtra(baseId, serie, esMedia) {
     setTrend(baseId + 'Trend', esMedia ? deltaMedia(serie) : deltaSuma(serie), true);
@@ -8948,6 +9236,17 @@
       if (!map.has(key)) map.set(key, { date: d, ingresos: 0, count: 0, comensales: 0 });
       const o = map.get(key);
       o.ingresos += p.total || 0; o.count += 1; o.comensales += p.personas || 0;
+    });
+    return Array.from(map.values()).sort((a, b) => a.date - b.date).slice(-14);
+  }
+  function reservasPorDia(reservas) {
+    const map = new Map();
+    reservas.forEach(r => {
+      let d = new Date(r.fecha);
+      if (isNaN(d)) d = new Date();
+      const key = d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+      if (!map.has(key)) map.set(key, { date: d, count: 0 });
+      map.get(key).count += 1;
     });
     return Array.from(map.values()).sort((a, b) => a.date - b.date).slice(-14);
   }
@@ -9084,10 +9383,10 @@
     if (!dias.length) return svgEmpty('Aún no hay pedidos registrados');
     return svgVBar(dias.map(d => ({ label: fmtDia(d.date), value: d.count ? d.ingresos / d.count : 0 })), { color: '#6366F1', color2: '#4F46E5', fmt: fmtEur0 }, elId);
   }
-  function chartComensalesDia(pedidos, elId) {
-    const dias = pedidosPorDia(pedidos);
-    if (!dias.length) return svgEmpty('Aún no hay pedidos registrados');
-    return svgVBar(dias.map(d => ({ label: fmtDia(d.date), value: d.comensales })), { color: '#00D2A0', color2: '#00D2A0', fmt: n => String(Math.round(n)) }, elId);
+  function chartReservasDia(reservas, elId) {
+    const dias = reservasPorDia(reservas);
+    if (!dias.length) return svgEmpty('Aún no hay reservas registradas');
+    return svgVBar(dias.map(d => ({ label: fmtDia(d.date), value: d.count })), { color: '#0EA5E9', color2: '#0EA5E9', fmt: n => String(Math.round(n)) }, elId);
   }
   function chartPlatosTop(pedidos) {
     const map = new Map();
@@ -9297,17 +9596,21 @@
     if (!data.length) { mountChart('dashRevArea', svgEmpty('Aún no hay pedidos registrados')); return; }
     mountChart('dashRevArea', svgArea(data, { color: '#3D7FFF', fmt: fmtEur0 }, 'dashRevSvg'));
   }
-  function renderAllDashboardCharts(pedidos) {
+  function renderAllDashboardCharts(pedidos, reservas) {
+    const acc = getCurrentAccount();
     if (!pedidos) {
-      const acc = getCurrentAccount();
       if (!acc) return;
       pedidos = pedidosEnRango(acc.data.pedidos.filter(p => p.estado === 'Pagado'));
+    }
+    if (!reservas) {
+      if (!acc) return;
+      reservas = reservasEnRango(acc.data.reservas);
     }
     renderRevenueCard(pedidos);
     mountChart('dashChartPlatos', chartPlatosTop(pedidos));
     mountChart('dashChartCanal', chartCanal(pedidos));
     mountChart('dashChartTicket', chartTicketDia(pedidos, 'dashTicketSvg'));
-    mountChart('dashChartComensales', chartComensalesDia(pedidos, 'dashComensalesSvg'));
+    mountChart('dashChartReservas', chartReservasDia(reservas, 'dashReservasSvg'));
     mountChart('dashChartMesas', chartMesas(pedidos));
     mountChart('dashChartCamareros', chartCamareros(pedidos));
     renderRentabilidad(pedidos);
@@ -9681,7 +9984,6 @@
           ${sec.reservas ? `<a href="${reservarUrl}" class="pweb-nav-cta">Reservar</a>` : ''}
         </nav>
         <div class="pweb-hero-inner">
-          ${cd.tipoRestaurante ? `<span class="pweb-badge">${TIPO_EMOJI[cd.tipoRestaurante] || '🍽️'} ${svgEsc(cd.tipoRestaurante)}</span>` : ''}
           <h1>${n}</h1>
           ${cd.tagline ? `<p class="pweb-tagline">"${svgEsc(cd.tagline)}"</p>` : ''}
           <div class="pweb-hero-ctas">
@@ -10198,6 +10500,7 @@
   const DIA_JS_A_KEY = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
   let publicReservaHorario = null;
   let publicReservaHorarioConfigurado = false;
+  let publicReservaCuentaId = null;
   // ---- Calendario visual + horas en chips para la página pública de reservas ----
   const MESES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const DIAS_SEMANA_CORTO = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -10257,13 +10560,23 @@
     renderPublicResCalendario();
     renderPublicResHoras();
   }
-  function renderPublicResHoras() {
+  // Comprueba de verdad, contra las reservas ya existentes, qué horas ya no tienen ninguna mesa
+  // libre para el número de personas indicado (misma lógica que usa crear_reserva_publica al
+  // guardar), para no dejar elegir una hora que luego el envío rechazaría.
+  async function renderPublicResHoras() {
     const wrap = document.getElementById('pubResHorasWrap');
     const avisoEl = document.getElementById('pubResAvisoHorario');
     const btn = document.getElementById('pubResBtnEnviar');
     if (!wrap) return;
     if (!publicResFechaSel) {
       wrap.innerHTML = `<p class="text-xs text-slate-400 py-1">Elige antes un día en el calendario.</p>`;
+      if (avisoEl) avisoEl.classList.add('hidden');
+      if (btn) btn.disabled = true;
+      return;
+    }
+    const personas = parseInt((document.getElementById('pubResPersonas') || {}).value, 10);
+    if (!personas || personas < 1) {
+      wrap.innerHTML = `<p class="text-xs text-slate-400 py-1">Indica antes cuántas personas sois.</p>`;
       if (avisoEl) avisoEl.classList.add('hidden');
       if (btn) btn.disabled = true;
       return;
@@ -10290,9 +10603,22 @@
         if (val >= apertura && val < cierre) slots.push(val);
       }
     }
-    if (publicResHoraSel && !slots.includes(publicResHoraSel)) publicResHoraSel = null;
+    const fechaConsultada = publicResFechaSel;
+    wrap.innerHTML = `<p class="text-xs text-slate-400 py-1">Comprobando disponibilidad…</p>`;
+    let ocupadas = [];
+    try {
+      const { data } = await supabaseClient.rpc('get_horas_ocupadas_publica', { p_user_id: publicReservaCuentaId, p_fecha: fechaConsultada, p_personas: personas });
+      if (Array.isArray(data)) ocupadas = data;
+    } catch (e) { /* si falla la consulta, no bloqueamos horas aquí: crear_reserva_publica igualmente rechaza al enviar si no hay hueco real */ }
+    // Si mientras esperábamos la respuesta el usuario cambió de día u horas, esta respuesta ya es
+    // vieja: no pisar lo que se esté mostrando ahora.
+    if (fechaConsultada !== publicResFechaSel) return;
+    if (publicResHoraSel && (!slots.includes(publicResHoraSel) || ocupadas.includes(publicResHoraSel))) publicResHoraSel = null;
     wrap.innerHTML = slots.length
-      ? `<div class="pubcal-horas">${slots.map(v => `<button type="button" onclick="publicResElegirHora('${v}')" class="pubcal-hora ${publicResHoraSel === v ? 'sel' : ''}">${v}</button>`).join('')}</div>`
+      ? `<div class="pubcal-horas">${slots.map(v => ocupadas.includes(v)
+          ? `<button type="button" disabled class="pubcal-hora full" title="Esa hora ya está completa">${v}</button>`
+          : `<button type="button" onclick="publicResElegirHora('${v}')" class="pubcal-hora ${publicResHoraSel === v ? 'sel' : ''}">${v}</button>`
+        ).join('')}</div>`
       : `<p class="text-xs text-slate-400 py-1">Sin horas disponibles ese día.</p>`;
     if (avisoEl) {
       if (publicReservaHorarioConfigurado) { avisoEl.textContent = 'Horario ese día: ' + apertura + ' - ' + cierre + '.'; avisoEl.classList.remove('hidden'); }
@@ -10306,6 +10632,7 @@
   }
   async function renderPublicReserva(cuentaId, canal) {
     canal = canal === 'web' ? 'web' : 'restora';
+    publicReservaCuentaId = cuentaId;
     document.getElementById('landingRoot').style.display = 'none';
     document.getElementById('publicReservaRoot').style.display = 'block';
     const body = document.getElementById('publicReservaBody');
@@ -10340,6 +10667,21 @@
               <label class="block text-sm font-medium text-navy mb-1.5">Tu nombre</label>
               <input id="pubResNombre" type="text" placeholder="Nombre y apellido" class="w-full rounded-xl border border-slate-200 px-3.5 py-3 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition">
             </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-navy mb-1.5">Teléfono</label>
+                <input id="pubResTelefono" type="tel" placeholder="600 000 000" class="w-full rounded-xl border border-slate-200 px-3.5 py-3 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-navy mb-1.5">Email</label>
+                <input id="pubResEmail" type="email" placeholder="tu@email.com" class="w-full rounded-xl border border-slate-200 px-3.5 py-3 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition">
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 -mt-2">Indica al menos uno de los dos, por si tenemos que avisarte de algún cambio en tu reserva.</p>
+            <div>
+              <label class="block text-sm font-medium text-navy mb-1.5">Personas</label>
+              <input id="pubResPersonas" type="number" min="1" placeholder="2" oninput="renderPublicResHoras()" class="w-full rounded-xl border border-slate-200 px-3.5 py-3 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition">
+            </div>
             <div class="grid grid-cols-2 gap-6 items-start">
               <div class="flex flex-col items-stretch">
                 <label class="block text-sm font-medium text-navy mb-1.5 self-start">Día</label>
@@ -10351,10 +10693,6 @@
               </div>
             </div>
             <p id="pubResAvisoHorario" class="text-xs text-slate-400 -mt-2 hidden"></p>
-            <div>
-              <label class="block text-sm font-medium text-navy mb-1.5">Personas</label>
-              <input id="pubResPersonas" type="number" min="1" placeholder="2" class="w-full rounded-xl border border-slate-200 px-3.5 py-3 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition">
-            </div>
             <p id="pubResError" class="text-xs text-rose-600 hidden"></p>
             <button id="pubResBtnEnviar" onclick="enviarReservaPublica('${cuentaId}', '${canal}')" class="w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-3.5 mt-2 shadow-sm">Reservar</button>
           </div>
@@ -10368,6 +10706,8 @@
   }
   async function enviarReservaPublica(cuentaId, canal) {
     const nombre = document.getElementById('pubResNombre').value.trim();
+    const telefono = document.getElementById('pubResTelefono').value.trim();
+    const email = document.getElementById('pubResEmail').value.trim();
     const fecha = publicResFechaSel;
     const hora = publicResHoraSel;
     const personas = parseInt(document.getElementById('pubResPersonas').value, 10);
@@ -10377,10 +10717,16 @@
       errorEl.classList.remove('hidden');
       return;
     }
+    if (!telefono && !email) {
+      errorEl.textContent = 'Indica un teléfono o un email de contacto.';
+      errorEl.classList.remove('hidden');
+      return;
+    }
     errorEl.classList.add('hidden');
     try {
       const { data, error } = await supabaseClient.rpc('crear_reserva_publica', {
         p_user_id: cuentaId, p_nombre: nombre, p_fecha: fecha, p_hora: hora, p_personas: personas, p_canal: canal === 'web' ? 'web' : 'restora',
+        p_telefono: telefono || null, p_email: email || null,
       });
       if (error || !data || data.error) {
         errorEl.textContent = (data && data.error) || 'No se ha podido enviar la reserva. Inténtalo de nuevo.';
@@ -10454,7 +10800,7 @@
         'Baja hasta "Rentabilidad" para ver el margen de cada plato (requiere haber puesto costes en Carta).',
       ],
       demo: [
-        { voz: 'Este es el Dashboard de Restora. Nada más entrar ves tus ingresos cobrados, el número de pedidos, el ticket medio y los comensales de hoy.', cursor: { x: 30, y: 22 }, html: `<p class="font-bold text-navy text-[12px] mb-2">¡Bienvenido, La Brasería!</p><div class="flex gap-2 mb-2">${_dKpi('Ingresos', '1.284,50€')}${_dKpi('Pedidos', '42')}${_dKpi('Ticket medio', '30,58€')}${_dKpi('Comensales', '96')}</div><div class="bg-white border border-slate-200 rounded-lg p-2 h-24"><p class="text-[8px] text-slate-400 mb-1">Ingresos · hoy por horas</p><svg viewBox="0 0 200 44" class="w-full h-16"><path d="M0,40 L30,38 L60,30 L90,34 L120,18 L150,24 L180,8 L200,12 L200,44 L0,44 Z" fill="rgba(61,127,255,0.15)"/><polyline points="0,40 30,38 60,30 90,34 120,18 150,24 180,8 200,12" fill="none" stroke="#3D7FFF" stroke-width="2"/></svg></div>` },
+        { voz: 'Este es el Dashboard de Restora. Nada más entrar ves tus ingresos cobrados, el número de pedidos, el ticket medio y las reservas de hoy.', cursor: { x: 30, y: 22 }, html: `<p class="font-bold text-navy text-[12px] mb-2">¡Bienvenido, La Brasería!</p><div class="flex gap-2 mb-2">${_dKpi('Ingresos', '1.284,50€')}${_dKpi('Pedidos', '42')}${_dKpi('Ticket medio', '30,58€')}${_dKpi('Reservas', '14')}</div><div class="bg-white border border-slate-200 rounded-lg p-2 h-24"><p class="text-[8px] text-slate-400 mb-1">Ingresos · hoy por horas</p><svg viewBox="0 0 200 44" class="w-full h-16"><path d="M0,40 L30,38 L60,30 L90,34 L120,18 L150,24 L180,8 L200,12 L200,44 L0,44 Z" fill="rgba(61,127,255,0.15)"/><polyline points="0,40 30,38 60,30 90,34 120,18 150,24 180,8 200,12" fill="none" stroke="#3D7FFF" stroke-width="2"/></svg></div>` },
         { voz: 'El gráfico de ingresos se adapta a ti: puedes verlo hora a hora, por días de la semana, por semanas del mes o por meses del año, con un solo clic.', cursor: { x: 82, y: 30 }, click: true, html: `<div class="flex justify-between items-center mb-2"><p class="font-bold text-navy text-[12px]">Ingresos</p><div class="flex gap-1 text-[8px] font-bold"><span class="demo-hl rounded-full bg-navydeep text-white px-2 py-0.5">Día</span><span class="text-slate-400 px-1.5 py-0.5">Semana</span><span class="text-slate-400 px-1.5 py-0.5">Mes</span><span class="text-slate-400 px-1.5 py-0.5">Año</span></div></div><div class="bg-white border border-slate-200 rounded-lg p-2 h-28"><p class="text-[9px] text-slate-500 mb-1">Ingresos de hoy, hora a hora</p><svg viewBox="0 0 200 52" class="w-full h-20"><path d="M0,48 L25,47 L50,40 L75,44 L100,26 L125,32 L150,12 L175,20 L200,6 L200,52 L0,52 Z" fill="rgba(61,127,255,0.15)"/><polyline points="0,48 25,47 50,40 75,44 100,26 125,32 150,12 175,20 200,6" fill="none" stroke="#3D7FFF" stroke-width="2.5"/></svg></div>` },
         { voz: 'Más abajo tienes tus platos más vendidos, los ingresos por mesa y por camarero, y por qué canal entra cada pedido: sala, TPV o el código QR de la mesa.', cursor: { x: 40, y: 62 }, html: `<div class="grid grid-cols-2 gap-2"><div class="bg-white border border-slate-200 rounded-lg p-2"><p class="text-[8px] text-slate-400 mb-1.5">Platos más vendidos</p><div class="space-y-1"><div class="flex items-center gap-1"><div class="h-2.5 rounded bg-accent" style="width:85%"></div><span class="text-[8px]">Salmón</span></div><div class="flex items-center gap-1"><div class="h-2.5 rounded bg-accent/70" style="width:60%"></div><span class="text-[8px]">Risotto</span></div><div class="flex items-center gap-1"><div class="h-2.5 rounded bg-accent/50" style="width:42%"></div><span class="text-[8px]">Tarta</span></div></div></div><div class="bg-white border border-slate-200 rounded-lg p-2"><p class="text-[8px] text-slate-400 mb-1.5">Canal de venta</p><div class="flex items-center gap-2"><svg viewBox="0 0 36 36" class="w-14 h-14"><circle cx="18" cy="18" r="14" fill="none" stroke="#E8EBF2" stroke-width="6"/><circle cx="18" cy="18" r="14" fill="none" stroke="#3D7FFF" stroke-width="6" stroke-dasharray="52 36" transform="rotate(-90 18 18)"/><circle cx="18" cy="18" r="14" fill="none" stroke="#00D2A0" stroke-width="6" stroke-dasharray="18 70" stroke-dashoffset="-52" transform="rotate(-90 18 18)"/></svg><div class="text-[8px] space-y-0.5"><p><span class="inline-block w-2 h-2 rounded-full bg-accent mr-1"></span>Sala 59%</p><p><span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>QR 21%</p><p><span class="inline-block w-2 h-2 rounded-full bg-slate-300 mr-1"></span>TPV 20%</p></div></div></div></div>` },
         { voz: 'Y si añades el coste de tus platos en la carta, la tabla de rentabilidad te dice el margen exacto que te deja cada uno. Deja de intuir, y decide con datos.', cursor: { x: 50, y: 55 }, html: `<p class="font-bold text-navy text-[12px] mb-2">Rentabilidad por plato</p><div class="bg-white border border-slate-200 rounded-lg p-2"><div class="grid grid-cols-4 text-[8px] font-semibold text-slate-400 border-b border-slate-100 pb-1 mb-1"><span>Plato</span><span class="text-right">Uds.</span><span class="text-right">Ingresos</span><span class="text-right">Margen</span></div><div class="grid grid-cols-4 text-[9px] py-1"><span class="font-semibold text-navy">Salmón</span><span class="text-right">38</span><span class="text-right">627€</span><span class="text-right text-emerald-600 font-bold">68%</span></div><div class="grid grid-cols-4 text-[9px] py-1 demo-hl"><span class="font-semibold text-navy">Risotto</span><span class="text-right">24</span><span class="text-right">333€</span><span class="text-right text-emerald-600 font-bold">74%</span></div><div class="grid grid-cols-4 text-[9px] py-1"><span class="font-semibold text-navy">Tarta queso</span><span class="text-right">19</span><span class="text-right">114€</span><span class="text-right text-amber-600 font-bold">41%</span></div></div>` },
@@ -11694,8 +12040,11 @@
     "Gasto medio por pedido cada día": ["Despesa mitjana per comanda cada dia", "Average spend per order each day"],
     "Comensales por día": ["Comensals per dia", "Guests by day"],
     "Afluencia diaria de tu restaurante": ["Afluència diària del teu restaurant", "Daily footfall of your restaurant"],
+    "Reservas por día": ["Reserves per dia", "Bookings by day"],
+    "Reservas registradas cada día": ["Reserves registrades cada dia", "Reservations recorded each day"],
     "Qué mesas facturan más": ["Quines taules facturen més", "Which tables earn the most"],
     "Aún no hay pedidos registrados": ["Encara no hi ha comandes registrades", "No orders recorded yet"],
+    "Aún no hay reservas registradas": ["Encara no hi ha reserves registrades", "No reservations recorded yet"],
     "Aún no hay platos vendidos": ["Encara no hi ha plats venuts", "No dishes sold yet"],
     "Aún no hay ingresos por mesa": ["Encara no hi ha ingressos per taula", "No revenue by table yet"],
     "QR de mesa": ["QR de taula", "Table QR"],
