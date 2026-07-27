@@ -696,7 +696,9 @@
   html.tema-oscuro #appRoot iframe,
   html.tema-oscuro #modalOverlay img,
   html.tema-oscuro #modalOverlay canvas { filter: invert(1) hue-rotate(180deg); }
-  /* (Se quitó el resplandor lila del texto navy en modo claro; el texto se ve limpio, sin reflejo.) */
+  /* Resplandor solo en las palabras destacadas en azul (.text-accent), con un glow del mismo azul de
+     acento. El resto del texto (navy) queda limpio, sin reflejo. */
+  html:not(.tema-oscuro) #landingRoot .text-accent { text-shadow: 0 0 16px rgba(61,127,255,0.30), 0 0 2px rgba(61,127,255,0.25); }
   html:not(.tema-oscuro) #landingRoot button,
   html:not(.tema-oscuro) #landingRoot a.rounded-full,
   html:not(.tema-oscuro) #landingRoot [class*="rounded-full"][onclick] { box-shadow: 0 0 0 1px rgba(79,63,255,0.12), 0 8px 26px -6px rgba(79,63,255,0.4); }
