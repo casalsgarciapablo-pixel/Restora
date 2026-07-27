@@ -49,6 +49,11 @@
   .negocio3d-arrow { transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s ease; }
   .negocio3d-arrow:hover { transform: scale(1.08); box-shadow: 0 8px 20px -6px rgba(11,27,51,0.3); }
   .negocio3d-arrow:active { transform: scale(0.94); }
+  /* Icono perfectamente centrado en el círculo: block quita el hueco de línea base y un micro-ajuste
+     óptico compensa que el "pico" del chevron parece descentrado. */
+  .negocio3d-arrow svg { display: block; }
+  #negocioArrowPrev svg { transform: translateX(1px); }
+  #negocioArrowNext svg { transform: translateX(-1px); }
   /* ---- Tarjetas de funcionalidades clicables + página de detalle por sección ---- */
   .func-card { cursor: pointer; }
   .func-card .func-cta { opacity: 0; transform: translateX(-4px); transition: opacity .25s ease, transform .25s ease; }
@@ -2700,16 +2705,18 @@
 
   let negocioCurrent = 0;
   const NEGOCIO_TOTAL = 4;
-  let negocioPos = 1;
+  const NEGOCIO_BASE = 2; // nº de clones al inicio = posición (DOM) de la primera tarjeta real
+  let negocioPos = NEGOCIO_BASE;
   let negocioAnimando = false;
   let negocioSafety = null;
   // Se llama al terminar la animación de la pista: libera el "candado" y, si hemos aterrizado sobre un
-  // clon (posición 0 o TOTAL+1), salta sin animación a la tarjeta real equivalente. Es idempotente:
-  // si se llama dos veces (por transitionend + salvaguarda) la segunda no hace nada.
+  // clon del borde, salta SIN animación a la tarjeta real equivalente (misma foto, misma posición
+  // centrada → salto invisible). Es idempotente: si se llama dos veces (transitionend + salvaguarda)
+  // la segunda no hace nada.
   function negocioFinalizar() {
     negocioAnimando = false;
-    if (negocioPos === 0) negocioMoveTo(NEGOCIO_TOTAL, false);
-    else if (negocioPos === NEGOCIO_TOTAL + 1) negocioMoveTo(1, false);
+    if (negocioPos < NEGOCIO_BASE) negocioMoveTo(negocioPos + NEGOCIO_TOTAL, false);
+    else if (negocioPos >= NEGOCIO_BASE + NEGOCIO_TOTAL) negocioMoveTo(negocioPos - NEGOCIO_TOTAL, false);
   }
   function negocioSetHighlight() {
     const track = document.getElementById('negocioCarousel');
@@ -2774,12 +2781,15 @@
     // saltamos sin animacion a la tarjeta real equivalente (se ve identica, el salto es invisible).
     const originales = Array.from(track.querySelectorAll('.negocio3d-slide'));
     if (originales.length === NEGOCIO_TOTAL) {
-      const cloneUltimo = originales[NEGOCIO_TOTAL - 1].cloneNode(true);
-      const clonePrimero = originales[0].cloneNode(true);
-      cloneUltimo.setAttribute('aria-hidden', 'true');
-      clonePrimero.setAttribute('aria-hidden', 'true');
-      track.insertBefore(cloneUltimo, originales[0]);
-      track.appendChild(clonePrimero);
+      // 2 clones a cada lado: en el punto donde el bucle "salta", así la tarjeta vecina del clon del
+      // borde nunca falta y no aparece el hueco en blanco. Izquierda: [s2, s3] antes de s0.
+      // Derecha: [s0, s1] después de s3. Total DOM: [s2,s3, s0,s1,s2,s3, s0,s1] (s0 real en índice 2).
+      [originales[NEGOCIO_TOTAL - 2], originales[NEGOCIO_TOTAL - 1]].forEach(o => {
+        const c = o.cloneNode(true); c.setAttribute('aria-hidden', 'true'); track.insertBefore(c, originales[0]);
+      });
+      [originales[0], originales[1]].forEach(o => {
+        const c = o.cloneNode(true); c.setAttribute('aria-hidden', 'true'); track.appendChild(c);
+      });
     }
     // (Se quitó el efecto de parallax/desplazamiento de la foto al mover el ratón: movía la imagen bajo
     //  el texto y dificultaba leerlo.)
@@ -2800,7 +2810,7 @@
     });
     negocioSetHighlight();
     // Centramos tras el layout inicial (imágenes/fuentes ya medidas) para no descuadrarnos al arrancar.
-    negocioMoveTo(1, false);
+    negocioMoveTo(NEGOCIO_BASE, false);
     requestAnimationFrame(() => negocioMoveTo(negocioPos, false));
     window.addEventListener('load', () => negocioMoveTo(negocioPos, false));
   })();
