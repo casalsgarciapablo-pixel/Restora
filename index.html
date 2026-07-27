@@ -2700,6 +2700,15 @@
   const NEGOCIO_TOTAL = 4;
   let negocioPos = 1;
   let negocioAnimando = false;
+  let negocioSafety = null;
+  // Se llama al terminar la animación de la pista: libera el "candado" y, si hemos aterrizado sobre un
+  // clon (posición 0 o TOTAL+1), salta sin animación a la tarjeta real equivalente. Es idempotente:
+  // si se llama dos veces (por transitionend + salvaguarda) la segunda no hace nada.
+  function negocioFinalizar() {
+    negocioAnimando = false;
+    if (negocioPos === 0) negocioMoveTo(NEGOCIO_TOTAL, false);
+    else if (negocioPos === NEGOCIO_TOTAL + 1) negocioMoveTo(1, false);
+  }
   function negocioSetHighlight() {
     const track = document.getElementById('negocioCarousel');
     if (!track) return;
@@ -2731,6 +2740,9 @@
     negocioSetHighlight();
     negocioAnimando = true;
     negocioMoveTo(negocioPos + dir, true);
+    // Salvaguarda: si por lo que sea no llegara el transitionend de la pista, desbloquea igualmente.
+    clearTimeout(negocioSafety);
+    negocioSafety = setTimeout(negocioFinalizar, 900);
   }
   function negocioTiltMove(e, inner) {
     const slide = inner.closest('.negocio3d-slide');
@@ -2763,10 +2775,12 @@
     // (Se quitó el efecto de parallax/desplazamiento de la foto al mover el ratón: movía la imagen bajo
     //  el texto y dificultaba leerlo.)
     track.addEventListener('transitionend', (e) => {
-      if (e.propertyName !== 'transform') return;
-      negocioAnimando = false;
-      if (negocioPos === 0) negocioMoveTo(NEGOCIO_TOTAL, false);
-      else if (negocioPos === NEGOCIO_TOTAL + 1) negocioMoveTo(1, false);
+      // Solo la transición de la PISTA en sí. Las tarjetas hijas (.negocio3d-slide-inner) también
+      // animan su transform y su transitionend burbujea hasta aquí; si no lo filtramos, se dispara
+      // antes de tiempo y desincroniza el carrusel (era la causa del bug al hacer clic).
+      if (e.target !== track || e.propertyName !== 'transform') return;
+      clearTimeout(negocioSafety);
+      negocioFinalizar();
     });
     negocioSetHighlight();
     negocioMoveTo(1, false);
