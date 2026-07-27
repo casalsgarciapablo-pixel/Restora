@@ -49,9 +49,9 @@
   .negocio3d-arrow { transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s ease; }
   .negocio3d-arrow:hover { transform: scale(1.08); box-shadow: 0 8px 20px -6px rgba(11,27,51,0.3); }
   .negocio3d-arrow:active { transform: scale(0.94); }
-  /* Icono centrado en el círculo: block quita el hueco de línea base del SVG (que lo dejaba un pelín
-     alto). El chevron ya está centrado en su viewBox, así que sin más ajustes queda en el centro. */
-  .negocio3d-arrow svg { display: block; }
+  /* Icono centrado en el círculo: block quita el hueco de línea base del SVG. Además se empuja un poco
+     a la derecha porque el chevron se veía desplazado a la izquierda dentro del círculo. */
+  .negocio3d-arrow svg { display: block; transform: translateX(2px); }
   /* ---- Tarjetas de funcionalidades clicables + página de detalle por sección ---- */
   .func-card { cursor: pointer; }
   .func-card .func-cta { opacity: 0; transform: translateX(-4px); transition: opacity .25s ease, transform .25s ease; }
