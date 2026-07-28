@@ -1199,8 +1199,8 @@
             <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 rounded-full px-2 py-1">Conectar</span>
           </div>
           <div class="flex items-center gap-2.5 bg-white rounded-lg px-3 py-2">
-            <span class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="18" rx="2"/><path stroke-linecap="round" d="M8 8h8M8 12h8M8 16h4"/></svg></span>
-            <span class="text-xs font-semibold text-navy flex-1">TPV Square</span>
+            <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M9 12l2 2 4-4"/></svg></span>
+            <span class="text-xs font-semibold text-navy flex-1">JustEat</span>
             <span class="text-[10px] font-semibold text-emerald-600 bg-emerald-50 rounded-full px-2 py-1">Conectado</span>
           </div>
         </div>
@@ -2174,14 +2174,6 @@
         </div>
       </div>
       <div class="mt-5 grid sm:grid-cols-2 gap-4 max-w-2xl">
-        <div class="lift-card rounded-xl border border-slate-200 bg-white p-4 flex items-center gap-3">
-          <span class="w-10 h-10 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="18" rx="2"/><path stroke-linecap="round" d="M8 8h8M8 12h8M8 16h4"/></svg></span>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-navy">TPV Square</p>
-            <p class="text-xs text-slate-400">Sincroniza ventas de tu terminal.</p>
-          </div>
-          <button id="integSquareBtn" onclick="toggleIntegracion('square')" class="text-xs bg-slate-100 text-slate-500 rounded-full px-2.5 py-1 font-medium hover:opacity-80 transition shrink-0">No conectado</button>
-        </div>
         <div class="lift-card rounded-xl border border-slate-200 bg-white p-4 flex items-center gap-3">
           <span class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" d="M2 9h3M2 13h2M2 17h2"/><rect x="8" y="6" width="13" height="12" rx="2"/><path stroke-linecap="round" d="M8 10h13"/></svg></span>
           <div class="flex-1 min-w-0">
@@ -3298,7 +3290,7 @@
       ofertaTipo: '', // '' (sin elegir todavía) | 'carta' | 'menu' | 'ambos'
       personal: [],
       inventario: [],
-      integraciones: { square: false, glovo: defaultDeliveryIntegracion(), uber: defaultDeliveryIntegracion(), justeat: defaultDeliveryIntegracion(), notifs: false, googleCalendar: false },
+      integraciones: { glovo: defaultDeliveryIntegracion(), uber: defaultDeliveryIntegracion(), justeat: defaultDeliveryIntegracion(), notifs: false, googleCalendar: false },
       iaConversaciones: [],
       iaInformes: [],
       caja: { abierta: false, fecha: null, efectivoInicial: 0, aperturaHora: null, historico: [] },
@@ -3432,7 +3424,6 @@
     });
     data.menu.forEach(m => { if (!Array.isArray(m.receta)) m.receta = []; });
     data.integraciones = data.integraciones || {};
-    data.integraciones.square = !!data.integraciones.square;
     ['glovo', 'uber', 'justeat'].forEach(key => {
       const val = data.integraciones[key];
       if (val && typeof val === 'object') {
@@ -5452,7 +5443,7 @@
       personal: d.personal.map(p => ({ nombre: p.nombre, rol: p.rol, turno: p.turno, estado: p.estado, apartados: p.secciones || [] })),
       inventario: d.inventario,
       caja: d.caja ? { abierta: !!d.caja.abierta, fecha: d.caja.fecha, efectivoInicial: d.caja.efectivoInicial, aperturaHora: d.caja.aperturaHora } : null,
-      integraciones: { square: !!ig.square, googleCalendar: !!ig.googleCalendar, glovo: estadoDelivery('glovo'), uber: estadoDelivery('uber'), justeat: estadoDelivery('justeat') },
+      integraciones: { googleCalendar: !!ig.googleCalendar, glovo: estadoDelivery('glovo'), uber: estadoDelivery('uber'), justeat: estadoDelivery('justeat') },
       cartaDigital: d.cartaDigital ? { activada: !!d.cartaDigital.activada, webPublicada: !!d.cartaDigital.web } : null,
       // A propósito NO se envían: datos bancarios (IBAN), claves de las plataformas de delivery,
       // códigos de acceso del personal ni los mensajes del chat interno.
@@ -6456,7 +6447,6 @@
   // ---- TPV ----
   function conectarTPVFormHtml() {
     const apps = [
-      { nombre: 'Square', letras: 'SQ', color: 'bg-slate-800 text-white', nota: 'Tiene API pública — se puede conectar de verdad si lo pides' },
       { nombre: 'ICG Software', letras: 'ICG', color: 'bg-blue-50 text-blue-600', nota: 'Requiere acuerdo comercial con ICG' },
       { nombre: 'Lightspeed', letras: 'LS', color: 'bg-emerald-50 text-emerald-600', nota: 'Requiere acuerdo comercial con Lightspeed' },
       { nombre: 'Aloha (NCR)', letras: 'AL', color: 'bg-rose-50 text-rose-600', nota: 'Requiere acuerdo comercial con NCR' },
@@ -10036,13 +10026,6 @@
     if (res && res.style.display !== 'none' && !e.target.closest('.topbar-search')) res.style.display = 'none';
   });
 
-  // ---- Configuración: integraciones locales ----
-  function toggleIntegracion(key) {
-    const acc = getCurrentAccount();
-    acc.data.integraciones[key] = !acc.data.integraciones[key];
-    saveCurrentAccountData(acc.data);
-    renderIntegraciones();
-  }
   // ---- Panel de avisos (Configuración) ----
   function avisoPill(activo) {
     return 'text-xs rounded-full px-2.5 py-1 font-medium hover:opacity-80 transition shrink-0 ' +
@@ -10117,19 +10100,6 @@
     const acc = getCurrentAccount();
     const ig = acc.data.integraciones;
     renderAvisosPrefs();
-    const map = { square: ['integSquareBtn','Conectado','No conectado'] };
-    Object.keys(map).forEach(key => {
-      const cfg = map[key];
-      const btn = document.getElementById(cfg[0]);
-      if (!btn) return;
-      if (ig[key]) {
-        btn.textContent = cfg[1];
-        btn.className = 'text-xs bg-emerald-50 text-emerald-600 rounded-full px-2.5 py-1 font-medium hover:opacity-80 transition shrink-0';
-      } else {
-        btn.textContent = cfg[2];
-        btn.className = 'text-xs bg-slate-100 text-slate-500 rounded-full px-2.5 py-1 font-medium hover:opacity-80 transition shrink-0';
-      }
-    });
     const deliveryBtnMap = { glovo: 'integGlovoBtn', uber: 'integUberBtn', justeat: 'integJusteatBtn' };
     Object.keys(deliveryBtnMap).forEach(key => {
       const btn = document.getElementById(deliveryBtnMap[key]);
@@ -11501,7 +11471,6 @@
       sub: 'Restora no te obliga a cambiarlo todo: conecta tu TPV, tus plataformas de delivery, tu calendario y tus notificaciones desde un solo panel de integraciones.',
       features: [
         ['🛵', 'Delivery: Glovo, Uber Eats y JustEat', 'Conexión con credenciales reales y webhook propio; los pedidos entran solos a cocina.'],
-        ['💳', 'TPV Square', 'Sincroniza las ventas de tu terminal Square.'],
         ['📆', 'Google Calendar', 'Tus reservas, también en tu calendario de Google.'],
         ['🔔', 'Notificaciones', 'Activa o desactiva los avisos del panel por dispositivo.'],
         ['🎛️', 'Estado siempre visible', 'Cada integración muestra Conectado/Conectar de un vistazo, y se desconecta igual de fácil.'],
@@ -11513,7 +11482,7 @@
         'El botón pasará a "Conectado" — y a funcionar desde ese momento.',
       ],
       demo: [
-        { voz: 'Esta es la sección de Apps: todas tus integraciones en un panel, cada una con su estado. Verde conectado, gris pendiente de conectar.', cursor: { x: 45, y: 40 }, html: `<p class="font-bold text-navy text-[12px] mb-2">Apps</p>${_dRow('🛵 Glovo', 'Recibe tus pedidos de delivery', _dPill('Conectado', 'bg-emerald-50 text-emerald-600'))}${_dRow('🛵 Uber Eats', 'Recibe tus pedidos de delivery', _dPill('Conectar', 'bg-slate-100 text-slate-500'))}${_dRow('💳 TPV Square', 'Sincroniza ventas del terminal', _dPill('Conectado', 'bg-emerald-50 text-emerald-600'))}${_dRow('📆 Google Calendar', 'Reservas en tu calendario', _dPill('Conectar', 'bg-slate-100 text-slate-500'))}` },
+        { voz: 'Esta es la sección de Apps: todas tus integraciones en un panel, cada una con su estado. Verde conectado, gris pendiente de conectar.', cursor: { x: 45, y: 40 }, html: `<p class="font-bold text-navy text-[12px] mb-2">Apps</p>${_dRow('🛵 Glovo', 'Recibe tus pedidos de delivery', _dPill('Conectado', 'bg-emerald-50 text-emerald-600'))}${_dRow('🛵 Uber Eats', 'Recibe tus pedidos de delivery', _dPill('Conectar', 'bg-slate-100 text-slate-500'))}${_dRow('🛵 JustEat', 'Recibe tus pedidos de delivery', _dPill('Conectado', 'bg-emerald-50 text-emerald-600'))}${_dRow('📆 Google Calendar', 'Reservas en tu calendario', _dPill('Conectar', 'bg-slate-100 text-slate-500'))}` },
         { voz: 'Conectar algo nuevo es tocar su botón y rellenar un formulario corto. Sin técnicos, sin instalaciones: credenciales, guardar, y en marcha.', cursor: { x: 76, y: 33 }, click: true, html: `${_dRow('🛵 Uber Eats', 'Recibe tus pedidos de delivery', '<span class="demo-hl">' + _dPill('Conectar', 'bg-slate-100 text-slate-500') + '</span>')}<div class="bg-white border border-slate-200 rounded-xl p-2.5 max-w-[220px] mx-auto mt-2"><p class="font-bold text-navy text-[10px] mb-1">Conectar Uber Eats</p><div class="space-y-1 text-[8px]"><div class="border border-slate-200 rounded-md px-2 py-1 text-slate-400">Store ID</div><div class="border border-slate-200 rounded-md px-2 py-1 text-slate-400">API Key</div></div><div class="mt-1.5 rounded-full bg-navydeep text-white text-center text-[8px] font-bold py-1">Conectar</div></div>` },
         { voz: 'Y cada integración trabaja para ti desde el primer minuto: los pedidos de delivery van a cocina, las reservas a tu calendario, las ventas del TPV a tus estadísticas. Todo en su sitio, sin cambiar de pantalla.', cursor: { x: 50, y: 45 }, html: `<div class="text-center mt-3"><div class="flex justify-center items-center gap-2 text-[9px] font-semibold text-slate-600"><span class="bg-white border border-slate-200 rounded-lg px-2 py-1.5">🛵 Pedido Glovo</span><span class="text-accent">→</span><span class="bg-white border border-slate-200 rounded-lg px-2 py-1.5 demo-hl">🍳 Cocina</span></div><div class="flex justify-center items-center gap-2 text-[9px] font-semibold text-slate-600 mt-1.5"><span class="bg-white border border-slate-200 rounded-lg px-2 py-1.5">📅 Reserva online</span><span class="text-accent">→</span><span class="bg-white border border-slate-200 rounded-lg px-2 py-1.5">📆 Tu calendario</span></div></div>` },
       ],
