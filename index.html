@@ -148,6 +148,10 @@
   .mesa-label { font-size: 11px; font-weight: 600; }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) scale(.9); background: #16294A; color: #fff; font-size: 13px; font-weight: 600; padding: 10px 18px; border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 200; opacity: 0; pointer-events: none; transition: opacity .25s cubic-bezier(.34,1.56,.64,1), transform .25s cubic-bezier(.34,1.56,.64,1); }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px) scale(1); }
+  /* El toast normal no se puede tocar (pointer-events:none) para no tapar la pantalla; los avisos con
+     destino sí, para poder ir al apartado desde el propio mensaje. */
+  .toast.show.clicable { pointer-events: auto; cursor: pointer; }
+  .toast.clicable::after { content: ' ›'; font-weight: 700; }
 
   .phone-mockup { width: 210px; max-width: 100%; aspect-ratio: 9 / 16; max-height: 400px; background: #111827; border-radius: 2.2rem; padding: 10px; box-shadow: 0 18px 36px -10px rgba(11,27,51,0.32); position: relative; overflow: hidden; }
   .phone-mockup-notch { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 80px; height: 16px; background: #111827; border-radius: 0 0 10px 10px; z-index: 2; }
@@ -3119,6 +3123,8 @@
     { key: 'chat', label: 'Mensajes del chat del equipo' },
     { key: 'inventario', label: 'Avisos de stock bajo' },
   ];
+  // A qué sección lleva cada aviso al tocarlo (tanto en la campana como en el mensaje de abajo).
+  const AVISO_DESTINO = { pedidos: 'pedidos', listos: 'pedidos', chat: 'chat', inventario: 'inventario' };
   function avisosPrefsKey() {
     const cuenta = currentAccount ? currentAccount.userId : 'sin-cuenta';
     const quien = (staffSession && staffSession.email) ? ('emp-' + String(staffSession.email).toLowerCase()) : 'duenyo';
@@ -3151,11 +3157,12 @@
   function pushNotification(text, sonido, tipo) {
     if (!avisoActivo(tipo)) return;
     const prefs = getAvisosPrefs();
-    notifications.unshift({ text, time: new Date() });
+    const destino = AVISO_DESTINO[tipo] || '';
+    notifications.unshift({ text, time: new Date(), destino });
     notifications = notifications.slice(0, 20);
     notifUnread += 1;
     renderNotifications();
-    showToast(text);
+    showToast(text, destino);
     // En hora punta pueden entrar varios pedidos en la misma actualización: sin este freno sonarían
     // todos a la vez y se solaparían hasta no entenderse. Un solo pitido por ráfaga.
     if (sonido && prefs.sonido && Date.now() - ultimoSonidoAviso > 1200) {
@@ -3183,8 +3190,31 @@
       badge.classList.add('hidden');
     }
     document.getElementById('notifList').innerHTML = notifications.length
-      ? notifications.map(n => `<div class="px-4 py-2.5 border-b border-slate-100 last:border-0"><p class="text-sm text-navy">${n.text}</p><p class="text-xs text-slate-400 mt-0.5">${n.time.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</p></div>`).join('')
+      ? notifications.map(n => {
+          const hora = n.time.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+          // El texto puede venir de un mensaje de chat escrito por una persona: se escapa siempre.
+          const texto = svgEsc(n.text);
+          if (!n.destino) {
+            return `<div class="px-4 py-2.5 border-b border-slate-100 last:border-0"><p class="text-sm text-navy">${texto}</p><p class="text-xs text-slate-400 mt-0.5">${hora}</p></div>`;
+          }
+          return `<div onclick="irADestinoAviso('${n.destino}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'){irADestinoAviso('${n.destino}');}" class="px-4 py-2.5 border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50 transition-colors">
+            <p class="text-sm text-navy">${texto}</p>
+            <p class="text-xs text-slate-400 mt-0.5">${hora} · Ver ${sectionNames[n.destino] || n.destino}</p>
+          </div>`;
+        }).join('')
       : '<p class="px-4 py-6 text-sm text-slate-400 text-center">Sin notificaciones</p>';
+  }
+  // Lleva al apartado del aviso. Un empleado solo entra en las secciones que el dueño le haya dado,
+  // así que si no tiene acceso se le dice en vez de colarlo en una pantalla que no le corresponde.
+  function irADestinoAviso(destino) {
+    if (!destino || !document.getElementById('sec-' + destino)) return;
+    const panel = document.getElementById('notifPanel');
+    if (panel) panel.classList.remove('open');
+    if (staffSession && Array.isArray(staffSession.secciones) && !staffSession.secciones.includes(destino)) {
+      showToast('No tienes acceso a ' + (sectionNames[destino] || destino));
+      return;
+    }
+    goSection(destino);
   }
 
   const DIAS_SEMANA = [
@@ -5083,11 +5113,15 @@
     panel.classList.toggle('open', open);
   }
 
-  function showToast(msg) {
+  function showToast(msg, destino) {
     const t = document.getElementById('toast');
     t.textContent = msg;
+    // Solo los avisos con destino son clicables; los mensajes normales ("Guardado") no deben serlo,
+    // y hay que limpiar el destino anterior para que un toast viejo no siga llevando a otro sitio.
+    t.onclick = destino ? function () { irADestinoAviso(destino); } : null;
+    t.classList.toggle('clicable', !!destino);
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 1800);
+    setTimeout(() => t.classList.remove('show'), destino ? 4200 : 1800);
   }
 
   let iaConversacionActualId = null;
