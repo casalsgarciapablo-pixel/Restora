@@ -1922,6 +1922,7 @@
           <p id="mesasResumen" class="mt-5 text-sm text-slate-500"></p>
           <div class="flex items-center gap-3">
             <button id="mesasEditarBtn" onclick="toggleModoEditarMesas()" class="mt-5 text-xs font-semibold rounded-full px-3 py-1.5 transition"></button>
+            <button onclick="anadirUnaMesa()" class="mt-5 text-xs font-semibold rounded-full px-3 py-1.5 transition bg-slate-100 text-navy hover:bg-slate-200" title="Añade una mesa más sin tocar las que ya tienes">+ Añadir mesa</button>
             <button onclick="mostrarCambiarMesas()" class="mt-5 text-xs font-semibold text-slate-400 hover:text-navy transition">Cambiar número de mesas</button>
           </div>
         </div>
@@ -5034,6 +5035,29 @@
     if (wrap) wrap.innerHTML = '';
     renderMesas();
   }
+  // Añade UNA mesa al espacio actual sin tocar las demás: ni sus nombres, ni sus estados, ni sus
+  // posiciones, ni sus capacidades. Es la alternativa segura a "Cambiar número de mesas", que pide un
+  // total y recorta las que sobran si escribes un número más pequeño.
+  function anadirUnaMesa() {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+    const espacio = espacioActivoMesas(acc);
+    const idx = primerIndiceMesaLibre(acc);
+    if (idx === acc.data.mesaEstados.length) {
+      acc.data.mesaEstados.push('Sin definir');
+      acc.data.mesaNombres.push('');
+      acc.data.mesaCapacidades.push(4);
+      acc.data.mesaFormas.push('rectangular');
+      acc.data.mesaPosiciones.push(null);
+      acc.data.mesaOcupadaDesde.push(null);
+    } else {
+      resetMesaSlot(acc, idx);
+    }
+    espacio.mesaIndices.push(idx);
+    saveCurrentAccountData(acc.data);
+    renderMesas();
+    showToast('Mesa ' + (idx + 1) + ' añadida');
+  }
   function mostrarCambiarMesas() {
     const acc = getCurrentAccount();
     document.getElementById('mesasSetup').classList.remove('hidden');
@@ -5268,19 +5292,122 @@
     document.getElementById('iaInput').value = btn.textContent;
     askIA();
   }
+  // ---- Contexto que se le manda al asistente en cada pregunta ----
+  // Se construye en el momento de preguntar, así que siempre lleva el estado actual (el canal de
+  // tiempo real mantiene currentAccount.data al día aunque el cambio lo haya hecho otro dispositivo).
+  const DIAS_IA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const DIAS_CLAVE_IA = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+  const MESES_IA = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  function semanaISO(d) {
+    const f = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dia = f.getUTCDay() || 7; // lunes = 1 ... domingo = 7
+    f.setUTCDate(f.getUTCDate() + 4 - dia);
+    const inicio = new Date(Date.UTC(f.getUTCFullYear(), 0, 1));
+    return Math.ceil(((f - inicio) / 86400000 + 1) / 7);
+  }
+  // Sin esto el asistente no sabe ni qué hora es: no podía responder "¿cuánto llevo hoy?" ni
+  // entender "esta noche", "mañana" o "la semana que viene".
+  function contextoAhoraIA() {
+    const n = new Date();
+    const p2 = (x) => String(x).padStart(2, '0');
+    return {
+      momentoISO: n.toISOString(),
+      fecha: n.getFullYear() + '-' + p2(n.getMonth() + 1) + '-' + p2(n.getDate()),
+      hora: p2(n.getHours()) + ':' + p2(n.getMinutes()),
+      minuto: n.getMinutes(),
+      horaDelDia: n.getHours(),
+      diaSemana: DIAS_IA[n.getDay()],
+      diaDelMes: n.getDate(),
+      semanaDelAnyo: semanaISO(n),
+      mes: MESES_IA[n.getMonth()],
+      numeroDeMes: n.getMonth() + 1,
+      anyo: n.getFullYear(),
+      zonaHoraria: (window.Intl && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : '',
+      enPalabras: DIAS_IA[n.getDay()] + ', ' + n.getDate() + ' de ' + MESES_IA[n.getMonth()] + ' de ' + n.getFullYear() + ', ' + p2(n.getHours()) + ':' + p2(n.getMinutes()),
+    };
+  }
+  function abiertoAhoraIA(perfil) {
+    const n = new Date();
+    const h = perfil && perfil.horario && perfil.horario[DIAS_CLAVE_IA[n.getDay()]];
+    if (!h || !h.abierto || !h.apertura || !h.cierre) return false;
+    const hhmm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0');
+    // Turno que cruza la medianoche (ej. de 20:00 a 01:00)
+    if (h.cierre <= h.apertura) return hhmm >= h.apertura || hhmm < h.cierre;
+    return hhmm >= h.apertura && hhmm < h.cierre;
+  }
+  // Números ya calculados, para que el asistente no tenga que sumar a mano miles de pedidos y no
+  // se equivoque en las preguntas de dinero, que son las más habituales.
+  function resumenParaIA(acc, ahora) {
+    const d = acc.data;
+    const n = new Date();
+    const inicioSemana = new Date(n.getFullYear(), n.getMonth(), n.getDate() - ((n.getDay() + 6) % 7));
+    const inicioMes = new Date(n.getFullYear(), n.getMonth(), 1);
+    let ventasHoy = 0, ventasSemana = 0, ventasMes = 0, pedidosHoy = 0;
+    (d.pedidos || []).forEach(p => {
+      const f = new Date(p.fecha);
+      if (isNaN(f)) return;
+      const esHoy = f.getFullYear() === n.getFullYear() && f.getMonth() === n.getMonth() && f.getDate() === n.getDate();
+      if (esHoy) pedidosHoy += 1;
+      if (p.estado !== 'Pagado') return;
+      const c = p.total || 0;
+      if (esHoy) ventasHoy += c;
+      if (f >= inicioSemana) ventasSemana += c;
+      if (f >= inicioMes) ventasMes += c;
+    });
+    const mesasPorEstado = {};
+    (d.mesaEstados || []).forEach(e => { mesasPorEstado[e] = (mesasPorEstado[e] || 0) + 1; });
+    const reservasHoy = (d.reservas || []).filter(r => r.fecha === ahora.fecha);
+    const pendientesHoy = reservasHoy
+      .filter(r => (r.hora || '') >= ahora.hora)
+      .sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
+    const bajoMinimo = (d.inventario || []).filter(i => {
+      const s = invNum(i.stock), m = invNum(i.minimo);
+      return s != null && m != null && s < m;
+    }).map(i => ({ producto: i.producto, stock: i.stock, minimo: i.minimo, unidad: i.unidad || '' }));
+    const redondear = (v) => Math.round(v * 100) / 100;
+    return {
+      ventasHoy: redondear(ventasHoy),
+      ventasEstaSemana: redondear(ventasSemana),
+      ventasEsteMes: redondear(ventasMes),
+      pedidosHoy,
+      pedidosActivosAhora: (d.pedidos || []).filter(p => p.estado !== 'Pagado' && p.estado !== 'Anulado').length,
+      mesasPorEstado,
+      reservasHoyTotal: reservasHoy.length,
+      reservasHoyPendientes: pendientesHoy.length,
+      proximaReservaHoy: pendientesHoy[0] || null,
+      ingredientesBajoMinimo: bajoMinimo,
+      cajaAbierta: !!(d.caja && d.caja.abierta),
+    };
+  }
   function construirDatosParaIA() {
     const acc = getCurrentAccount();
     const d = acc.data;
+    const ahora = contextoAhoraIA();
+    const ig = d.integraciones || {};
+    const estadoDelivery = (k) => !!(ig[k] && ig[k].connected);
     return {
+      ahora,
       restaurantName: acc.restaurantName,
+      usuarioActual: staffSession
+        ? { tipo: 'trabajador', nombre: staffSession.nombre || '', apartadosPermitidos: staffSession.secciones || [] }
+        : { tipo: 'propietario', apartadosPermitidos: 'todos' },
+      abiertoAhora: abiertoAhoraIA(d.perfil),
       perfil: d.perfil,
-      mesas: Array.from(indicesMesasActivos(acc)).sort((a, b) => a - b).map(i => ({ numero: i + 1, nombre: d.mesaNombres[i] || null, capacidad: d.mesaCapacidades[i] || null, estado: d.mesaEstados[i] })),
+      resumen: resumenParaIA(acc, ahora),
+      mesas: Array.from(indicesMesasActivos(acc)).sort((a, b) => a - b).map(i => ({ numero: i + 1, nombre: d.mesaNombres[i] || null, capacidad: d.mesaCapacidades[i] || null, estado: d.mesaEstados[i], ocupadaDesde: d.mesaOcupadaDesde[i] || null })),
+      espacios: d.espacios,
       pedidos: d.pedidos,
       reservas: d.reservas,
-      menu: d.menu.map(m => ({ nombre: m.nombre, precio: m.precio, estado: m.estado, seccion: m.categoria || '' })),
+      menu: d.menu.map(m => ({ nombre: m.nombre, precio: m.precio, estado: m.estado, seccion: m.categoria || '', descripcion: m.descripcion || '', tieneReceta: Array.isArray(m.receta) && m.receta.length > 0 })),
       menuSecciones: d.menuSecciones,
-      personal: d.personal.map(p => ({ nombre: p.nombre, rol: p.rol, turno: p.turno, estado: p.estado })),
+      promociones: d.promociones,
+      personal: d.personal.map(p => ({ nombre: p.nombre, rol: p.rol, turno: p.turno, estado: p.estado, apartados: p.secciones || [] })),
       inventario: d.inventario,
+      caja: d.caja ? { abierta: !!d.caja.abierta, fecha: d.caja.fecha, efectivoInicial: d.caja.efectivoInicial, aperturaHora: d.caja.aperturaHora } : null,
+      integraciones: { square: !!ig.square, googleCalendar: !!ig.googleCalendar, glovo: estadoDelivery('glovo'), uber: estadoDelivery('uber'), justeat: estadoDelivery('justeat') },
+      cartaDigital: d.cartaDigital ? { activada: !!d.cartaDigital.activada, webPublicada: !!d.cartaDigital.web } : null,
+      // A propósito NO se envían: datos bancarios (IBAN), claves de las plataformas de delivery,
+      // códigos de acceso del personal ni los mensajes del chat interno.
     };
   }
 
@@ -12164,6 +12291,7 @@
     "Crear mesas": ["Crea les taules", "Create tables"],
     "← Volver al panel": ["← Torna al tauler", "← Back to panel"],
     "Cambiar número de mesas": ["Canvia el nombre de taules", "Change number of tables"],
+    "+ Añadir mesa": ["+ Afegir taula", "+ Add table"],
     // SaaS: botones y tablas
     "🔗 Enlace para reservar": ["🔗 Enllaç per reservar", "🔗 Booking link"],
     "Conectar": ["Connecta", "Connect"],
