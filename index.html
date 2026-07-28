@@ -2250,10 +2250,7 @@
               </select>
             </div>
           </div>
-          <div class="mt-3 flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
-            <span class="text-sm text-slate-600">Notificaciones por email</span>
-            <button id="integNotifsBtn" onclick="toggleIntegracion('notifs')" class="text-xs bg-slate-100 text-slate-500 rounded-full px-2.5 py-1 font-medium hover:opacity-80 transition">Desactivadas</button>
-          </div>
+          <div id="avisosPrefsCard" class="mt-3 rounded-lg border border-slate-200 px-4 py-3"></div>
           <div class="mt-3 flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
             <div>
               <span class="text-sm text-slate-600">Modo oscuro</span>
@@ -2951,18 +2948,18 @@
           if (!prev) {
             // Pedido nuevo: si aún no tiene platos listos, entra en cocina → avisar a cocina
             if (listosAhora === 0 && esDispositivoCocina()) {
-              pushNotification('🍳 Nuevo pedido en cocina · ' + p.mesa + (p.origen === 'qr' ? ' (QR)' : ''), 'cocina');
+              pushNotification('🍳 Nuevo pedido en cocina · ' + p.mesa + (p.origen === 'qr' ? ' (QR)' : ''), 'cocina', 'pedidos');
             }
           } else if (listosAhora > prev.listos) {
             // Uno o más platos acaban de quedar listos → avisar a sala para que los recoja
-            if (esDispositivoSala()) pushNotification('🔔 Plato listo para servir · ' + p.mesa, 'listo');
+            if (esDispositivoSala()) pushNotification('🔔 Plato listo para servir · ' + p.mesa, 'listo', 'listos');
           }
         });
         // Mensajes de chat nuevos (de otra persona) → aviso instantáneo sin sonido
         const yoChat = identidadChatActual();
         currentAccount.data.chatMensajes.slice(chatAntes).forEach(m => {
           if (m.autorEmail && yoChat.email && m.autorEmail.toLowerCase() === yoChat.email.toLowerCase()) return;
-          pushNotification('💬 ' + m.autor + ': ' + m.texto);
+          pushNotification('💬 ' + m.autor + ': ' + m.texto, null, 'chat');
           if (!chatSeccionActiva()) chatNoLeidos += 1;
         });
         actualizarBadgeChatNav();
@@ -3111,15 +3108,60 @@
     return true;
   }
 
+  // ---- Avisos: preferencias de cada dispositivo y de cada trabajador ----
+  // Se guardan en ESTE dispositivo (localStorage), no en los datos compartidos del restaurante.
+  // En un local con varias tablets y muchos empleados cada uno necesita sus propios avisos: si se
+  // guardaran en común, silenciarlos en la barra dejaría a cocina sin oír los pedidos. Al cambiar de
+  // trabajador en el mismo dispositivo, la clave cambia y cada uno recupera sus ajustes.
+  const AVISOS_TIPOS = [
+    { key: 'pedidos', label: 'Pedidos nuevos en cocina' },
+    { key: 'listos', label: 'Platos listos para servir' },
+    { key: 'chat', label: 'Mensajes del chat del equipo' },
+    { key: 'inventario', label: 'Avisos de stock bajo' },
+  ];
+  function avisosPrefsKey() {
+    const cuenta = currentAccount ? currentAccount.userId : 'sin-cuenta';
+    const quien = (staffSession && staffSession.email) ? ('emp-' + String(staffSession.email).toLowerCase()) : 'duenyo';
+    return 'restora_avisos_' + cuenta + '_' + quien;
+  }
+  function avisosPrefsDefecto() {
+    // Por defecto todo activado: nunca dejamos a un restaurante sin avisos por no haber configurado nada.
+    return { pedidos: true, listos: true, chat: true, inventario: true, sonido: true };
+  }
+  function getAvisosPrefs() {
+    const def = avisosPrefsDefecto();
+    try {
+      const raw = localStorage.getItem(avisosPrefsKey());
+      if (!raw) return def;
+      const guardado = JSON.parse(raw);
+      return (guardado && typeof guardado === 'object') ? Object.assign(def, guardado) : def;
+    } catch (e) { return def; }
+  }
+  function guardarAvisosPrefs(p) {
+    try { localStorage.setItem(avisosPrefsKey(), JSON.stringify(p)); } catch (e) {}
+  }
+  function avisoActivo(tipo) {
+    if (!tipo) return true; // aviso sin categoría: no se puede silenciar
+    return !!getAvisosPrefs()[tipo];
+  }
+
   let notifications = [];
   let notifUnread = 0;
-  function pushNotification(text, sonido) {
+  let ultimoSonidoAviso = 0;
+  function pushNotification(text, sonido, tipo) {
+    if (!avisoActivo(tipo)) return;
+    const prefs = getAvisosPrefs();
     notifications.unshift({ text, time: new Date() });
     notifications = notifications.slice(0, 20);
     notifUnread += 1;
     renderNotifications();
     showToast(text);
-    if (sonido) reproducirSonido(sonido);
+    // En hora punta pueden entrar varios pedidos en la misma actualización: sin este freno sonarían
+    // todos a la vez y se solaparían hasta no entenderse. Un solo pitido por ráfaga.
+    if (sonido && prefs.sonido && Date.now() - ultimoSonidoAviso > 1200) {
+      ultimoSonidoAviso = Date.now();
+      reproducirSonido(sonido);
+    }
   }
   function toggleNotifications() {
     const panel = document.getElementById('notifPanel');
@@ -9037,7 +9079,7 @@
     Object.keys(avisados).forEach(k => {
       const ing = avisados[k];
       const restante = invFmt(invNum(ing.stock) || 0) + (ing.unidad ? ' ' + ing.unidad : '');
-      pushNotification('⚠️ Cocina: queda poco ' + ing.producto + ' (' + restante + '). Pide más.');
+      pushNotification('⚠️ Cocina: queda poco ' + ing.producto + ' (' + restante + '). Pide más.', null, 'inventario');
     });
     actualizarDisponibilidadPorStock(acc);
   }
@@ -9730,10 +9772,73 @@
     saveCurrentAccountData(acc.data);
     renderIntegraciones();
   }
+  // ---- Panel de avisos (Configuración) ----
+  function avisoPill(activo) {
+    return 'text-xs rounded-full px-2.5 py-1 font-medium hover:opacity-80 transition shrink-0 ' +
+      (activo ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500');
+  }
+  // Los avisos de cocina/sala ya se filtran por rol (esDispositivoCocina/esDispositivoSala). Si el rol
+  // de quien mira no recibe ese aviso, lo decimos aquí para que nadie active algo y crea que falla.
+  function avisoNotaRol(key) {
+    if (key === 'pedidos' && !esDispositivoCocina()) return 'Tu rol es de sala: este aviso llega a los dispositivos de cocina.';
+    if (key === 'listos' && !esDispositivoSala()) return 'Tu rol es de cocina: este aviso llega a los dispositivos de sala.';
+    return '';
+  }
+  function toggleAvisoPref(key) {
+    const p = getAvisosPrefs();
+    p[key] = !p[key];
+    guardarAvisosPrefs(p);
+    renderAvisosPrefs();
+    if (key === 'sonido') showToast(p.sonido ? 'Sonido de aviso activado' : 'Sonido de aviso silenciado');
+  }
+  function toggleTodosAvisos() {
+    const p = getAvisosPrefs();
+    const encender = !AVISOS_TIPOS.some(t => p[t.key]);
+    AVISOS_TIPOS.forEach(t => { p[t.key] = encender; });
+    guardarAvisosPrefs(p);
+    renderAvisosPrefs();
+    showToast(encender ? 'Avisos activados en este dispositivo' : 'Avisos silenciados en este dispositivo');
+  }
+  function renderAvisosPrefs() {
+    const cont = document.getElementById('avisosPrefsCard');
+    if (!cont) return;
+    const p = getAvisosPrefs();
+    const algunoActivo = AVISOS_TIPOS.some(t => p[t.key]);
+    const filas = AVISOS_TIPOS.map(t => {
+      const nota = avisoNotaRol(t.key);
+      return `
+      <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <span class="text-sm text-slate-600">${t.label}</span>
+          ${nota ? `<p class="text-xs text-slate-400 mt-0.5">${nota}</p>` : ''}
+        </div>
+        <button onclick="toggleAvisoPref('${t.key}')" class="${avisoPill(p[t.key])}">${p[t.key] ? 'Activado' : 'Silenciado'}</button>
+      </div>`;
+    }).join('');
+    cont.innerHTML = `
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <span class="text-sm text-slate-600">Avisos en este dispositivo</span>
+          <p class="text-xs text-slate-400 mt-0.5">Solo afecta a este móvil o tablet${staffSession ? ' y a tu usuario' : ''}: el resto del equipo mantiene los suyos.</p>
+        </div>
+        <button onclick="toggleTodosAvisos()" class="${avisoPill(algunoActivo)}">${algunoActivo ? 'Activados' : 'Silenciados'}</button>
+      </div>
+      <div class="mt-3 space-y-2.5 border-t border-slate-100 pt-3">
+        ${filas}
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <span class="text-sm text-slate-600">Sonido de aviso</span>
+            <p class="text-xs text-slate-400 mt-0.5">Si lo silencias, los avisos siguen apareciendo pero sin pitido.</p>
+          </div>
+          <button onclick="toggleAvisoPref('sonido')" class="${avisoPill(p.sonido)}">${p.sonido ? 'Activado' : 'Silenciado'}</button>
+        </div>
+      </div>`;
+  }
   function renderIntegraciones() {
     const acc = getCurrentAccount();
     const ig = acc.data.integraciones;
-    const map = { square: ['integSquareBtn','Conectado','No conectado'], notifs: ['integNotifsBtn','Activadas','Desactivadas'] };
+    renderAvisosPrefs();
+    const map = { square: ['integSquareBtn','Conectado','No conectado'] };
     Object.keys(map).forEach(key => {
       const cfg = map[key];
       const btn = document.getElementById(cfg[0]);
@@ -12011,7 +12116,18 @@
     "Se usa para limitar las reservas online (enlace público) a tus horas de apertura.": ["Es fa servir per limitar les reserves en línia (enllaç públic) a les teves hores d'obertura.", "Used to limit online bookings (public link) to your opening hours."],
     "Idioma": ["Idioma", "Language"],
     "Moneda": ["Moneda", "Currency"],
-    "Notificaciones por email": ["Notificacions per correu", "Email notifications"],
+    "Avisos en este dispositivo": ["Avisos en aquest dispositiu", "Alerts on this device"],
+    "Pedidos nuevos en cocina": ["Comandes noves a cuina", "New orders in the kitchen"],
+    "Platos listos para servir": ["Plats llestos per servir", "Dishes ready to serve"],
+    "Mensajes del chat del equipo": ["Missatges del xat de l'equip", "Team chat messages"],
+    "Avisos de stock bajo": ["Avisos d'estoc baix", "Low stock alerts"],
+    "Sonido de aviso": ["So d'avís", "Alert sound"],
+    "Si lo silencias, los avisos siguen apareciendo pero sin pitido.": ["Si el silencies, els avisos continuen apareixent però sense so.", "If muted, alerts still appear but without a sound."],
+    "Tu rol es de sala: este aviso llega a los dispositivos de cocina.": ["El teu rol és de sala: aquest avís arriba als dispositius de cuina.", "Your role is front-of-house: this alert goes to kitchen devices."],
+    "Tu rol es de cocina: este aviso llega a los dispositivos de sala.": ["El teu rol és de cuina: aquest avís arriba als dispositius de sala.", "Your role is kitchen: this alert goes to front-of-house devices."],
+    "Silenciado": ["Silenciat", "Muted"],
+    "Silenciados": ["Silenciats", "Muted"],
+    "Activado": ["Activat", "On"],
     "Desactivadas": ["Desactivades", "Off"],
     "Activadas": ["Activades", "On"],
     "Guardar cambios": ["Desa els canvis", "Save changes"],
