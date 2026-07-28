@@ -4967,9 +4967,57 @@
         <p class="text-xs text-slate-400 mt-3">Escanéalo desde el móvil para ver la carta de esta mesa.</p>
         <button type="button" onclick="imprimirQrMesa('${escAttr(getMesaNombre(i))}', ${numero})" class="mt-3 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">🖨️ Imprimir QR</button>
       </div>
-      <button onclick="closeModal()" class="mt-5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>
+      <button onclick="eliminarMesa(${i})" class="mt-4 w-full rounded-full bg-rose-50 hover:bg-rose-100 transition text-rose-600 text-sm font-semibold px-5 py-2.5">Eliminar mesa</button>
+      <button onclick="closeModal()" class="mt-2.5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>
     `;
     document.getElementById('modalOverlay').classList.add('open');
+  }
+  // Elimina una mesa y renumera para que no queden huecos: si borras la 3, la 4 pasa a ser la 3, la 5
+  // la 4, etc. Ese cambio hay que arrastrarlo a los espacios, a las reservas y a los pedidos vivos,
+  // porque todos ellos identifican la mesa por su número ("Mesa 5"), no por una referencia interna.
+  function eliminarMesa(i) {
+    const acc = getCurrentAccount();
+    if (!acc || acc.data.mesaEstados[i] === undefined) return;
+    const numero = i + 1;
+    // Un pedido sin cobrar no puede quedarse huérfano: se resuelve antes de tocar la numeración.
+    if (findPedidoDeMesa(numero)) {
+      showToast('Esta mesa tiene un pedido activo: ciérralo o cóbralo antes de eliminarla.');
+      return;
+    }
+    const etiquetaEsta = ('mesa ' + numero).toLowerCase();
+    const reservasHuerfanas = (acc.data.reservas || []).filter(r => (r.mesa || '').toLowerCase() === etiquetaEsta).length;
+    const totalMesas = indicesMesasActivos(acc).size;
+    let aviso = '¿Eliminar ' + getMesaNombre(i) + '?';
+    if (numero < totalMesas) aviso += '\n\nLas siguientes bajarán un número: la ' + (numero + 1) + ' pasará a ser la ' + numero + ', y así con el resto.';
+    if (reservasHuerfanas) aviso += '\n\nAtención: ' + reservasHuerfanas + (reservasHuerfanas === 1 ? ' reserva se quedará sin mesa asignada' : ' reservas se quedarán sin mesa asignada') + ' (no se borran, tendrás que reasignarlas).';
+    aviso += '\n\nLos QR ya impresos de las mesas siguientes dejarán de coincidir.';
+    if (!confirm(aviso)) return;
+    const renumerar = (etiqueta) => {
+      const m = /^Mesa (\d+)$/i.exec(etiqueta || '');
+      if (!m) return etiqueta;
+      const n = parseInt(m[1], 10);
+      if (n === numero) return '';                       // la mesa que se elimina
+      return n > numero ? ('Mesa ' + (n - 1)) : etiqueta; // las de detrás bajan una posición
+    };
+    (acc.data.reservas || []).forEach(r => { r.mesa = renumerar(r.mesa); });
+    (acc.data.pedidos || []).forEach(p => {
+      // El historial ya cobrado se queda tal cual: es el registro de lo que pasó de verdad.
+      if (p.estado === 'Pagado' || p.estado === 'Anulado') return;
+      p.mesa = renumerar(p.mesa) || p.mesa;
+    });
+    ['mesaEstados', 'mesaNombres', 'mesaCapacidades', 'mesaFormas', 'mesaPosiciones', 'mesaOcupadaDesde'].forEach(k => {
+      if (Array.isArray(acc.data[k])) acc.data[k].splice(i, 1);
+    });
+    acc.data.espacios.forEach(e => {
+      e.mesaIndices = (e.mesaIndices || []).filter(x => x !== i).map(x => (x > i ? x - 1 : x));
+    });
+    saveCurrentAccountData(acc.data);
+    closeModal();
+    renderMesas();
+    renderReservas();
+    renderPedidos();
+    renderDashboardStats();
+    showToast('Mesa eliminada');
   }
   function cycleMesaFromDetalle(i) {
     cycleMesa(i);
@@ -12292,6 +12340,7 @@
     "← Volver al panel": ["← Torna al tauler", "← Back to panel"],
     "Cambiar número de mesas": ["Canvia el nombre de taules", "Change number of tables"],
     "+ Añadir mesa": ["+ Afegir taula", "+ Add table"],
+    "Eliminar mesa": ["Elimina la taula", "Delete table"],
     // SaaS: botones y tablas
     "🔗 Enlace para reservar": ["🔗 Enllaç per reservar", "🔗 Booking link"],
     "Conectar": ["Connecta", "Connect"],
