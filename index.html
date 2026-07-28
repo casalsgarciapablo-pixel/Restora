@@ -5068,21 +5068,38 @@
     if (!acc || !acc.data.mesaEstados.length || !acc.data.reservas.length) return;
     const ahora = new Date();
     const hoyStr = ahora.getFullYear() + '-' + String(ahora.getMonth() + 1).padStart(2, '0') + '-' + String(ahora.getDate()).padStart(2, '0');
-    let cambiado = false;
+    // Se decide mesa por mesa, no reserva por reserva: una misma mesa puede tener varias reservas hoy
+    // y lo que manda es la más cercana que todavía cuenta.
+    const conReservaHoy = {};  // mesa -> tiene alguna reserva para hoy (en cualquier estado)
+    const minutosProxima = {}; // mesa -> minutos que faltan para la reserva confirmada más cercana
     acc.data.reservas.forEach(r => {
       if (r.fecha !== hoyStr || !r.hora) return;
       const mMatch = /^Mesa (\d+)$/i.exec(r.mesa || '');
       if (!mMatch) return;
       const idx = parseInt(mMatch[1], 10) - 1;
       if (acc.data.mesaEstados[idx] === undefined) return;
+      conReservaHoy[idx] = true;
+      if (r.estado !== 'Confirmada') return;
       const [hh, mm] = r.hora.split(':').map(n => parseInt(n, 10));
       const horaReserva = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), hh, mm);
       const minParaReserva = (horaReserva - ahora) / 60000;
+      if (minParaReserva <= -RESERVA_GRACIA_MIN) return; // caducada: no se presentaron
+      if (minutosProxima[idx] === undefined || minParaReserva < minutosProxima[idx]) minutosProxima[idx] = minParaReserva;
+    });
+    let cambiado = false;
+    // Ojo: solo se tocan mesas que tienen reserva hoy. Una mesa puesta en "Reservada" a mano por el
+    // personal (sin reserva registrada) no se libera nunca sola.
+    Object.keys(conReservaHoy).forEach(k => {
+      const idx = parseInt(k, 10);
       const estadoActual = acc.data.mesaEstados[idx];
-      if (r.estado === 'Confirmada' && minParaReserva <= RESERVA_ANTELACION_MIN && minParaReserva > -RESERVA_GRACIA_MIN && (estadoActual === 'Libre' || estadoActual === 'Sin definir')) {
+      const min = minutosProxima[idx];
+      const dentroDeVentana = min !== undefined && min <= RESERVA_ANTELACION_MIN;
+      if (dentroDeVentana && (estadoActual === 'Libre' || estadoActual === 'Sin definir')) {
         marcarEstadoMesa(acc, idx, 'Reservada');
         cambiado = true;
-      } else if (minParaReserva <= -RESERVA_GRACIA_MIN && estadoActual === 'Reservada') {
+      } else if (!dentroDeVentana && estadoActual === 'Reservada') {
+        // O todavía falta mucho (que la use quien llegue sin reserva) o ya caducó (no-show). La
+        // reserva NO se borra: la mesa se volverá a marcar sola al acercarse la hora.
         marcarEstadoMesa(acc, idx, 'Libre');
         cambiado = true;
       }
@@ -5092,10 +5109,10 @@
       renderMesas();
     }
   }
-  // Al confirmar (o crear ya confirmada) una reserva para HOY con una mesa concreta, refleja el
-  // estado al instante (no hace falta esperar a la ventana de 30 min de arriba): si la hora ya ha
-  // llegado, la persona se da por sentada (Ocupada); si es más tarde, la mesa queda marcada como
-  // Reservada ya mismo. Una reserva sin confirmar todavía no debe reclamar la mesa.
+  // Al confirmar (o crear ya confirmada) una reserva para HOY con una mesa concreta: si la hora ya ha
+  // llegado, la persona se da por sentada (Ocupada). Si aún falta más que la ventana previa, la mesa
+  // NO se toca: sigue libre para quien entre sin reserva, y se marcará sola al acercarse la hora
+  // (actualizarMesasPorReservas, que corre cada minuto). Una reserva sin confirmar no reclama la mesa.
   function marcarMesaAlCrearReserva(reserva) {
     const acc = getCurrentAccount();
     if (!acc || !reserva.hora || reserva.estado !== 'Confirmada') return;
@@ -5109,6 +5126,7 @@
     if (estadoActual !== 'Libre' && estadoActual !== 'Sin definir') return;
     const [hh, mm] = reserva.hora.split(':').map(n => parseInt(n, 10));
     const horaReserva = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), hh, mm);
+    if ((horaReserva - ahora) / 60000 > RESERVA_ANTELACION_MIN) return;
     marcarEstadoMesa(acc, idx, horaReserva <= ahora ? 'Ocupada' : 'Reservada');
   }
   // Si la reserva borrada era la que tenía la mesa en "Reservada", al eliminarla se libera la mesa (ya
