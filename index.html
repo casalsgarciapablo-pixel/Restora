@@ -5061,7 +5061,7 @@
   }
 
   // ---- Auto-reservar mesas antes de la hora de la reserva (y liberarlas si no se presentan) ----
-  const RESERVA_ANTELACION_MIN = 30; // marcar "Reservada" 30 min antes de la hora reservada
+  const RESERVA_ANTELACION_MIN = 60; // marcar "Reservada" 1 hora antes de la hora reservada
   const RESERVA_GRACIA_MIN = 20; // si pasan 20 min de la hora reservada sin ocuparla, se libera (no-show)
   function actualizarMesasPorReservas() {
     const acc = getCurrentAccount();
