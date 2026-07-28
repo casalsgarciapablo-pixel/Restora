@@ -2943,6 +2943,8 @@
         const antes = {};
         (currentAccount.data.pedidos || []).forEach(p => { antes[p.id] = { listos: platosListosCount(p) }; });
         const chatAntes = (currentAccount.data.chatMensajes || []).length;
+        // Las reservas no tienen id propio: para saber cuáles son nuevas comparamos por su contenido.
+        const reservasAntes = new Set((currentAccount.data.reservas || []).map(claveReserva));
         currentAccount.data = normalizeAccountData(payload.new.data);
         currentAccount.restaurantName = payload.new.restaurant_name || currentAccount.restaurantName;
         currentAccount.data.pedidos.forEach(p => {
@@ -2952,12 +2954,17 @@
           if (!prev) {
             // Pedido nuevo: si aún no tiene platos listos, entra en cocina → avisar a cocina
             if (listosAhora === 0 && esDispositivoCocina()) {
-              pushNotification('🍳 Nuevo pedido en cocina · ' + p.mesa + (p.origen === 'qr' ? ' (QR)' : ''), 'cocina', 'pedidos');
+              pushNotification('🍳 Nuevo pedido en cocina · ' + p.mesa + etiquetaOrigenPedido(p), 'cocina', 'pedidos');
             }
           } else if (listosAhora > prev.listos) {
             // Uno o más platos acaban de quedar listos → avisar a sala para que los recoja
             if (esDispositivoSala()) pushNotification('🔔 Plato listo para servir · ' + p.mesa, 'listo', 'listos');
           }
+        });
+        // Reservas nuevas (del enlace público, de otro dispositivo o creadas por el Ayudante IA)
+        (currentAccount.data.reservas || []).forEach(r => {
+          if (reservasAntes.has(claveReserva(r))) return;
+          pushNotification('📅 Nueva reserva · ' + textoReserva(r), null, 'reservas');
         });
         // Mensajes de chat nuevos (de otra persona) → aviso instantáneo sin sonido
         const yoChat = identidadChatActual();
@@ -3120,11 +3127,22 @@
   const AVISOS_TIPOS = [
     { key: 'pedidos', label: 'Pedidos nuevos en cocina' },
     { key: 'listos', label: 'Platos listos para servir' },
+    { key: 'reservas', label: 'Reservas nuevas' },
     { key: 'chat', label: 'Mensajes del chat del equipo' },
     { key: 'inventario', label: 'Avisos de stock bajo' },
   ];
   // A qué sección lleva cada aviso al tocarlo (tanto en la campana como en el mensaje de abajo).
-  const AVISO_DESTINO = { pedidos: 'pedidos', listos: 'pedidos', chat: 'chat', inventario: 'inventario' };
+  const AVISO_DESTINO = { pedidos: 'pedidos', listos: 'pedidos', reservas: 'reservas', chat: 'chat', inventario: 'inventario' };
+  // Cada trabajador solo recibe los avisos de los apartados que el dueño le haya dado. El dueño
+  // (sin sesión de trabajador) recibe todo, y un encargado con todos los apartados también.
+  function avisoPermitido(tipo) {
+    if (!staffSession) return true;
+    const destino = AVISO_DESTINO[tipo];
+    if (!destino) return true;
+    // Sesión antigua guardada sin la lista de permisos: no ocultamos nada (mejor de más que perder un aviso).
+    if (!Array.isArray(staffSession.secciones)) return true;
+    return staffSession.secciones.includes(destino);
+  }
   function avisosPrefsKey() {
     const cuenta = currentAccount ? currentAccount.userId : 'sin-cuenta';
     const quien = (staffSession && staffSession.email) ? ('emp-' + String(staffSession.email).toLowerCase()) : 'duenyo';
@@ -3132,7 +3150,7 @@
   }
   function avisosPrefsDefecto() {
     // Por defecto todo activado: nunca dejamos a un restaurante sin avisos por no haber configurado nada.
-    return { pedidos: true, listos: true, chat: true, inventario: true, sonido: true };
+    return { pedidos: true, listos: true, reservas: true, chat: true, inventario: true, sonido: true };
   }
   function getAvisosPrefs() {
     const def = avisosPrefsDefecto();
@@ -3151,10 +3169,36 @@
     return !!getAvisosPrefs()[tipo];
   }
 
+  // Las reservas no llevan id: se identifican por su contenido para detectar las que acaban de entrar.
+  function claveReserva(r) {
+    if (!r) return '';
+    return [r.fecha || '', r.hora || '', r.cliente || '', r.mesa || ''].join('|');
+  }
+  function textoReserva(r) {
+    const d = new Date();
+    const hoy = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const partes = [];
+    if (r.cliente) partes.push(r.cliente);
+    // Solo mostramos el día si la reserva no es para hoy; si es de hoy, basta con la hora.
+    const dia = (r.fecha && r.fecha !== hoy && r.fecha.length >= 10) ? (r.fecha.slice(8, 10) + '/' + r.fecha.slice(5, 7) + ' ') : '';
+    if (dia || r.hora) partes.push((dia + (r.hora || '')).trim());
+    if (r.personas) partes.push(r.personas + ' pers.');
+    if (r.mesa) partes.push(r.mesa);
+    if (r.canal === 'web' || r.canal === 'restora') partes.push('online');
+    return partes.join(' · ');
+  }
+  // Marca de dónde viene un pedido, para reconocerlo de un vistazo en el aviso.
+  const NOMBRE_ORIGEN_PEDIDO = { qr: 'QR', glovo: 'Glovo', uber: 'Uber Eats', justeat: 'JustEat' };
+  function etiquetaOrigenPedido(p) {
+    const n = NOMBRE_ORIGEN_PEDIDO[p && p.origen];
+    return n ? ' (' + n + ')' : '';
+  }
+
   let notifications = [];
   let notifUnread = 0;
   let ultimoSonidoAviso = 0;
   function pushNotification(text, sonido, tipo) {
+    if (!avisoPermitido(tipo)) return;
     if (!avisoActivo(tipo)) return;
     const prefs = getAvisosPrefs();
     const destino = AVISO_DESTINO[tipo] || '';
@@ -9827,8 +9871,9 @@
   }
   function toggleTodosAvisos() {
     const p = getAvisosPrefs();
-    const encender = !AVISOS_TIPOS.some(t => p[t.key]);
-    AVISOS_TIPOS.forEach(t => { p[t.key] = encender; });
+    const visibles = AVISOS_TIPOS.filter(t => avisoPermitido(t.key));
+    const encender = !visibles.some(t => p[t.key]);
+    visibles.forEach(t => { p[t.key] = encender; });
     guardarAvisosPrefs(p);
     renderAvisosPrefs();
     showToast(encender ? 'Avisos activados en este dispositivo' : 'Avisos silenciados en este dispositivo');
@@ -9837,8 +9882,15 @@
     const cont = document.getElementById('avisosPrefsCard');
     if (!cont) return;
     const p = getAvisosPrefs();
-    const algunoActivo = AVISOS_TIPOS.some(t => p[t.key]);
-    const filas = AVISOS_TIPOS.map(t => {
+    // Solo se ofrecen los avisos que esta persona puede recibir según sus permisos.
+    const visibles = AVISOS_TIPOS.filter(t => avisoPermitido(t.key));
+    if (!visibles.length) {
+      cont.innerHTML = `<span class="text-sm text-slate-600">Avisos en este dispositivo</span>
+        <p class="text-xs text-slate-400 mt-1">No recibes avisos porque tu usuario no tiene acceso a ningún apartado que los genere. Pídeselo al responsable del restaurante.</p>`;
+      return;
+    }
+    const algunoActivo = visibles.some(t => p[t.key]);
+    const filas = visibles.map(t => {
       const nota = avisoNotaRol(t.key);
       return `
       <div class="flex items-center justify-between gap-3">
@@ -12155,6 +12207,8 @@
     "Platos listos para servir": ["Plats llestos per servir", "Dishes ready to serve"],
     "Mensajes del chat del equipo": ["Missatges del xat de l'equip", "Team chat messages"],
     "Avisos de stock bajo": ["Avisos d'estoc baix", "Low stock alerts"],
+    "Reservas nuevas": ["Reserves noves", "New bookings"],
+    "No recibes avisos porque tu usuario no tiene acceso a ningún apartado que los genere. Pídeselo al responsable del restaurante.": ["No reps avisos perquè el teu usuari no té accés a cap apartat que en generi. Demana-ho al responsable del restaurant.", "You get no alerts because your user has no access to any section that generates them. Ask the restaurant manager."],
     "Sonido de aviso": ["So d'avís", "Alert sound"],
     "Si lo silencias, los avisos siguen apareciendo pero sin pitido.": ["Si el silencies, els avisos continuen apareixent però sense so.", "If muted, alerts still appear but without a sound."],
     "Tu rol es de sala: este aviso llega a los dispositivos de cocina.": ["El teu rol és de sala: aquest avís arriba als dispositius de cuina.", "Your role is front-of-house: this alert goes to kitchen devices."],
