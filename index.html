@@ -2974,7 +2974,13 @@
         const chatAntes = (currentAccount.data.chatMensajes || []).length;
         // Las reservas no tienen id propio: para saber cuáles son nuevas comparamos por su contenido.
         const reservasAntes = new Set((currentAccount.data.reservas || []).map(claveReserva));
-        currentAccount.data = normalizeAccountData(payload.new.data);
+        // Adopción NO destructiva: partimos del estado del servidor y volvemos a aplicar encima los
+        // cambios locales que este dispositivo aún no ha confirmado (pending), para no perderlos si
+        // llega una actualización de otro dispositivo justo mientras tomamos una comanda.
+        const servidor = normalizeAccountData(clonarProfundo(payload.new.data));
+        const pending = currentAccount.baseline ? computarPatch(currentAccount.baseline, currentAccount.data) : null;
+        currentAccount.baseline = normalizeAccountData(clonarProfundo(payload.new.data));
+        currentAccount.data = aplicarPatchLocal(servidor, pending);
         currentAccount.restaurantName = payload.new.restaurant_name || currentAccount.restaurantName;
         currentAccount.data.pedidos.forEach(p => {
           if (p.estado === 'Pagado' || p.estado === 'Anulado') return;
@@ -3506,6 +3512,9 @@
     data.cartaDigital.textoBotonReservar = data.cartaDigital.textoBotonReservar || '';
     data.cartaDigital.secciones = Object.assign({ nosotros: true, opiniones: true, galeria: true, horario: true, contacto: true, reservas: true }, data.cartaDigital.secciones || {});
     data.chatMensajes = Array.isArray(data.chatMensajes) ? data.chatMensajes.filter(m => m && m.texto) : [];
+    // Asigna ids deterministas a reservas/chat/anulaciones (los pedidos ya tienen id propio). Son
+    // estables entre dispositivos, así la sincronización por diferencias puede fusionarlos sin duplicar.
+    if (typeof asegurarIdsSync === 'function') asegurarIdsSync(data);
     return data;
   }
   function getCurrentAccount() {
@@ -3576,17 +3585,120 @@
       borrarSnapshotOffline();
     }
   }
+  // ===== Sincronización por DIFERENCIAS (evita que un dispositivo pise el trabajo de otro) =====
+  // En vez de subir el bloque `data` entero (que sobrescribe lo que otro camarero acaba de guardar),
+  // calculamos qué ha cambiado respecto a la última versión conocida del servidor (baseline) y enviamos
+  // solo ese "patch". Una función SQL lo fusiona de forma atómica con el estado actual del servidor:
+  //  - pedidos/reservas/chat/anulaciones: se fusionan por id (altas/cambios/bajas de cada uno, sin pisar
+  //    los de otros).  - mesas (estados/nombres/…): se fusionan por índice (dos camareros ocupando mesas
+  //    distintas no se pisan).  - el resto de claves: se escriben enteras solo si ESTE dispositivo las
+  //    cambió (así editar la carta no pisa un pedido que otro está tomando).
+  // Si la función SQL aún no está instalada, se cae automáticamente al método antiguo (bloque entero).
+  const MERGE_BYID = ['pedidos', 'reservas', 'chatMensajes', 'anulaciones'];
+  const MERGE_POS = ['mesaEstados', 'mesaNombres', 'mesaCapacidades', 'mesaFormas', 'mesaPosiciones', 'mesaOcupadaDesde'];
+  let mergeRpcDisponible = true; // se pone a false si la función no existe, para no reintentar en bucle
+  function clonarProfundo(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
+  function hashCorto(s) { let h = 0; s = String(s); for (let i = 0; i < s.length; i++) { h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0; } return (h >>> 0).toString(36); }
+  function asegurarIdsSync(data) {
+    if (!data) return data;
+    (data.reservas || []).forEach(r => { if (r && !r.id) r.id = 'r_' + hashCorto((r.fecha || '') + '|' + (r.hora || '') + '|' + (r.cliente || '') + '|' + (r.personas || '') + '|' + (r.canal || '')); });
+    (data.chatMensajes || []).forEach(m => { if (m && !m.id) m.id = 'c_' + hashCorto((m.fecha || '') + '|' + (m.autorEmail || '') + '|' + (m.texto || '')); });
+    (data.anulaciones || []).forEach(a => { if (a && !a.id) a.id = 'a_' + hashCorto(JSON.stringify(a)); });
+    return data;
+  }
+  function indexarPorId(arr) { const m = {}; (arr || []).forEach(it => { if (it && it.id != null) m[it.id] = it; }); return m; }
+  function computarPatch(base, actual) {
+    asegurarIdsSync(base); asegurarIdsSync(actual);
+    const patch = { byId: {}, pos: {}, set: {} };
+    MERGE_BYID.forEach(k => {
+      const bMap = indexarPorId(base[k]); const aMap = indexarPorId(actual[k]);
+      const up = [], del = [];
+      Object.keys(aMap).forEach(id => { if (!bMap[id] || JSON.stringify(bMap[id]) !== JSON.stringify(aMap[id])) up.push(aMap[id]); });
+      Object.keys(bMap).forEach(id => { if (!aMap[id]) del.push(id); });
+      if (up.length || del.length) patch.byId[k] = { up, del };
+    });
+    MERGE_POS.forEach(k => {
+      const b = base[k] || [], a = actual[k] || [];
+      if (b.length !== a.length) { if (JSON.stringify(b) !== JSON.stringify(a)) patch.pos[k] = { full: a }; return; }
+      const idx = {};
+      for (let i = 0; i < a.length; i++) { if (JSON.stringify(b[i]) !== JSON.stringify(a[i])) idx[i] = a[i]; }
+      if (Object.keys(idx).length) patch.pos[k] = { idx };
+    });
+    const especial = new Set([].concat(MERGE_BYID, MERGE_POS));
+    Object.keys(actual).forEach(k => {
+      if (especial.has(k)) return;
+      if (JSON.stringify(base[k]) !== JSON.stringify(actual[k])) patch.set[k] = actual[k];
+    });
+    if (!Object.keys(patch.byId).length && !Object.keys(patch.pos).length && !Object.keys(patch.set).length) return null;
+    return patch;
+  }
+  // Aplica un patch sobre un objeto data local (se usa para re-aplicar cambios locales aún sin guardar
+  // encima del estado que llega por tiempo real, para no perderlos).
+  function aplicarPatchLocal(target, patch) {
+    if (!patch) return target;
+    Object.keys(patch.byId || {}).forEach(k => {
+      const arr = Array.isArray(target[k]) ? target[k] : [];
+      const m = indexarPorId(arr);
+      (patch.byId[k].del || []).forEach(id => { delete m[id]; });
+      (patch.byId[k].up || []).forEach(it => { if (it && it.id != null) m[it.id] = it; });
+      const out = [], seen = {};
+      arr.forEach(it => {
+        if (it && it.id != null) { if (m[it.id]) { out.push(m[it.id]); seen[it.id] = 1; } } // borrado si no está en m
+        else if (it) { out.push(it); } // sin id: se conserva tal cual (no lo toca el patch)
+      });
+      (patch.byId[k].up || []).forEach(it => { if (it && it.id != null && !seen[it.id]) { out.push(it); seen[it.id] = 1; } });
+      target[k] = out;
+    });
+    Object.keys(patch.pos || {}).forEach(k => {
+      if (patch.pos[k].full) { target[k] = patch.pos[k].full; return; }
+      const arr = Array.isArray(target[k]) ? target[k].slice() : [];
+      Object.keys(patch.pos[k].idx || {}).forEach(i => { arr[+i] = patch.pos[k].idx[i]; });
+      target[k] = arr;
+    });
+    Object.keys(patch.set || {}).forEach(k => { target[k] = patch.set[k]; });
+    return target;
+  }
+  function esErrorFuncionInexistente(e) {
+    const msg = ((e && (e.message || e.details || e.hint)) || '') + ' ' + ((e && e.code) || '');
+    return /PGRST202|could not find the function|does not exist|schema cache/i.test(msg);
+  }
+
+  async function syncBloqueEntero() {
+    if (staffSession) {
+      const { error } = await supabaseClient.rpc('staff_save_data', { p_user_id: staffSession.userId, p_email: staffSession.email, p_codigo: staffSession.codigo, p_new_data: currentAccount.data });
+      if (error) throw error;
+    } else {
+      const { error } = await supabaseClient.from('restaurant_data').upsert({ user_id: currentAccount.userId, restaurant_name: currentAccount.restaurantName, data: currentAccount.data });
+      if (error) throw error;
+    }
+    currentAccount.baseline = clonarProfundo(currentAccount.data);
+  }
+
   async function syncAccountToServer() {
     if (!currentAccount) return;
     try {
-      if (staffSession) {
-        await supabaseClient.rpc('staff_save_data', { p_user_id: staffSession.userId, p_email: staffSession.email, p_codigo: staffSession.codigo, p_new_data: currentAccount.data });
+      if (mergeRpcDisponible && currentAccount.baseline) {
+        const enviado = clonarProfundo(currentAccount.data); // foto de lo que enviamos
+        const patch = computarPatch(currentAccount.baseline, enviado);
+        if (!patch) { // nada que sincronizar
+          if (offlineQueuePendiente) { offlineQueuePendiente = false; borrarSnapshotOffline(); actualizarIndicadorOffline(); }
+          return;
+        }
+        const rpc = staffSession ? 'staff_merge_data' : 'merge_restaurant_data';
+        const params = staffSession
+          ? { p_user_id: staffSession.userId, p_email: staffSession.email, p_codigo: staffSession.codigo, p_patch: patch }
+          : { p_user_id: currentAccount.userId, p_restaurant_name: currentAccount.restaurantName, p_patch: patch };
+        const { error } = await supabaseClient.rpc(rpc, params);
+        if (error) {
+          if (esErrorFuncionInexistente(error)) { mergeRpcDisponible = false; await syncBloqueEntero(); }
+          else throw error;
+        } else {
+          // El servidor ya tiene lo nuestro fusionado; nuestra base pasa a ser lo que enviamos. Cualquier
+          // cambio hecho DESPUÉS sigue en currentAccount.data y se sincronizará en el siguiente patch.
+          currentAccount.baseline = enviado;
+        }
       } else {
-        await supabaseClient.from('restaurant_data').upsert({
-          user_id: currentAccount.userId,
-          restaurant_name: currentAccount.restaurantName,
-          data: currentAccount.data,
-        });
+        await syncBloqueEntero();
       }
       if (offlineQueuePendiente) {
         offlineQueuePendiente = false;
@@ -3727,6 +3839,9 @@
   function enterApp() {
     document.getElementById('landingRoot').style.display = 'none';
     document.getElementById('appRoot').style.display = 'flex';
+    // Baseline = versión del servidor recién cargada. A partir de aquí, cada guardado envía solo el
+    // patch de diferencias respecto a esto (ver syncAccountToServer), no el bloque entero.
+    if (currentAccount) { asegurarIdsSync(currentAccount.data); currentAccount.baseline = clonarProfundo(currentAccount.data); }
     resetNavVisibility();
     comprobarSnapshotOfflinePendiente();
     actualizarIndicadorOffline();
