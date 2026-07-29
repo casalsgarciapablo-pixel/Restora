@@ -335,15 +335,15 @@
      accesos al enfocar, con el placeholder cambiando de pregunta letra a letra. */
   .ia-input-wrap { border-radius: 28px; background: #fff; border: 1px solid #E3E3EA; overflow: hidden; transition: box-shadow .3s cubic-bezier(.4,0,.2,1), border-color .3s ease; box-shadow: 0 2px 8px rgba(11,27,51,0.06); }
   .ia-input-wrap.ia-input-active { box-shadow: 0 10px 30px -8px rgba(11,27,51,0.18); border-color: #d7d9e6; }
-  .ia-input-row { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 18px; }
+  .ia-input-row { display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 16px; }
   .ia-input-field-wrap { position: relative; flex: 1; min-width: 0; }
-  .ia-input-field-wrap input { width: 100%; border: 0; outline: 0; background: transparent; font-size: 15px; padding: 12px 0; color: #16161D; position: relative; z-index: 1; }
+  .ia-input-field-wrap input { width: 100%; border: 0; outline: 0; background: transparent; font-size: 15px; padding: 8px 0; color: #16161D; position: relative; z-index: 1; }
   .ia-input-placeholder-cycle { position: absolute; left: 0; top: 50%; transform: translateY(-50%); pointer-events: none; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; z-index: 0; }
   .ia-input-placeholder-cycle span { display: inline-block; opacity: 0; filter: blur(10px); transform: translateY(8px); animation: iaPhraseIn .45s cubic-bezier(.34,1.2,.4,1) forwards; animation-delay: var(--d, 0ms); }
   .ia-input-placeholder-cycle.ia-out span { animation: iaPhraseOut .22s ease forwards !important; animation-delay: 0ms !important; }
   @keyframes iaPhraseIn { to { opacity: 1; filter: blur(0); transform: translateY(0); } }
   @keyframes iaPhraseOut { to { opacity: 0; filter: blur(8px); transform: translateY(-8px); } }
-  .ia-input-send { width: 42px; height: 42px; border-radius: 999px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: #16294A; color: #fff; transition: background-color .15s ease, transform .15s ease; }
+  .ia-input-send { width: 36px; height: 36px; border-radius: 999px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: #16294A; color: #fff; transition: background-color .15s ease, transform .15s ease; }
   .ia-input-send:hover { background: #0B1B33; }
   .ia-input-send:active { transform: scale(0.94); }
   .ia-input-actions { max-height: 0; opacity: 0; padding: 0 18px; overflow: hidden; transition: max-height .35s cubic-bezier(.4,0,.2,1), opacity .3s ease, padding .35s ease; display: flex; gap: 10px; }
