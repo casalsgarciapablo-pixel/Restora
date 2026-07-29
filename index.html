@@ -351,6 +351,11 @@
   .ia-input-action-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #16161D; background: #F4F5F9; border: none; border-radius: 999px; padding: 8px 14px; cursor: pointer; transition: background-color .15s ease, transform .1s ease; white-space: nowrap; }
   .ia-input-action-btn:hover { background: #E7E7EE; }
   .ia-input-action-btn:active { transform: scale(0.96); }
+  /* Listas dentro de las respuestas del asistente (platos, mesas, reservas...), en vez de un parrafo */
+  .ia-resp-list { margin: 4px 0; padding-left: 1.2em; }
+  .ia-resp-list li { margin: 2px 0; }
+  .ia-resp-p { margin: 0 0 6px; }
+  .ia-resp-p:last-child { margin-bottom: 0; }
   /* Menú por secciones (panel del SaaS) */
   .menu-sec { border: 1px solid #E9E9EF; border-radius: 16px; background: #fff; overflow: hidden; box-shadow: 0 1px 2px rgba(22,22,29,0.04); }
   .menu-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; background: #F5F7FA; border-bottom: 1px solid #EFEFF4; }
@@ -5292,11 +5297,45 @@
   }
 
   let iaConversacionActualId = null;
+  // Convierte la respuesta del asistente en HTML esquematico: lineas que empiezan por guion o
+  // numero se agrupan en una lista de verdad (<ul>/<ol>) en vez de quedar como un parrafo largo con
+  // saltos de linea sueltos, y **negrita** se resalta. Escapa primero: el texto viene del modelo (y
+  // puede citar datos del propio restaurante), nunca se inserta como HTML sin pasar por aqui.
+  function renderizarRespuestaIA(texto) {
+    const escapado = svgEsc(String(texto == null ? '' : texto));
+    const conNegrita = escapado.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    const lineas = conNegrita.split('\n');
+    let html = '';
+    let listaAbierta = null;
+    const cerrarLista = () => { if (listaAbierta) { html += '</' + listaAbierta + '>'; listaAbierta = null; } };
+    lineas.forEach(linea => {
+      const l = linea.trim();
+      const bullet = /^[-*•]\s+(.*)/.exec(l);
+      const numerada = /^\d+[.)]\s+(.*)/.exec(l);
+      if (bullet) {
+        if (listaAbierta !== 'ul') { cerrarLista(); html += '<ul class="ia-resp-list">'; listaAbierta = 'ul'; }
+        html += '<li>' + bullet[1] + '</li>';
+      } else if (numerada) {
+        if (listaAbierta !== 'ol') { cerrarLista(); html += '<ol class="ia-resp-list">'; listaAbierta = 'ol'; }
+        html += '<li>' + numerada[1] + '</li>';
+      } else {
+        cerrarLista();
+        if (l) html += '<p class="ia-resp-p">' + linea + '</p>';
+      }
+    });
+    cerrarLista();
+    return html || '<p class="ia-resp-p"></p>';
+  }
+  // Pista de formato SOLO para la peticion al asistente (no se guarda ni se muestra en el chat):
+  // pide listas breves para preguntas con varios elementos, en vez de parrafos largos.
+  function conPistaDeFormato(pregunta) {
+    return pregunta + '\n\n(Si la respuesta incluye varios elementos -- platos, mesas, reservas, personal, ingredientes... -- contesta con una lista breve de guiones, uno por línea, sin párrafos de relleno. Si es un dato suelto, basta una frase corta.)';
+  }
   function iaMsgHtml(role, texto) {
     if (role === 'user') {
-      return `<div style="display:flex;justify-content:flex-end;"><div class="text-sm text-white bg-accent rounded-2xl px-4 py-2.5" style="max-width:80%; white-space:pre-wrap;">${texto}</div></div>`;
+      return `<div style="display:flex;justify-content:flex-end;"><div class="text-sm text-white bg-accent rounded-2xl px-4 py-2.5" style="max-width:80%; white-space:pre-wrap;">${svgEsc(texto)}</div></div>`;
     }
-    return `<div class="flex items-start gap-2.5"><span class="w-7 h-7 rounded-full bg-accent/10 text-accent flex items-center justify-center shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L20 9.5l-6.1 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.9L12 2z"/></svg></span><div class="rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-600" style="max-width:80%; white-space:pre-wrap;">${texto}</div></div>`;
+    return `<div class="flex items-start gap-2.5"><span class="w-7 h-7 rounded-full bg-accent/10 text-accent flex items-center justify-center shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L20 9.5l-6.1 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.9L12 2z"/></svg></span><div class="rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-600" style="max-width:80%;">${renderizarRespuestaIA(texto)}</div></div>`;
   }
   function getConversacionIAActual() {
     const acc = getCurrentAccount();
@@ -5649,7 +5688,7 @@
     try {
       const historialPrevio = conv.mensajes.slice(0, -1).slice(-20);
       const { data, error } = await supabaseClient.functions.invoke('ia-asistente', {
-        body: { pregunta, historial: historialPrevio, datos: construirDatosParaIA() },
+        body: { pregunta: conPistaDeFormato(pregunta), historial: historialPrevio, datos: construirDatosParaIA() },
       });
       const respuesta = (!error && data && data.respuesta) ? data.respuesta : 'No he podido responder ahora mismo. Inténtalo de nuevo en un momento.';
       conv.mensajes.push({ role: 'assistant', content: respuesta });
@@ -5687,7 +5726,7 @@
   }
   function iaQuickMsgHtml(m) {
     if (m.role === 'user') return `<div class="ia-quick-msg-user">${svgEsc(m.content)}</div>`;
-    return `<div class="ia-quick-msg-ia">${svgEsc(m.content)}</div>`;
+    return `<div class="ia-quick-msg-ia">${renderizarRespuestaIA(m.content)}</div>`;
   }
   function renderIAQuickChat() {
     const chat = document.getElementById('iaQuickChat');
@@ -5716,7 +5755,7 @@
     try {
       const historialPrevio = iaQuickMensajes.slice(0, -1).slice(-12);
       const { data, error } = await supabaseClient.functions.invoke('ia-asistente', {
-        body: { pregunta, historial: historialPrevio, datos: construirDatosParaIA() },
+        body: { pregunta: conPistaDeFormato(pregunta), historial: historialPrevio, datos: construirDatosParaIA() },
       });
       const respuesta = (!error && data && data.respuesta) ? data.respuesta : 'No he podido responder ahora mismo. Inténtalo de nuevo en un momento.';
       iaQuickMensajes.push({ role: 'assistant', content: respuesta });
