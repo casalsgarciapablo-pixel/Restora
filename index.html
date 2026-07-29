@@ -5161,15 +5161,26 @@
         marcarEstadoMesa(acc, idx, 'Reservada');
         cambiado = true;
       } else if (!dentroDeVentana && estadoActual === 'Reservada') {
-        // O todavía falta mucho (que la use quien llegue sin reserva) o ya caducó (no-show). La
-        // reserva NO se borra: la mesa se volverá a marcar sola al acercarse la hora.
+        // Si todavía falta mucho para la hora, la mesa queda libre para quien llegue sin reserva (se
+        // volverá a marcar sola al acercarse la hora). Si en cambio ya pasó de largo, es un no-show.
         marcarEstadoMesa(acc, idx, 'Libre');
         cambiado = true;
       }
     });
-    if (cambiado) {
+    // Pasados los 20 min de gracia, la reserva se retira de la lista, se haya presentado el cliente o
+    // no: si vino, ya se borró al sentarlo (eliminarReservaCumplidaDeMesa); esto es la red de
+    // seguridad para los que no se presentaron, y de paso limpia reservas de días anteriores.
+    const totalAntes = acc.data.reservas.length;
+    acc.data.reservas = acc.data.reservas.filter(r => {
+      const dt = fechaHoraReserva(r);
+      if (isNaN(dt)) return true; // dato corrupto: mejor conservarlo que perderlo en silencio
+      return (ahora - dt) / 60000 < RESERVA_GRACIA_MIN;
+    });
+    const reservasCambiadas = acc.data.reservas.length !== totalAntes;
+    if (cambiado || reservasCambiadas) {
       saveCurrentAccountData(acc.data);
       renderMesas();
+      if (reservasCambiadas) renderReservas();
     }
   }
   // Al confirmar (o crear ya confirmada) una reserva para HOY con una mesa concreta: si la hora ya ha
