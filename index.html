@@ -6271,6 +6271,7 @@
     }
     const indicesMesas = Array.from(indicesMesasActivos(acc)).sort((a, b) => a - b);
     document.getElementById('reservasBody').innerHTML = list.map((r,i) => {
+     try {
       const estadoCls = r.estado === 'Confirmada' ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50';
       const canalInfo = RESERVA_CANAL_INFO[r.canal] || RESERVA_CANAL_INFO.manual;
       const contactoHtml = [
@@ -6289,6 +6290,11 @@
         mesaHtml = r.mesa;
       }
       return `<tr><td class="px-4 py-2.5" data-label="Fecha">${r.fecha || '—'}</td><td class="px-4 py-2.5" data-label="Hora">${r.hora}</td><td class="px-4 py-2.5" data-label="Cliente">${svgEsc(r.cliente)}</td><td class="px-4 py-2.5 text-xs text-slate-500" data-label="Contacto">${contactoHtml}</td><td class="px-4 py-2.5" data-label="Personas">${r.personas}</td><td class="px-4 py-2.5" data-label="Mesa">${mesaHtml}</td><td class="px-4 py-2.5" data-label="Canal"><span class="${canalInfo.cls} rounded-full px-2 py-0.5 text-xs font-medium">${canalInfo.label}</span></td><td class="px-4 py-2.5" data-label="Estado"><span onclick="cicloEstadoReserva(${i})" class="${estadoCls} rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition" title="Toca para cambiar el estado">${r.estado}</span></td><td class="px-4 py-2.5 text-right"><button onclick="eliminarReserva(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
+     } catch (e) {
+      // Fila con datos problemáticos: se muestra igualmente lo básico (nunca desaparece la reserva).
+      console.error('renderReservas fila', i, e);
+      return `<tr><td class="px-4 py-2.5" data-label="Fecha">${svgEsc(r.fecha || '—')}</td><td class="px-4 py-2.5" data-label="Hora">${svgEsc(r.hora || '')}</td><td class="px-4 py-2.5" data-label="Cliente">${svgEsc(r.cliente || '')}</td><td class="px-4 py-2.5">—</td><td class="px-4 py-2.5" data-label="Personas">${svgEsc(String(r.personas || ''))}</td><td class="px-4 py-2.5" data-label="Mesa">${svgEsc(r.mesa || '')}</td><td class="px-4 py-2.5">—</td><td class="px-4 py-2.5" data-label="Estado">${svgEsc(r.estado || '')}</td><td class="px-4 py-2.5 text-right"><button onclick="eliminarReserva(${i})" class="text-slate-300 hover:text-rose-500 transition" title="Eliminar">✕</button></td></tr>`;
+     }
     }).join('');
   }
   function cicloEstadoReserva(i) {
@@ -6366,15 +6372,19 @@
     const acc = getCurrentAccount();
     const reserva = { fecha, hora, cliente, personas, mesa, estado, canal: 'manual' };
     acc.data.reservas.push(reserva);
-    marcarMesaAlCrearReserva(reserva);
+    // PRIMERO guardamos y confirmamos: la reserva no se puede perder nunca aunque un refresco de UI
+    // posterior fallara. Marcar la mesa va protegido para no cortar el guardado si algo saliera mal.
+    try { marcarMesaAlCrearReserva(reserva); } catch (e) { console.error('marcarMesaAlCrearReserva', e); }
     saveCurrentAccountData(acc.data);
-    renderReservas();
-    renderDashboardStats();
-    renderMesas();
-    actualizarMesasPorReservas();
     closeModal();
     showToast('Reserva añadida');
-    if (googleAccessToken) crearEventoGoogleCalendar(reserva);
+    // Refrescos de pantalla, cada uno aislado: un error de pintado no debe tirar el resto ni ocultar
+    // que la reserva ya está guardada.
+    try { renderReservas(); } catch (e) { console.error('renderReservas', e); }
+    try { renderDashboardStats(); } catch (e) { console.error('renderDashboardStats', e); }
+    try { renderMesas(); } catch (e) { console.error('renderMesas', e); }
+    try { actualizarMesasPorReservas(); } catch (e) { console.error('actualizarMesasPorReservas', e); }
+    if (googleAccessToken) { try { crearEventoGoogleCalendar(reserva); } catch (e) { console.error('crearEventoGoogleCalendar', e); } }
   }
 
   // ---- Conectar (Reservas): Google Calendar / TheFork / Airtable ----
