@@ -11420,9 +11420,6 @@
       }
       const rest = data.restaurant_name || 'El restaurante';
       const mesaTxt = data.mesa ? ` · ${data.mesa}` : '';
-      // Aviso de confirmación al cliente por email/SMS (no bloquea: si el servicio no está montado o
-      // falla, la reserva ya ha quedado registrada igualmente).
-      enviarConfirmacionReserva({ cuentaId, restaurante: rest, nombre, telefono, email, fecha, hora, personas, mesa: data.mesa || '' });
       document.getElementById('publicReservaBody').innerHTML = `
         <div class="text-center py-10">
           <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 mx-auto">
@@ -11430,22 +11427,13 @@
           </div>
           <h1 class="text-xl font-bold text-navy">¡Reserva confirmada!</h1>
           <p class="text-sm text-slate-500 mt-2">${rest} te espera el <b>${fecha}</b> a las <b>${hora}</b> (${personas} ${personas === 1 ? 'persona' : 'personas'})${mesaTxt}.</p>
-          ${email
-            ? `<div class="mt-4 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3 text-sm text-emerald-700">📧 Te hemos enviado un <b>correo de confirmación</b> a <b>${svgEsc(email)}</b>.<br><span class="text-xs text-emerald-600">Si no lo ves en unos minutos, revisa la carpeta de spam.</span></div>`
-            : (telefono ? `<p class="text-xs text-slate-400 mt-3">Te avisaremos al ${svgEsc(telefono)} si hay algún cambio.</p>` : '')}
+          <p class="text-xs text-slate-400 mt-3">Si hubiera algún cambio, te ${email && telefono ? 'llamaremos o escribiremos' : (email ? 'escribiremos por correo' : 'llamaremos')}.</p>
         </div>
       `;
     } catch (e) {
       if (btn) { btn.disabled = false; btn.textContent = 'Reservar'; }
       mostrarErrorReservaPublica('No se ha podido enviar la reserva. Revisa tu conexión e inténtalo de nuevo.');
     }
-  }
-  // Llama a una Edge Function que envía el email (y/o SMS) de confirmación al cliente. No bloquea el
-  // flujo: si aún no está desplegada o falla, no rompe la reserva (que ya está creada y confirmada).
-  async function enviarConfirmacionReserva(info) {
-    try {
-      await supabaseClient.functions.invoke('enviar-confirmacion-reserva', { body: info });
-    } catch (e) { /* silencioso: la reserva ya está hecha */ }
   }
   function mostrarEnlaceReservaPublica() {
     const acc = getCurrentAccount();
