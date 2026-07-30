@@ -2818,7 +2818,13 @@
 // ---- Auth & per-account persistence (Supabase) ----
   const SUPABASE_URL = 'https://frypbhwwjlfzkfvzlwhh.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyeXBiaHd3amxmemtmdnpsd2hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMDUxMjIsImV4cCI6MjA5ODc4MTEyMn0.hqoXJJvGyz2ZBoLQq8NhD1fSiJTEjsjZGwlULJkcQj0';
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // flowType: 'pkce' — el login con Google (y cualquier enlace mágico) devuelve la sesión con un
+  // "?code=" en la URL normal, en vez del fragmento "#access_token=..." del flujo por defecto
+  // ("implicit"). El fragmento se pierde con facilidad en los saltos de redirección de móviles
+  // (Google → Supabase → esta web) en varios navegadores/webviews de Android e iOS; el código en la
+  // query es mucho más fiable. Esto es lo que arregla que Google funcionara en escritorio pero no
+  // en móvil (volvía a la landing sin sesión).
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { flowType: 'pkce' } });
 
   let currentAccount = null; // { userId, email, restaurantName, data }
   let saveTimer = null;
