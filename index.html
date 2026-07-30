@@ -5653,7 +5653,50 @@
       proximaReservaHoy: pendientesHoy[0] || null,
       ingredientesBajoMinimo: bajoMinimo,
       cajaAbierta: !!(d.caja && d.caja.abierta),
+      ticketMedioHoy: redondear(ventasHoy / ((d.pedidos || []).filter(p => { const f = new Date(p.fecha); return p.estado === 'Pagado' && !isNaN(f) && f.getFullYear() === n.getFullYear() && f.getMonth() === n.getMonth() && f.getDate() === n.getDate(); }).length || 1)),
+      ventasTotalesHistorico: redondear((d.pedidos || []).reduce((s, p) => s + (p.estado === 'Pagado' ? (p.total || 0) : 0), 0)),
+      pedidosPagadosHistorico: (d.pedidos || []).filter(p => p.estado === 'Pagado').length,
+      platosMasVendidos: rankingPlatosIA(d, null).slice(0, 15),
+      platosMasVendidosHoy: rankingPlatosIA(d, ahora.fecha).slice(0, 10),
+      ventasPorCanal: ventasPorCanalIA(d),
     };
+  }
+  // Ranking de platos por unidades vendidas e ingresos (opcionalmente solo de un día concreto).
+  // Se calcula aquí, en el navegador, para que el asistente no tenga que sumar miles de pedidos.
+  function rankingPlatosIA(d, soloFecha) {
+    const acum = {};
+    (d.pedidos || []).forEach(p => {
+      if (p.estado !== 'Pagado' && p.estado !== 'Servido' && p.estado !== 'Listo' && p.estado !== 'En cocina') return;
+      if (p.anulado) return;
+      if (soloFecha) {
+        const f = new Date(p.fechaPago || p.fecha);
+        if (isNaN(f)) return;
+        const key = f.getFullYear() + '-' + String(f.getMonth() + 1).padStart(2, '0') + '-' + String(f.getDate()).padStart(2, '0');
+        if (key !== soloFecha) return;
+      }
+      (p.platos || []).forEach(pl => {
+        if (!pl || !pl.nombre) return;
+        const k = pl.nombre;
+        const cant = pl.cantidad || 1;
+        if (!acum[k]) acum[k] = { nombre: k, unidades: 0, ingresos: 0 };
+        acum[k].unidades += cant;
+        acum[k].ingresos += precioToNumero(pl.precio) * cant;
+      });
+    });
+    return Object.values(acum)
+      .map(x => ({ nombre: x.nombre, unidades: x.unidades, ingresos: Math.round(x.ingresos * 100) / 100 }))
+      .sort((a, b) => b.unidades - a.unidades);
+  }
+  function ventasPorCanalIA(d) {
+    const canal = { sala: 0, tpv: 0, qr: 0, glovo: 0, uber: 0, justeat: 0 };
+    (d.pedidos || []).forEach(p => {
+      if (p.estado !== 'Pagado') return;
+      const o = p.origen || 'sala';
+      if (canal[o] === undefined) canal[o] = 0;
+      canal[o] += p.total || 0;
+    });
+    Object.keys(canal).forEach(k => { canal[k] = Math.round(canal[k] * 100) / 100; });
+    return canal;
   }
   function construirDatosParaIA() {
     const acc = getCurrentAccount();
@@ -5672,8 +5715,19 @@
       resumen: resumenParaIA(acc, ahora),
       mesas: Array.from(indicesMesasActivos(acc)).sort((a, b) => a - b).map(i => ({ numero: i + 1, nombre: d.mesaNombres[i] || null, capacidad: d.mesaCapacidades[i] || null, estado: d.mesaEstados[i], ocupadaDesde: d.mesaOcupadaDesde[i] || null })),
       espacios: d.espacios,
-      pedidos: d.pedidos,
-      reservas: d.reservas,
+      // Solo los pedidos que de verdad importan para responder: los activos ahora mismo y los últimos
+      // pagados, con los campos justos. Antes se enviaba TODO el histórico en bruto: con unos pocos
+      // meses de uso real eso son megabytes, la respuesta tardaba >13 s y acababa fallando ("No he
+      // podido responder"). Los totales y rankings ya van calculados en `resumen`.
+      pedidos: (() => {
+        const compacto = p => ({ id: p.id, mesa: p.mesa, estado: p.estado, total: p.total, fecha: p.fecha, fechaPago: p.fechaPago || null, origen: p.origen || 'sala', personas: p.personas || null, creadoPor: p.creadoPor || '', notaGeneral: p.notaGeneral || '', platos: (p.platos || []).map(pl => ({ nombre: pl.nombre, cantidad: pl.cantidad, precio: pl.precio, estado: pl.estado, nota: pl.nota || '' })) });
+        const activos = (d.pedidos || []).filter(p => p.estado !== 'Pagado' && p.estado !== 'Anulado');
+        const cerrados = (d.pedidos || []).filter(p => p.estado === 'Pagado' || p.estado === 'Anulado').slice(-60);
+        return activos.concat(cerrados).map(compacto);
+      })(),
+      pedidosEnviadosNota: 'Se envían solo los pedidos activos y los últimos 60 cerrados. Para totales, ventas por periodo y platos más vendidos usa siempre los valores ya calculados de `resumen` (cubren TODO el histórico).',
+      // Reservas: de hoy en adelante (las pasadas no sirven para operar) y como mucho 100.
+      reservas: (d.reservas || []).filter(r => !r.fecha || r.fecha >= ahora.fecha).slice(0, 100),
       menu: d.menu.map(m => ({ nombre: m.nombre, precio: m.precio, estado: m.estado, seccion: m.categoria || '', descripcion: m.descripcion || '', tieneReceta: Array.isArray(m.receta) && m.receta.length > 0 })),
       menuSecciones: d.menuSecciones,
       promociones: d.promociones,
@@ -5784,11 +5838,13 @@
       const { data, error } = await supabaseClient.functions.invoke('ia-asistente', {
         body: { pregunta: conPistaDeFormato(pregunta), historial: historialPrevio, datos: construirDatosParaIA() },
       });
+      if (error || !data || !data.respuesta) console.error('ia-asistente', error || data); // deja rastro del fallo real
       const respuesta = (!error && data && data.respuesta) ? data.respuesta : 'No he podido responder ahora mismo. Inténtalo de nuevo en un momento.';
       conv.mensajes.push({ role: 'assistant', content: respuesta });
       const nAcciones = ejecutarAccionesIA(!error && data ? data.acciones : null);
       if (nAcciones) showToast('🤖 ' + nAcciones + (nAcciones === 1 ? ' cambio aplicado' : ' cambios aplicados') + ' por el asistente');
     } catch (e) {
+      console.error('ia-asistente', e);
       conv.mensajes.push({ role: 'assistant', content: 'No he podido responder ahora mismo. Inténtalo de nuevo en un momento.' });
     }
     saveCurrentAccountData(acc.data);
