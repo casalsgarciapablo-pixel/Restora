@@ -11254,14 +11254,14 @@
     if (!publicResFechaSel) {
       wrap.innerHTML = `<p class="text-xs text-slate-400 py-1">Elige antes un día en el calendario.</p>`;
       if (avisoEl) avisoEl.classList.add('hidden');
-      if (btn) btn.disabled = true;
+      // (el botón queda siempre pulsable; al enviar se valida y se dice qué falta)
       return;
     }
     const personas = parseInt((document.getElementById('pubResPersonas') || {}).value, 10);
     if (!personas || personas < 1) {
       wrap.innerHTML = `<p class="text-xs text-slate-400 py-1">Indica antes cuántas personas sois.</p>`;
       if (avisoEl) avisoEl.classList.add('hidden');
-      if (btn) btn.disabled = true;
+      // (el botón queda siempre pulsable; al enviar se valida y se dice qué falta)
       return;
     }
     const partes = publicResFechaSel.split('-').map(n => parseInt(n, 10));
@@ -11276,7 +11276,7 @@
       wrap.innerHTML = `<p class="text-xs text-slate-400 py-1">El restaurante está cerrado ese día.</p>`;
       publicResHoraSel = null;
       if (avisoEl) avisoEl.classList.add('hidden');
-      if (btn) btn.disabled = true;
+      // (el botón queda siempre pulsable; al enviar se valida y se dice qué falta)
       return;
     }
     const slots = [];
@@ -11307,7 +11307,7 @@
       if (publicReservaHorarioConfigurado) { avisoEl.textContent = 'Horario ese día: ' + apertura + ' - ' + cierre + '.'; avisoEl.classList.remove('hidden'); }
       else avisoEl.classList.add('hidden');
     }
-    if (btn) btn.disabled = !publicResHoraSel;
+    if (btn) btn.disabled = false;
   }
   function publicResElegirHora(v) {
     publicResHoraSel = v;
@@ -11387,48 +11387,63 @@
       body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar la página de reservas.</p>`;
     }
   }
+  function mostrarErrorReservaPublica(msg) {
+    const errorEl = document.getElementById('pubResError');
+    if (errorEl) { errorEl.textContent = msg; errorEl.classList.remove('hidden'); }
+    else alert(msg); // por si el elemento no existiera, el cliente siempre ve el motivo
+  }
   async function enviarReservaPublica(cuentaId, canal) {
-    const nombre = document.getElementById('pubResNombre').value.trim();
-    const telefono = document.getElementById('pubResTelefono').value.trim();
-    const email = document.getElementById('pubResEmail').value.trim();
+    const btn = document.getElementById('pubResBtnEnviar');
+    const nombre = ((document.getElementById('pubResNombre') || {}).value || '').trim();
+    const telefono = ((document.getElementById('pubResTelefono') || {}).value || '').trim();
+    const email = ((document.getElementById('pubResEmail') || {}).value || '').trim();
     const fecha = publicResFechaSel;
     const hora = publicResHoraSel;
-    const personas = parseInt(document.getElementById('pubResPersonas').value, 10);
+    const personas = parseInt(((document.getElementById('pubResPersonas') || {}).value || ''), 10);
+    // Validación que dice EXACTAMENTE qué falta (nunca "no pasa nada").
+    if (!nombre) return mostrarErrorReservaPublica('Escribe tu nombre.');
+    if (!personas || personas < 1) return mostrarErrorReservaPublica('Indica cuántas personas sois.');
+    if (!fecha) return mostrarErrorReservaPublica('Elige un día en el calendario.');
+    if (!hora) return mostrarErrorReservaPublica('Elige una hora disponible.');
+    if (!telefono && !email) return mostrarErrorReservaPublica('Indica un teléfono o un email para poder confirmarte la reserva.');
     const errorEl = document.getElementById('pubResError');
-    if (!nombre || !fecha || !hora || !personas || personas < 1) {
-      errorEl.textContent = 'Rellena todos los campos.';
-      errorEl.classList.remove('hidden');
-      return;
-    }
-    if (!telefono && !email) {
-      errorEl.textContent = 'Indica un teléfono o un email de contacto.';
-      errorEl.classList.remove('hidden');
-      return;
-    }
-    errorEl.classList.add('hidden');
+    if (errorEl) errorEl.classList.add('hidden');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
     try {
       const { data, error } = await supabaseClient.rpc('crear_reserva_publica', {
         p_user_id: cuentaId, p_nombre: nombre, p_fecha: fecha, p_hora: hora, p_personas: personas, p_canal: canal === 'web' ? 'web' : 'restora',
         p_telefono: telefono || null, p_email: email || null,
       });
       if (error || !data || data.error) {
-        errorEl.textContent = (data && data.error) || 'No se ha podido enviar la reserva. Inténtalo de nuevo.';
-        errorEl.classList.remove('hidden');
-        return;
+        if (btn) { btn.disabled = false; btn.textContent = 'Reservar'; }
+        return mostrarErrorReservaPublica((data && data.error) || (error && error.message) || 'No se ha podido enviar la reserva. Inténtalo de nuevo.');
       }
+      const rest = data.restaurant_name || 'El restaurante';
+      const mesaTxt = data.mesa ? ` · ${data.mesa}` : '';
+      // Aviso de confirmación al cliente por email/SMS (no bloquea: si el servicio no está montado o
+      // falla, la reserva ya ha quedado registrada igualmente).
+      enviarConfirmacionReserva({ cuentaId, restaurante: rest, nombre, telefono, email, fecha, hora, personas, mesa: data.mesa || '' });
       document.getElementById('publicReservaBody').innerHTML = `
         <div class="text-center py-10">
-          <div class="w-11 h-11 rounded-full bg-accent/10 text-accent flex items-center justify-center mb-4 mx-auto">
+          <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 mx-auto">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           </div>
-          <h1 class="text-xl font-bold text-navy">¡Reserva enviada!</h1>
-          <p class="text-sm text-slate-500 mt-2">${data.restaurant_name || 'El restaurante'} ha recibido tu reserva para el ${fecha} a las ${hora} (${personas} personas). Te confirmarán en breve.</p>
+          <h1 class="text-xl font-bold text-navy">¡Reserva confirmada!</h1>
+          <p class="text-sm text-slate-500 mt-2">${rest} te espera el <b>${fecha}</b> a las <b>${hora}</b> (${personas} ${personas === 1 ? 'persona' : 'personas'})${mesaTxt}.</p>
+          <p class="text-xs text-slate-400 mt-3">${email ? 'Te hemos enviado la confirmación a ' + svgEsc(email) + '.' : (telefono ? 'Te avisaremos al ' + svgEsc(telefono) + ' si hay algún cambio.' : '')}</p>
         </div>
       `;
     } catch (e) {
-      errorEl.textContent = 'No se ha podido enviar la reserva. Inténtalo de nuevo.';
-      errorEl.classList.remove('hidden');
+      if (btn) { btn.disabled = false; btn.textContent = 'Reservar'; }
+      mostrarErrorReservaPublica('No se ha podido enviar la reserva. Revisa tu conexión e inténtalo de nuevo.');
     }
+  }
+  // Llama a una Edge Function que envía el email (y/o SMS) de confirmación al cliente. No bloquea el
+  // flujo: si aún no está desplegada o falla, no rompe la reserva (que ya está creada y confirmada).
+  async function enviarConfirmacionReserva(info) {
+    try {
+      await supabaseClient.functions.invoke('enviar-confirmacion-reserva', { body: info });
+    } catch (e) { /* silencioso: la reserva ya está hecha */ }
   }
   function mostrarEnlaceReservaPublica() {
     const acc = getCurrentAccount();
