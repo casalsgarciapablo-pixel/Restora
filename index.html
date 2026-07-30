@@ -11430,7 +11430,9 @@
           </div>
           <h1 class="text-xl font-bold text-navy">¡Reserva confirmada!</h1>
           <p class="text-sm text-slate-500 mt-2">${rest} te espera el <b>${fecha}</b> a las <b>${hora}</b> (${personas} ${personas === 1 ? 'persona' : 'personas'})${mesaTxt}.</p>
-          <p class="text-xs text-slate-400 mt-3">${email ? 'Te hemos enviado la confirmación a ' + svgEsc(email) + '.' : (telefono ? 'Te avisaremos al ' + svgEsc(telefono) + ' si hay algún cambio.' : '')}</p>
+          ${email
+            ? `<div class="mt-4 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3 text-sm text-emerald-700">📧 Te hemos enviado un <b>correo de confirmación</b> a <b>${svgEsc(email)}</b>.<br><span class="text-xs text-emerald-600">Si no lo ves en unos minutos, revisa la carpeta de spam.</span></div>`
+            : (telefono ? `<p class="text-xs text-slate-400 mt-3">Te avisaremos al ${svgEsc(telefono)} si hay algún cambio.</p>` : '')}
         </div>
       `;
     } catch (e) {
