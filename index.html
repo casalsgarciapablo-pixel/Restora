@@ -11172,8 +11172,17 @@
   function publicResFechaAKey(d) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
+  // Ningún restaurante real está cerrado los 7 días de la semana: si el horario que ha llegado dice
+  // eso, es un dato incompleto o corrupto (p. ej. una versión antigua del horario en el servidor), no
+  // una decisión real del restaurante. Mejor dejar reservar (y que el propio envío lo valide) que
+  // bloquear el calendario entero por un fallo de datos — esto es lo que causaba que julio entero
+  // apareciera en gris.
+  function horarioPareceValido() {
+    if (!publicReservaHorario) return false;
+    return DIA_JS_A_KEY.some(k => publicReservaHorario[k] && publicReservaHorario[k].abierto);
+  }
   function publicResDiaCerrado(d) {
-    if (!publicReservaHorarioConfigurado || !publicReservaHorario) return false;
+    if (!publicReservaHorarioConfigurado || !publicReservaHorario || !horarioPareceValido()) return false;
     const dia = publicReservaHorario[DIA_JS_A_KEY[d.getDay()]];
     return !dia || !dia.abierto;
   }
@@ -11246,7 +11255,7 @@
     const partes = publicResFechaSel.split('-').map(n => parseInt(n, 10));
     const fechaObj = new Date(partes[0], partes[1] - 1, partes[2]);
     let apertura = '00:00', cierre = '24:00', abierto = true;
-    if (publicReservaHorarioConfigurado && publicReservaHorario) {
+    if (publicReservaHorarioConfigurado && publicReservaHorario && horarioPareceValido()) {
       const dia = publicReservaHorario[DIA_JS_A_KEY[fechaObj.getDay()]];
       abierto = !!(dia && dia.abierto);
       if (abierto) { apertura = dia.apertura; cierre = dia.cierre; }
@@ -11289,8 +11298,16 @@
     if (btn) btn.disabled = false;
   }
   function publicResElegirHora(v) {
+    // Actualización local instantánea, SIN volver a consultar el servidor (antes llamaba a
+    // renderPublicResHoras(), que es async y repinta "Comprobando disponibilidad…" borrando los
+    // botones antes de mostrar el resaltado — por eso no se veía ningún feedback al pulsar una hora).
+    // La disponibilidad ya se comprobó al elegir el día/personas; aquí solo cambia cuál está marcada.
     publicResHoraSel = v;
-    renderPublicResHoras();
+    document.querySelectorAll('#pubResHorasWrap .pubcal-hora').forEach(b => {
+      b.classList.toggle('sel', !b.disabled && b.textContent.trim() === v);
+    });
+    const btn = document.getElementById('pubResBtnEnviar');
+    if (btn) btn.disabled = false;
   }
   async function renderPublicReserva(cuentaId, canal) {
     canal = canal === 'web' ? 'web' : 'restora';
