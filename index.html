@@ -5092,7 +5092,7 @@
             <span class="text-xs rounded-full px-2 py-0.5 font-medium ${pedido.estado === 'Listo' ? 'bg-emerald-50 text-emerald-600' : pedido.estado === 'En cocina' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}">${pedido.estado}</span>
           </div>
           <p class="text-xs text-slate-500 mt-1.5">${pedido.items}</p>
-          <p class="text-sm font-semibold text-navy mt-2">${pedido.total.toFixed(2).replace('.', ',')}€</p>
+          <p class="text-sm font-semibold text-navy mt-2">${fmtMoneda(pedido.total)}</p>
         </div>`
       : `<div class="mt-3 rounded-lg border border-dashed border-slate-200 p-3 text-center">
           <p class="text-xs text-slate-400">Esta mesa no tiene ningún pedido activo ahora mismo.</p>
@@ -6107,6 +6107,28 @@
   }
   function esDeHoy(fecha) { return !!fecha && fechaLocalISO(fecha) === fechaLocalISO(); }
   function round2(n) { return Math.round(n * 100) / 100; }
+  // ---- Formateo de moneda (ÚNICO punto de verdad para todos los importes de la app) ----
+  // Respeta la moneda elegida en Configuración y usa siempre 2 decimales con coma decimal, para que no
+  // convivan "2€" y "2,50€" en la misma carta.
+  const MONEDA_SIMBOLO = { EUR: '€', USD: '$', MXN: '$' };
+  function monedaActual() {
+    const acc = typeof getCurrentAccount === 'function' ? getCurrentAccount() : null;
+    return (acc && acc.data && acc.data.cuenta && acc.data.cuenta.moneda) || 'EUR';
+  }
+  function simboloMoneda() { return MONEDA_SIMBOLO[monedaActual()] || '€'; }
+  // Importe numérico -> "12,90€". Es lo que hay que usar en toda la interfaz.
+  function fmtMoneda(n, opts) {
+    const v = typeof n === 'number' ? n : precioToNumero(n);
+    const txt = (isNaN(v) ? 0 : v).toFixed(2).replace('.', ',');
+    const simbolo = simboloMoneda();
+    return (opts && opts.sinSimbolo) ? txt : txt + simbolo;
+  }
+  // Precio de un plato tal como lo escribió el usuario ("2", "2,5€") -> "2,00€". Si está vacío se
+  // devuelve vacío: un plato sin precio (p. ej. dentro de un menú cerrado) no debe mostrar "0,00€".
+  function fmtPrecioPlato(precio) {
+    if (precio == null || String(precio).trim() === '') return '';
+    return fmtMoneda(precioToNumero(precio));
+  }
   // Calcula los KPIs profesionales de la semana con cifras exactas (nada de pedirle a la IA que
   // sume/reste sobre datos en bruto: los números se calculan aquí y se le pasan ya hechos).
   function calcularKpisSemana(pedidosSemana, reservasSemana, acc, inicio, fin) {
@@ -6301,7 +6323,7 @@
   }
   function kpiCardsHtml(k) {
     if (!k) return '';
-    const eur = n => n.toFixed(2).replace('.', ',') + '€';
+    const eur = n => fmtMoneda(n);
     return `
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
         ${kpiPill('Ingresos cobrados', eur(k.ingresosTotales), k.numPedidos + ' pedidos')}
@@ -6338,7 +6360,7 @@
               return `<button onclick='verInformeGuardado("${inf.id}")' class="text-left rounded-xl border border-slate-200 bg-white hover:border-accent/40 hover:shadow-sm transition p-3.5">
                 <p class="text-xs font-semibold text-navy">${fmtFechaCorta(new Date(inf.inicio))} – ${fmtFechaCorta(new Date(inf.fin))}</p>
                 <div class="mt-1.5 flex items-center gap-2">
-                  <p class="text-lg font-bold text-navy">${ingresos != null ? ingresos.toFixed(2).replace('.', ',') + '€' : '—'}</p>
+                  <p class="text-lg font-bold text-navy">${ingresos != null ? fmtMoneda(ingresos) : '—'}</p>
                   ${trend}
                 </div>
               </button>`;
@@ -6859,7 +6881,7 @@
             </div>
             <div class="kds-plato-mid"><span class="kds-nombre">${svgEsc(p.items || '')}</span></div>
             <div class="kds-plato-actions">
-              <button onclick="abrirCobroPedido(${idx})" class="kds-btn" style="background:#16A34A;color:#fff">💰 Cobrar · ${p.total.toFixed(2).replace('.', ',')}€</button>
+              <button onclick="abrirCobroPedido(${idx})" class="kds-btn" style="background:#16A34A;color:#fff">💰 Cobrar · ${fmtMoneda(p.total)}</button>
             </div>
           </div>`;
         }).join('')}</div>`
@@ -6871,7 +6893,7 @@
               <p class="text-sm text-navy truncate">${svgEsc(p.mesa)} <span class="text-slate-400">· ${svgEsc(p.metodoPago || '')}</span></p>
               <p class="text-xs text-slate-400 truncate">${horaCorta(p.fechaPago || p.fecha)} · ${svgEsc(p.items || '')}</p>
             </div>
-            <p class="text-sm font-semibold text-navy shrink-0">${p.total.toFixed(2).replace('.', ',')}€</p>
+            <p class="text-sm font-semibold text-navy shrink-0">${fmtMoneda(p.total)}</p>
           </div>`).join('')}</div>`
       : `<p class="text-sm text-slate-400 text-center py-4">Todavía no se ha cobrado nada hoy.</p>`;
     return `
@@ -6879,7 +6901,7 @@
       ${pendientesHtml}
       <div class="mt-6 flex items-center justify-between">
         <p class="text-sm font-semibold text-navy">Facturado hoy</p>
-        <p class="text-sm font-bold text-navy">${totalHoy.toFixed(2).replace('.', ',')}€ · ${pagadosHoy.length} pedido${pagadosHoy.length === 1 ? '' : 's'}</p>
+        <p class="text-sm font-bold text-navy">${fmtMoneda(totalHoy)} · ${pagadosHoy.length} pedido${pagadosHoy.length === 1 ? '' : 's'}</p>
       </div>
       <div class="mt-2">${pagadosHtml}</div>
     `;
@@ -7062,7 +7084,7 @@
           <p class="text-sm font-semibold text-navy">${meta.nombre}</p>
         </div>
         <p class="mt-3 text-2xl font-bold text-navy">${deHoy.length}</p>
-        <p class="text-xs text-slate-400">pedidos hoy · ${totalHoy.toFixed(2).replace('.', ',')}€</p>
+        <p class="text-xs text-slate-400">pedidos hoy · ${fmtMoneda(totalHoy)}</p>
         <button type="button" onclick="simularPedidoDelivery('${k}')" class="mt-3 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-3 py-1.5">Simular pedido de prueba</button>
       </div>`;
     }).join('');
@@ -7080,7 +7102,7 @@
           <p class="text-xs text-slate-400 truncate">${svgEsc(p.items || '')}</p>
         </div>
         <span class="text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${DELIVERY_ESTADO_COLOR[p.estado] || 'bg-slate-100 text-slate-400'}">${DELIVERY_ESTADO_LABEL[p.estado] || p.estado}</span>
-        <p class="text-sm font-semibold text-navy w-16 text-right shrink-0">${(p.total || 0).toFixed(2).replace('.', ',')}€</p>
+        <p class="text-sm font-semibold text-navy w-16 text-right shrink-0">${fmtMoneda((p.total || 0))}</p>
         <button type="button" onclick="abrirEditarPedido(${x.idx})" class="shrink-0 text-xs font-semibold text-accent hover:opacity-70">Ver</button>
       </div>`;
     }).join('') : '<p class="text-sm text-slate-400 text-center py-6">Todavía no ha llegado ningún pedido de delivery.</p>';
@@ -7147,7 +7169,7 @@
           </div>
           <p class="text-xs text-slate-500 mt-2">${svgEsc(p.items)}</p>
           <div class="flex items-center justify-between mt-3 gap-2">
-            <p class="text-sm font-semibold text-navy">${p.total.toFixed(2).replace('.', ',')}€</p>
+            <p class="text-sm font-semibold text-navy">${fmtMoneda(p.total)}</p>
             <div class="flex items-center gap-1.5 shrink-0">
               <button onclick="abrirAnularPedido(${p._idx})" class="text-slate-300 hover:text-rose-500 transition" title="Anular pedido">✕</button>
               <button onclick="abrirCobroPedido(${p._idx})" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-1.5">Cobrar</button>
@@ -7165,7 +7187,7 @@
               <p class="text-xs text-slate-400">${horaCorta(p.fechaPago || p.fecha)}</p>
             </div>
             <div class="flex items-center gap-2 shrink-0">
-              <p class="text-sm font-semibold text-navy">${p.total.toFixed(2).replace('.', ',')}€</p>
+              <p class="text-sm font-semibold text-navy">${fmtMoneda(p.total)}</p>
               <button onclick="abrirAnularPedido(${idx})" class="text-xs font-semibold text-rose-500 hover:text-rose-600 transition" title="Anular y devolver">↩️</button>
             </div>
           </div>`;
@@ -7176,11 +7198,11 @@
         <div class="flex gap-3 flex-wrap">
           <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
             <p class="text-xs text-slate-400">Ventas de hoy</p>
-            <p class="text-lg font-bold text-navy mt-0.5">${totalHoy.toFixed(2).replace('.', ',')}€</p>
+            <p class="text-lg font-bold text-navy mt-0.5">${fmtMoneda(totalHoy)}</p>
           </div>
           <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
             <p class="text-xs text-slate-400">Efectivo · Tarjeta · Bizum</p>
-            <p class="text-sm font-semibold text-navy mt-0.5">${porMetodo.Efectivo.toFixed(2).replace('.', ',')}€ · ${porMetodo.Tarjeta.toFixed(2).replace('.', ',')}€ · ${porMetodo.Bizum.toFixed(2).replace('.', ',')}€</p>
+            <p class="text-sm font-semibold text-navy mt-0.5">${fmtMoneda(porMetodo.Efectivo)} · ${fmtMoneda(porMetodo.Tarjeta)} · ${fmtMoneda(porMetodo.Bizum)}</p>
           </div>
           <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
             <p class="text-xs text-slate-400">Tickets cobrados</p>
@@ -7238,19 +7260,19 @@
     const pendiente = pendienteCobro(p);
     const yaPagado = p.pagado || 0;
     const cobrosHtml = (p.cobros || []).length
-      ? `<div class="mt-2 border border-slate-200 rounded-lg divide-y divide-slate-100">${p.cobros.map(c => `<div class="flex items-center justify-between px-3 py-2 text-xs"><span class="text-slate-500 truncate">${svgEsc(c.detalle || 'Cobro')} · ${svgEsc(c.metodo)}</span><span class="font-semibold text-navy shrink-0 ml-2">${c.importe.toFixed(2).replace('.', ',')}€</span></div>`).join('')}</div>`
+      ? `<div class="mt-2 border border-slate-200 rounded-lg divide-y divide-slate-100">${p.cobros.map(c => `<div class="flex items-center justify-between px-3 py-2 text-xs"><span class="text-slate-500 truncate">${svgEsc(c.detalle || 'Cobro')} · ${svgEsc(c.metodo)}</span><span class="font-semibold text-navy shrink-0 ml-2">${fmtMoneda(c.importe)}</span></div>`).join('')}</div>`
       : '';
     return `
       <h3 class="text-xl font-bold text-navy">Cobrar ${svgEsc(p.mesa)}</h3>
       <p class="mt-1 text-sm text-slate-500">${svgEsc(p.items)}</p>
       <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
         <p class="text-sm font-semibold text-navy">Total</p>
-        <p class="text-lg font-bold text-navy">${p.total.toFixed(2).replace('.', ',')}€</p>
+        <p class="text-lg font-bold text-navy">${fmtMoneda(p.total)}</p>
       </div>
-      ${p.descuento ? `<div class="flex items-center justify-between mt-1"><p class="text-xs font-medium text-accent">Descuento ${svgEsc(p.descuento.nombre)} (${p.descuento.pct}%)</p><p class="text-xs font-semibold text-accent">-${p.descuento.importe.toFixed(2).replace('.', ',')}€</p></div>` : ''}
+      ${p.descuento ? `<div class="flex items-center justify-between mt-1"><p class="text-xs font-medium text-accent">Descuento ${svgEsc(p.descuento.nombre)} (${p.descuento.pct}%)</p><p class="text-xs font-semibold text-accent">-${fmtMoneda(p.descuento.importe)}</p></div>` : ''}
       ${yaPagado > 0 ? `
-      <div class="flex items-center justify-between mt-1"><p class="text-xs font-medium text-emerald-600">Ya cobrado</p><p class="text-xs font-semibold text-emerald-600">${yaPagado.toFixed(2).replace('.', ',')}€</p></div>
-      <div class="flex items-center justify-between mt-1"><p class="text-sm font-semibold text-navy">Pendiente</p><p class="text-lg font-bold text-rose-600">${pendiente.toFixed(2).replace('.', ',')}€</p></div>
+      <div class="flex items-center justify-between mt-1"><p class="text-xs font-medium text-emerald-600">Ya cobrado</p><p class="text-xs font-semibold text-emerald-600">${fmtMoneda(yaPagado)}</p></div>
+      <div class="flex items-center justify-between mt-1"><p class="text-sm font-semibold text-navy">Pendiente</p><p class="text-lg font-bold text-rose-600">${fmtMoneda(pendiente)}</p></div>
       ${cobrosHtml}` : ''}
       ${(!p.descuento && promocionesActivasCliente().length) ? `
       <div class="mt-3">
@@ -7261,7 +7283,7 @@
         </div>
       </div>` : ''}
       <p class="text-xs text-amber-600 font-medium mt-3">El cobro con tarjeta se registra manualmente: aún no hay datáfono conectado (falta enlazar Stripe/Redsys con una cuenta de comercio real).</p>
-      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Cobrar el pendiente (${pendiente.toFixed(2).replace('.', ',')}€)</label>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Cobrar el pendiente (${fmtMoneda(pendiente)})</label>
       <div class="grid grid-cols-3 gap-2">
         <button type="button" onclick="confirmarCobro(${i}, 'Efectivo')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy">💶 Efectivo</button>
         <button type="button" onclick="confirmarCobro(${i}, 'Tarjeta')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy">💳 Tarjeta</button>
@@ -7307,7 +7329,7 @@
       mostrarTicket(p);
       showToast('Cobrado con ' + metodo);
     } else {
-      showToast('Cobrados ' + importe.toFixed(2).replace('.', ',') + '€ · quedan ' + pendienteCobro(p).toFixed(2).replace('.', ',') + '€');
+      showToast('Cobrados ' + fmtMoneda(importe) + ' · quedan ' + fmtMoneda(pendienteCobro(p)));
       if (document.getElementById('modalOverlay').classList.contains('open')) document.getElementById('modalBody').innerHTML = cobroPedidoFormHtml(i);
     }
   }
@@ -7342,7 +7364,7 @@
         </button>
         <h3 class="text-xl font-bold text-navy">Dividir cuenta</h3>
       </div>
-      <p class="mt-1.5 text-sm text-slate-500">Pendiente: <strong class="text-navy">${pendiente.toFixed(2).replace('.', ',')}€</strong></p>
+      <p class="mt-1.5 text-sm text-slate-500">Pendiente: <strong class="text-navy">${fmtMoneda(pendiente)}</strong></p>
       <button type="button" onclick="iniciarDivisionPartesIguales(${i})" class="mt-4 w-full rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition p-4 text-left">
         <p class="text-sm font-semibold text-navy">👥 Por partes iguales</p>
         <p class="text-xs text-slate-400 mt-0.5">Reparte lo pendiente entre varios comensales.</p>
@@ -7357,7 +7379,7 @@
   function iniciarDivisionPartesIguales(i) {
     const acc = getCurrentAccount();
     const p = acc.data.pedidos[i];
-    const n = parseInt(prompt('¿Entre cuántas personas se divide el pendiente (' + pendienteCobro(p).toFixed(2).replace('.', ',') + '€)?', '2'), 10);
+    const n = parseInt(prompt('¿Entre cuántas personas se divide el pendiente (' + fmtMoneda(pendienteCobro(p)) + ')?', '2'), 10);
     if (!n || n < 1) return;
     divisionPartesEnCurso = { idx: i, restantes: n };
     mostrarSiguienteParteIgual();
@@ -7375,7 +7397,7 @@
       <p class="mt-1.5 text-sm text-slate-500">Quedan ${restantes} parte${restantes === 1 ? '' : 's'} por cobrar</p>
       <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
         <p class="text-sm font-semibold text-navy">Importe de esta parte</p>
-        <p class="text-xl font-bold text-navy">${importe.toFixed(2).replace('.', ',')}€</p>
+        <p class="text-xl font-bold text-navy">${fmtMoneda(importe)}</p>
       </div>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Método de pago</label>
       <div class="grid grid-cols-3 gap-2">
@@ -7434,7 +7456,7 @@
       return `<div class="flex items-center justify-between gap-2 py-2 border-b border-slate-100 last:border-0">
         <div class="min-w-0">
           <p class="text-sm font-medium text-navy truncate">${svgEsc(pl.nombre)}</p>
-          <p class="text-xs text-slate-400">${svgEsc(pl.precio)} · quedan ${restante} por cobrar</p>
+          <p class="text-xs text-slate-400">${fmtPrecioPlato(pl.precio)} · quedan ${restante} por cobrar</p>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
           <button type="button" onclick="cambiarSeleccionDivisionArticulo(${pi}, -1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">−</button>
@@ -7451,11 +7473,11 @@
         </button>
         <h3 class="text-xl font-bold text-navy">Elige qué paga esta persona</h3>
       </div>
-      <p class="mt-1.5 text-sm text-slate-500">Pendiente total: ${pendiente.toFixed(2).replace('.', ',')}€</p>
+      <p class="mt-1.5 text-sm text-slate-500">Pendiente total: ${fmtMoneda(pendiente)}</p>
       <div class="mt-3 border border-slate-200 rounded-lg px-3 max-h-64 overflow-y-auto">${filas || '<p class="text-sm text-slate-400 py-4 text-center">Nada pendiente de cobrar.</p>'}</div>
       <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
         <p class="text-sm font-semibold text-navy">Subtotal de esta parte</p>
-        <p class="text-lg font-bold text-navy">${subtotal.toFixed(2).replace('.', ',')}€</p>
+        <p class="text-lg font-bold text-navy">${fmtMoneda(subtotal)}</p>
       </div>
       ${p.descuento ? `<p class="text-xs text-slate-400 mt-1">Ya incluye el descuento "${svgEsc(p.descuento.nombre)}" (${p.descuento.pct}%) del pedido.</p>` : ''}
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Método de pago</label>
@@ -7502,11 +7524,11 @@
     const itemsHtml = (p.platos && p.platos.length)
       ? p.platos.map(pl => {
           const r = precioLineaConPromo(pl.nombre, pl.precio, pl.cantidad);
-          return `<div class="flex justify-between text-sm py-1"><span>${pl.cantidad}x ${svgEsc(pl.nombre)}${r.promo ? ' <span class="text-accent text-xs">(' + svgEsc(r.promo) + ')</span>' : ''}</span><span>${r.total.toFixed(2).replace('.', ',')}€</span></div>`;
+          return `<div class="flex justify-between text-sm py-1"><span>${pl.cantidad}x ${svgEsc(pl.nombre)}${r.promo ? ' <span class="text-accent text-xs">(' + svgEsc(r.promo) + ')</span>' : ''}</span><span>${fmtMoneda(r.total)}</span></div>`;
         }).join('')
       : `<p class="text-sm">${svgEsc(p.items)}</p>`;
     const cobrosHtml = (p.cobros && p.cobros.length > 1)
-      ? p.cobros.map(c => `<div class="flex justify-between text-xs text-slate-500 py-0.5"><span>${svgEsc(c.detalle || 'Cobro')}</span><span>${c.importe.toFixed(2).replace('.', ',')}€ · ${svgEsc(c.metodo)}</span></div>`).join('')
+      ? p.cobros.map(c => `<div class="flex justify-between text-xs text-slate-500 py-0.5"><span>${svgEsc(c.detalle || 'Cobro')}</span><span>${fmtMoneda(c.importe)} · ${svgEsc(c.metodo)}</span></div>`).join('')
       : `<p class="text-xs text-slate-400 mt-2 text-center">Pagado con ${svgEsc(p.metodoPago || '')}</p>`;
     document.getElementById('ticketBody').innerHTML = `
       <div class="text-center">
@@ -7516,9 +7538,9 @@
         <p class="text-xs text-slate-400">${svgEsc(p.mesa)}${p.ticketNumero ? ' · Ticket nº ' + p.ticketNumero : ''}</p>
       </div>
       <div class="mt-4 border-t border-b border-dashed border-slate-300 py-3">${itemsHtml}</div>
-      ${p.descuento ? `<div class="flex justify-between text-sm text-accent py-1"><span>Descuento ${svgEsc(p.descuento.nombre)} (${p.descuento.pct}%)</span><span>-${p.descuento.importe.toFixed(2).replace('.', ',')}€</span></div>` : ''}
+      ${p.descuento ? `<div class="flex justify-between text-sm text-accent py-1"><span>Descuento ${svgEsc(p.descuento.nombre)} (${p.descuento.pct}%)</span><span>-${fmtMoneda(p.descuento.importe)}</span></div>` : ''}
       <div class="flex justify-between mt-3 text-base font-bold text-navy">
-        <span>Total</span><span>${p.total.toFixed(2).replace('.', ',')}€</span>
+        <span>Total</span><span>${fmtMoneda(p.total)}</span>
       </div>
       ${cobrosHtml}
       ${p.ticketHash ? `<p class="text-[9px] text-slate-300 mt-2 text-center break-all ticket-no-print" title="Cadena de integridad interna del ticket">#${p.ticketHash.slice(0, 24)}…</p>` : ''}
@@ -7536,9 +7558,9 @@
     const acc = getCurrentAccount();
     const destino = prompt('¿A qué email se lo enviamos?');
     if (!destino) return;
-    const lineas = (p.platos || []).map(pl => pl.cantidad + 'x ' + pl.nombre + ' — ' + (precioToNumero(pl.precio) * pl.cantidad).toFixed(2).replace('.', ',') + '€').join('%0D%0A');
+    const lineas = (p.platos || []).map(pl => pl.cantidad + 'x ' + pl.nombre + ' — ' + fmtMoneda(precioToNumero(pl.precio) * pl.cantidad)).join('%0D%0A');
     const asunto = encodeURIComponent('Recibo · ' + (acc.restaurantName || 'Restaurante') + (p.ticketNumero ? ' · Ticket nº ' + p.ticketNumero : ''));
-    const cuerpo = encodeURIComponent((acc.restaurantName || 'Restaurante') + '\n' + p.mesa + '\n\n') + lineas + encodeURIComponent('\n\nTotal: ' + p.total.toFixed(2).replace('.', ',') + '€\nPagado con ' + (p.metodoPago || '') + '\n\nEste recibo no es una factura fiscal certificada.');
+    const cuerpo = encodeURIComponent((acc.restaurantName || 'Restaurante') + '\n' + p.mesa + '\n\n') + lineas + encodeURIComponent('\n\nTotal: ' + fmtMoneda(p.total) + '\nPagado con ' + (p.metodoPago || '') + '\n\nEste recibo no es una factura fiscal certificada.');
     window.location.href = 'mailto:' + encodeURIComponent(destino) + '?subject=' + asunto + '&body=' + cuerpo;
   }
   function cerrarTicket() {
@@ -7577,12 +7599,12 @@
       <h3 class="text-xl font-bold text-navy">Cerrar caja</h3>
       <p class="mt-1 text-sm text-slate-500">Resumen de hoy antes de cerrar. Es un cierre de prueba: no mueve dinero real.</p>
       <div class="mt-4 space-y-2 text-sm">
-        <div class="flex justify-between"><span class="text-slate-500">Efectivo inicial</span><span class="font-medium text-navy">${caja.efectivoInicial.toFixed(2).replace('.', ',')}€</span></div>
-        <div class="flex justify-between"><span class="text-slate-500">Ventas en efectivo</span><span class="font-medium text-navy">${porMetodo.Efectivo.toFixed(2).replace('.', ',')}€</span></div>
-        <div class="flex justify-between"><span class="text-slate-500">Ventas con tarjeta</span><span class="font-medium text-navy">${porMetodo.Tarjeta.toFixed(2).replace('.', ',')}€</span></div>
-        <div class="flex justify-between"><span class="text-slate-500">Ventas con Bizum</span><span class="font-medium text-navy">${porMetodo.Bizum.toFixed(2).replace('.', ',')}€</span></div>
-        <div class="flex justify-between border-t border-slate-200 pt-2"><span class="font-semibold text-navy">Total vendido</span><span class="font-bold text-navy">${totalHoy.toFixed(2).replace('.', ',')}€</span></div>
-        <div class="flex justify-between"><span class="font-semibold text-navy">Efectivo esperado en caja</span><span class="font-bold text-navy">${(caja.efectivoInicial + porMetodo.Efectivo).toFixed(2).replace('.', ',')}€</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Efectivo inicial</span><span class="font-medium text-navy">${fmtMoneda(caja.efectivoInicial)}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Ventas en efectivo</span><span class="font-medium text-navy">${fmtMoneda(porMetodo.Efectivo)}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Ventas con tarjeta</span><span class="font-medium text-navy">${fmtMoneda(porMetodo.Tarjeta)}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Ventas con Bizum</span><span class="font-medium text-navy">${fmtMoneda(porMetodo.Bizum)}</span></div>
+        <div class="flex justify-between border-t border-slate-200 pt-2"><span class="font-semibold text-navy">Total vendido</span><span class="font-bold text-navy">${fmtMoneda(totalHoy)}</span></div>
+        <div class="flex justify-between"><span class="font-semibold text-navy">Efectivo esperado en caja</span><span class="font-bold text-navy">${fmtMoneda((caja.efectivoInicial + porMetodo.Efectivo))}</span></div>
       </div>
       <p class="text-xs text-slate-400 mt-3">${cobradosHoy.length} ticket${cobradosHoy.length === 1 ? '' : 's'} cobrado${cobradosHoy.length === 1 ? '' : 's'} hoy.</p>
       <button type="button" onclick="confirmarCerrarCaja()" class="mt-5 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Confirmar cierre de caja</button>
@@ -7655,7 +7677,7 @@
           return `<div class="flex items-center justify-between gap-2 py-2 border-b border-slate-100">
             <div class="min-w-0">
               <p class="text-sm font-medium text-navy truncate">${m.nombre}</p>
-              <p class="text-xs text-slate-400">${m.precio}</p>
+              <p class="text-xs text-slate-400">${fmtPrecioPlato(m.precio)}</p>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
               <button type="button" onclick="cambiarCantidadVentaRapida(${m.idx}, -1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">−</button>
@@ -7676,7 +7698,7 @@
       <div class="mt-3 grid grid-cols-2 platos-grid">${filas}</div>
       <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
         <p class="text-sm font-semibold text-navy">Total</p>
-        <p class="text-lg font-bold text-navy">${total.toFixed(2).replace('.', ',')}€</p>
+        <p class="text-lg font-bold text-navy">${fmtMoneda(total)}</p>
       </div>
       <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
       <button type="button" onclick="submitVentaRapidaFinal()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Continuar al cobro →</button>
@@ -7716,7 +7738,11 @@
     return nombre || ('Mesa ' + (i + 1));
   }
   function precioToNumero(precio) {
-    return parseFloat(String(precio).replace('€', '').replace(',', '.')) || 0;
+    if (typeof precio === 'number') return isNaN(precio) ? 0 : precio;
+    // Acepta lo que escriba el usuario: "2", "2,5", "2.50 €", "12,90€"…
+    const limpio = String(precio == null ? '' : precio).replace(/[^\d,.\-]/g, '').replace(',', '.');
+    const n = parseFloat(limpio);
+    return isNaN(n) ? 0 : n;
   }
   // ---- Promociones (2x1 / descuento por artículo, descuento de cliente aplicado al cobrar) ----
   function promoArticuloDe(nombrePlato) {
@@ -7899,7 +7925,7 @@
             <div class="flex items-center justify-between gap-2">
               <div class="min-w-0">
                 <p class="text-sm font-medium text-navy truncate">${m.nombre}</p>
-                <p class="text-xs text-slate-400">${m.precio}</p>
+                <p class="text-xs text-slate-400">${fmtPrecioPlato(m.precio)}</p>
               </div>
               <div class="flex items-center gap-1.5 shrink-0">
                 <button type="button" onclick="cambiarCantidadPlato(${m.idx}, -1)" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy font-bold leading-none">−</button>
@@ -7924,7 +7950,7 @@
       <textarea oninput="pedidoEnCurso.notaGeneral = this.value" rows="2" placeholder="Ej. alergia a los frutos secos en la mesa" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(pedidoEnCurso.notaGeneral || '')}</textarea>
       <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
         <p class="text-sm font-semibold text-navy">Total</p>
-        <p class="text-lg font-bold text-navy">${total.toFixed(2).replace('.', ',')}€</p>
+        <p class="text-lg font-bold text-navy">${fmtMoneda(total)}</p>
       </div>
       <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
       <button type="button" onclick="submitPedidoFinal()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar pedido</button>
@@ -7994,7 +8020,7 @@
       ? paraAnadir.map(m => `
         <button type="button" onclick="anadirPlatoPedidoEditando(${m.idx})" class="flex items-center justify-between gap-2 w-full text-left py-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition rounded-lg px-1.5 -mx-1.5">
           <span class="text-sm text-navy truncate">${svgEsc(m.nombre)}</span>
-          <span class="text-xs text-slate-400 shrink-0">${svgEsc(m.precio)} · + añadir</span>
+          <span class="text-xs text-slate-400 shrink-0">${fmtPrecioPlato(m.precio)} · + añadir</span>
         </button>`).join('')
       : '';
     const total = totalConPromos(pedidoEditando.platos.map(pl => ({ nombre: pl.nombre, precio: pl.precio, cantidad: pl.cantidad || 1 })));
@@ -8010,7 +8036,7 @@
       <textarea oninput="pedidoEditando.notaGeneral = this.value" rows="2" placeholder="Ej. alergia a los frutos secos en la mesa" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(pedidoEditando.notaGeneral || '')}</textarea>
       <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
         <p class="text-sm font-semibold text-navy">Total</p>
-        <p class="text-lg font-bold text-navy">${total.toFixed(2).replace('.', ',')}€</p>
+        <p class="text-lg font-bold text-navy">${fmtMoneda(total)}</p>
       </div>
       <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
       <button type="button" onclick="submitEditarPedido()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar cambios</button>
@@ -8075,7 +8101,7 @@
     document.getElementById('modalBody').innerHTML = `
       <h3 class="text-xl font-bold text-navy">${esDevolucion ? 'Anular y devolver' : 'Anular pedido'} · ${svgEsc(p.mesa)}</h3>
       <p class="mt-1.5 text-sm text-slate-500">${svgEsc(p.items)}</p>
-      <p class="mt-1 text-sm font-semibold text-navy">${p.total.toFixed(2).replace('.', ',')}€</p>
+      <p class="mt-1 text-sm font-semibold text-navy">${fmtMoneda(p.total)}</p>
       ${esDevolucion ? `<p class="text-xs text-amber-600 font-medium mt-3">Se registrará como devuelto. No hay pasarela de pago real conectada, así que el dinero no se mueve solo: gestiona el reembolso físico o con tu banco aparte.</p>` : ''}
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Motivo (obligatorio)</label>
       <textarea id="anulMotivo" rows="3" placeholder="Ej. El cliente ha rechazado el plato, error al tomar la comanda..." class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></textarea>
@@ -8131,7 +8157,7 @@
         <div class="py-2.5 border-b border-slate-100 last:border-0">
           <div class="flex items-center justify-between gap-2">
             <p class="text-sm font-semibold text-navy">${svgEsc(a.mesa)} <span class="text-xs font-normal text-slate-400">· ${a.tipo === 'devolucion' ? 'Devolución' : 'Anulación'}</span></p>
-            <p class="text-sm font-semibold text-rose-500">-${a.importe.toFixed(2).replace('.', ',')}€</p>
+            <p class="text-sm font-semibold text-rose-500">-${fmtMoneda(a.importe)}</p>
           </div>
           <p class="text-xs text-slate-500 mt-0.5">${svgEsc(a.motivo)}</p>
           <p class="text-[11px] text-slate-400 mt-0.5">${svgEsc(a.quien || 'Encargado')} · ${new Date(a.fecha).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
@@ -8204,7 +8230,7 @@
         </div>
         ${descripcionLinea}
       </div>
-      <p class="text-sm font-bold text-navy shrink-0">${svgEsc(m.precio) || '—'}</p>
+      <p class="text-sm font-bold text-navy shrink-0">${fmtPrecioPlato(m.precio) || '—'}</p>
       <svg class="w-4 h-4 text-slate-300 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
     </div>`;
   }
@@ -9968,9 +9994,9 @@
     const reservas = reservasEnRango(acc.data.reservas);
     const ingresos = pedidos.reduce((sum, p) => sum + (p.total || 0), 0);
     const ticket = pedidos.length ? ingresos / pedidos.length : 0;
-    pulseKpi('kpiIngresos', ingresos.toFixed(2).replace('.', ',') + '€');
+    pulseKpi('kpiIngresos', fmtMoneda(ingresos));
     pulseKpi('kpiPedidos', pedidos.length);
-    pulseKpi('kpiTicket', ticket.toFixed(2).replace('.', ',') + '€');
+    pulseKpi('kpiTicket', fmtMoneda(ticket));
     pulseKpi('kpiReservas', reservas.length);
     const dias = pedidosPorDia(pedidos);
     renderKpiExtra('kpiIngresos', dias.map(d => d.ingresos));
@@ -10299,8 +10325,8 @@
         <tbody>${filas.map(f => `<tr class="border-t border-slate-100">
           <td class="py-2 pr-2 text-navy font-medium truncate max-w-[140px]">${svgEsc(f.nombre)}</td>
           <td class="py-2 text-right text-slate-500">${f.unidades}</td>
-          <td class="py-2 text-right text-navy">${f.ingresos.toFixed(2).replace('.', ',')}€</td>
-          <td class="py-2 text-right ${f.tieneCosto ? (f.margen >= 0 ? 'text-emerald-600' : 'text-rose-500') : 'text-slate-300'} font-medium">${f.tieneCosto ? f.margen.toFixed(2).replace('.', ',') + '€ (' + Math.round(f.margenPct) + '%)' : 'Sin coste'}</td>
+          <td class="py-2 text-right text-navy">${fmtMoneda(f.ingresos)}</td>
+          <td class="py-2 text-right ${f.tieneCosto ? (f.margen >= 0 ? 'text-emerald-600' : 'text-rose-500') : 'text-slate-300'} font-medium">${f.tieneCosto ? fmtMoneda(f.margen) + ' (' + Math.round(f.margenPct) + '%)' : 'Sin coste'}</td>
         </tr>`).join('')}</tbody>
       </table>
       </div>
@@ -10787,7 +10813,7 @@
               <p class="text-sm font-semibold text-navy truncate">${svgEsc(m.nombre)}</p>
               <p class="text-xs text-slate-400 mt-0.5 truncate">${m.descripcion ? svgEsc(m.descripcion) : svgEsc(resumenGrupos)}</p>
             </div>
-            <p class="text-sm font-bold shrink-0 ${temaActivo ? '' : 'text-navy'}" ${precioStyleMenu}>${svgEsc(m.precio)}</p>
+            <p class="text-sm font-bold shrink-0 ${temaActivo ? '' : 'text-navy'}" ${precioStyleMenu}>${fmtPrecioPlato(m.precio)}</p>
             ${controlMenu}
           </div>
           ${qtyMenu > 0 && publicPedidoCarritoNotas[idx] ? `<p class="mt-2 text-xs text-slate-500">${svgEsc(publicPedidoCarritoNotas[idx])}</p>` : ''}
@@ -10817,7 +10843,7 @@
             <p class="text-sm font-semibold text-navy truncate">${svgEsc(m.nombre)}${!esBebida ? ' <span class="text-slate-300 font-normal">· fotos</span>' : ''}</p>
             ${m.descripcion ? `<p class="text-xs text-slate-500 mt-0.5" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${svgEsc(m.descripcion)}</p>` : `<p class="text-xs text-slate-400 mt-0.5">${disponible ? 'Disponible' : 'Agotado'}</p>`}
           </div>
-          <p class="text-sm font-bold shrink-0 ${temaActivo ? '' : 'text-navy'}" ${precioStyle}>${svgEsc(m.precio)}</p>
+          <p class="text-sm font-bold shrink-0 ${temaActivo ? '' : 'text-navy'}" ${precioStyle}>${fmtPrecioPlato(m.precio)}</p>
           ${stepper}
         </div>
         ${notaInput}
@@ -11008,7 +11034,7 @@
       <div class="flex items-center gap-3">
         <div class="min-w-0 shrink-0">
           <p class="text-xs text-slate-400">${totalItems} ${totalItems === 1 ? 'plato' : 'platos'}</p>
-          <p class="text-base font-bold text-navy">${total.toFixed(2).replace('.', ',')}€</p>
+          <p class="text-base font-bold text-navy">${fmtMoneda(total)}</p>
         </div>
         <button type="button" onclick="enviarPedidoPublico()" id="pubPedBtn" class="flex-1 rounded-full transition text-white text-sm font-semibold px-5 py-3" style="background:${colorBoton || '#16294A'};">${publicEditandoPedidoId ? 'Guardar cambios' : 'Enviar pedido'}</button>
       </div>`;
@@ -11234,7 +11260,7 @@
       <div class="flex items-start justify-between gap-3">
         <div>
           <h3 class="text-lg font-bold text-navy leading-tight">${svgEsc(m.nombre)}</h3>
-          <p class="text-sm text-slate-400 mt-0.5">${svgEsc(m.precio)}</p>
+          <p class="text-sm text-slate-400 mt-0.5">${fmtPrecioPlato(m.precio)}</p>
         </div>
         <button type="button" onclick="cerrarMenuFijoPublico()" class="text-slate-400 hover:text-navy transition shrink-0" aria-label="Cerrar"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
       </div>
@@ -11306,7 +11332,7 @@
           <p class="text-sm font-semibold text-navy">${svgEsc(m.nombre)}</p>
           <p class="text-xs text-slate-400 mt-0.5">${svgEsc(r.motivo || '')}</p>
           <div class="flex items-center justify-between mt-2">
-            <span class="text-sm font-bold text-navy">${svgEsc(m.precio)}</span>
+            <span class="text-sm font-bold text-navy">${fmtPrecioPlato(m.precio)}</span>
             <button type="button" onclick="publicRecoAnadir(${idx})" id="recoBtn${idx}" class="reco-add-btn ${yaEnCarrito ? 'added' : ''}">${yaEnCarrito ? '✓ Añadido' : RECO_ICON_MAS + ' Añadir'}</button>
           </div>
         </div>
