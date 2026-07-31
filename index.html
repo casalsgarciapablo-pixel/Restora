@@ -4891,8 +4891,28 @@
     renderReservas();
     showToast('Espacio eliminado');
   }
+  // Una mesa con una comanda abierta está ocupada, por definición: antes el estado de la mesa se
+  // llevaba a mano y podía decir "Libre" mientras esa misma mesa tenía pedidos activos (de ahí el
+  // "0/15 ocupadas" con comandas en marcha). Esto lo mantiene coherente solo. No toca mesas marcadas
+  // "Reservada" a mano ni fuerza a "Libre" (liberar la mesa sigue siendo decisión del personal).
+  function sincronizarMesasConPedidos(acc) {
+    if (!acc || !acc.data.mesaEstados.length) return false;
+    let cambiado = false;
+    acc.data.pedidos.forEach(p => {
+      if (p.estado === 'Pagado' || p.estado === 'Anulado') return;
+      const m = /^Mesa (\d+)$/i.exec((p.mesa || '').trim()); // los de delivery/barra no son mesas
+      if (!m) return;
+      const idx = parseInt(m[1], 10) - 1;
+      const actual = acc.data.mesaEstados[idx];
+      if (actual === undefined || actual === 'Ocupada') return;
+      marcarEstadoMesa(acc, idx, 'Ocupada');
+      cambiado = true;
+    });
+    return cambiado;
+  }
   function renderMesas() {
     const acc = getCurrentAccount();
+    if (sincronizarMesasConPedidos(acc)) saveCurrentAccountData(acc.data);
     renderMesasTabs();
     const espacio = espacioActivoMesas(acc);
     const indices = espacio.mesaIndices;
@@ -6029,8 +6049,18 @@
     return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
   function fmtFechaInput(d) {
-    return d.toISOString().slice(0, 10);
+    return fechaLocalISO(d);
   }
+  // Fecha AAAA-MM-DD en hora LOCAL del restaurante. No usar toISOString() para esto: devuelve la fecha
+  // en UTC, así que en España un pedido de después de las 22:00 (00:00 en verano) se contaba como del
+  // día siguiente y desaparecía de los totales "de hoy" de Delivery, TPV y caja.
+  function fechaLocalISO(fecha) {
+    const d = fecha ? new Date(fecha) : new Date();
+    if (isNaN(d)) return '';
+    const p2 = (x) => String(x).padStart(2, '0');
+    return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+  }
+  function esDeHoy(fecha) { return !!fecha && fechaLocalISO(fecha) === fechaLocalISO(); }
   function round2(n) { return Math.round(n * 100) / 100; }
   // Calcula los KPIs profesionales de la semana con cifras exactas (nada de pedirle a la IA que
   // sume/reste sobre datos en bruto: los números se calculan aquí y se le pasan ya hechos).
@@ -6387,7 +6417,7 @@
     return `
       <h3 class="text-xl font-bold text-navy">Nueva reserva</h3>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Fecha</label>
-      <input id="resFecha" type="date" value="${new Date().toISOString().slice(0, 10)}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <input id="resFecha" type="date" value="${fechaLocalISO()}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Hora</label>
       <input id="resHora" type="time" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Cliente</label>
@@ -6733,8 +6763,8 @@
   // Pestaña "Pagado": pedidos ya servidos (todos sus platos) que aún no se han cobrado, con acceso directo
   // al cobro real (reutiliza abrirCobroPedido, el mismo flujo del TPV), y debajo lo ya facturado hoy.
   function pedidosPagadosHtml(acc, pendientesPago) {
-    const hoy = new Date().toISOString().slice(0, 10);
-    const pagadosHoy = acc.data.pedidos.filter(p => p.estado === 'Pagado' && (p.fechaPago || '').slice(0, 10) === hoy);
+    const hoy = fechaLocalISO();
+    const pagadosHoy = acc.data.pedidos.filter(p => p.estado === 'Pagado' && esDeHoy(p.fechaPago));
     const totalHoy = pagadosHoy.reduce((sum, p) => sum + (p.total || 0), 0);
     const pendientesHtml = pendientesPago.length
       ? `<div class="kds-cards">${pendientesPago.map(p => {
@@ -6938,10 +6968,10 @@
         </div>`;
       return;
     }
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = fechaLocalISO();
     const statsHtml = conectadas.map(k => {
       const meta = DELIVERY_PLATAFORMAS[k];
-      const deHoy = acc.data.pedidos.filter(p => p.origen === k && (p.fecha || '').slice(0, 10) === hoy);
+      const deHoy = acc.data.pedidos.filter(p => p.origen === k && esDeHoy(p.fecha));
       const totalHoy = deHoy.reduce((s, p) => s + (p.total || 0), 0);
       return `<div class="lift-card rounded-xl border border-slate-200 bg-white p-4">
         <div class="flex items-center gap-2">
@@ -6985,7 +7015,7 @@
     if (!body) return;
     const acc = getCurrentAccount();
     const caja = acc.data.caja;
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = fechaLocalISO();
     if (!caja.abierta || caja.fecha !== hoy) {
       body.innerHTML = `
         <div class="rounded-xl border border-slate-200 bg-white p-6 max-w-sm">
@@ -7011,7 +7041,7 @@
       return;
     }
     const acc = getCurrentAccount();
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = fechaLocalISO();
     acc.data.caja = { abierta: true, fecha: hoy, efectivoInicial: val, aperturaHora: new Date().toISOString(), historico: acc.data.caja.historico || [] };
     saveCurrentAccountData(acc.data);
     renderTPV();
@@ -7020,8 +7050,8 @@
   function renderTPVAbierta() {
     const acc = getCurrentAccount();
     const pedidos = acc.data.pedidos;
-    const hoy = new Date().toISOString().slice(0, 10);
-    const cobradosHoy = pedidos.filter(p => p.estado === 'Pagado' && (p.fechaPago || '').slice(0, 10) === hoy);
+    const hoy = fechaLocalISO();
+    const cobradosHoy = pedidos.filter(p => p.estado === 'Pagado' && esDeHoy(p.fechaPago));
     const pendientes = pedidos.map((p, i) => Object.assign({ _idx: i }, p)).filter(p => p.estado !== 'Pagado' && p.estado !== 'Anulado');
     const porMetodo = porMetodoDelDia(cobradosHoy);
     const totalHoy = cobradosHoy.reduce((s, p) => s + p.total, 0);
@@ -7455,8 +7485,8 @@
   function abrirCerrarCaja() {
     const acc = getCurrentAccount();
     const caja = acc.data.caja;
-    const hoy = new Date().toISOString().slice(0, 10);
-    const cobradosHoy = acc.data.pedidos.filter(p => p.estado === 'Pagado' && (p.fechaPago || '').slice(0, 10) === hoy);
+    const hoy = fechaLocalISO();
+    const cobradosHoy = acc.data.pedidos.filter(p => p.estado === 'Pagado' && esDeHoy(p.fechaPago));
     const porMetodo = porMetodoDelDia(cobradosHoy);
     const totalHoy = cobradosHoy.reduce((s, p) => s + p.total, 0);
     document.getElementById('modalCard').classList.remove('modal-wide');
@@ -7480,8 +7510,8 @@
   function confirmarCerrarCaja() {
     const acc = getCurrentAccount();
     const caja = acc.data.caja;
-    const hoy = new Date().toISOString().slice(0, 10);
-    const cobradosHoy = acc.data.pedidos.filter(p => p.estado === 'Pagado' && (p.fechaPago || '').slice(0, 10) === hoy);
+    const hoy = fechaLocalISO();
+    const cobradosHoy = acc.data.pedidos.filter(p => p.estado === 'Pagado' && esDeHoy(p.fechaPago));
     const porMetodo = porMetodoDelDia(cobradosHoy);
     const totalHoy = cobradosHoy.reduce((s, p) => s + p.total, 0);
     caja.historico.push({
