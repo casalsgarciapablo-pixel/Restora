@@ -357,6 +357,15 @@
   .ia-resp-p { margin: 0 0 6px; }
   .ia-resp-p:last-child { margin-bottom: 0; }
   /* Menú por secciones (panel del SaaS) */
+  /* Pestañas de secciones de la carta digital pública (Primeros, Segundos, Postres…). Fila deslizable
+     para que quepan muchas secciones en el móvil sin romper el ancho. */
+  .pubmenu-tabs { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 2px 0 6px; margin-bottom: 4px; scroll-snap-type: x proximity; }
+  .pubmenu-tabs::-webkit-scrollbar { display: none; }
+  .pubmenu-tab { flex: 0 0 auto; scroll-snap-align: start; border: 1.5px solid #E5E4EE; background: #fff; color: #5B6478; border-radius: 999px; padding: 8px 15px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background-color .15s ease, color .15s ease, border-color .15s ease; }
+  .pubmenu-tab:hover { border-color: #C9C5E8; color: #0B1B33; }
+  .pubmenu-tab.sel { background: var(--pubmenu-accent, #16294A); border-color: var(--pubmenu-accent, #16294A); color: #fff; }
+  .pubmenu-tab-count { opacity: .65; font-weight: 700; margin-left: 4px; }
+
   .menu-sec { border: 1px solid #E9E9EF; border-radius: 16px; background: #fff; overflow: hidden; box-shadow: 0 1px 2px rgba(22,22,29,0.04); }
   .menu-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; background: #F5F7FA; border-bottom: 1px solid #EFEFF4; }
   .menu-sec-title { font-size: 14px; font-weight: 700; color: #0B1B33; letter-spacing: -0.01em; }
@@ -10505,6 +10514,18 @@
   let publicPedidoCarrito = {};
   let publicPedidoCarritoNotas = {};
   let publicPedidoNotaGeneral = '';
+  // Pestaña (sección de la carta) que se está viendo en la carta digital pública. '' = ninguna elegida
+  // todavía; al renderizar se selecciona la primera sección que tenga platos.
+  let publicMenuSeccionActiva = '';
+  let publicMenuSeccionesRender = []; // claves de las pestañas tal como se pintaron por última vez
+  function publicElegirSeccionPorIndice(i) {
+    if (!publicMenuSeccionesRender.length) return;
+    publicMenuSeccionActiva = publicMenuSeccionesRender[i] != null ? publicMenuSeccionesRender[i] : publicMenuSeccionActiva;
+    renderPublicMenuBody();
+    // Al cambiar de pestaña, dejar las pestañas a la vista para no quedarse a media lista.
+    const tabs = document.getElementById('pubMenuTabs');
+    if (tabs && tabs.scrollIntoView) tabs.scrollIntoView({ block: 'nearest' });
+  }
   let publicEditandoPedidoId = null;
   let publicUltimoPedido = null; // { id, items: [{nombre, cantidad, nota}], notaGeneral }
   async function renderPublicMenu(cuentaId, mesaNumero, isPreview) {
@@ -10636,13 +10657,33 @@
     const catHeader = (nombre) => temaActivo
       ? `<p class="pweb-menu-cat" style="color:${paleta.color1};">${svgEsc(nombre)}</p>`
       : `<p class="text-xs font-bold uppercase tracking-wide text-accent mt-5 mb-1">${svgEsc(nombre)}</p>`;
-    const hayVariasSecc = gruposConPlatos.filter(g => g.nombre).length > 0;
-    const itemsHtml = menu.length
-      ? gruposConPlatos.map(g => {
-          const cards = g.indices.map(i => itemCard(menu[i], i)).join('');
-          return (hayVariasSecc && g.nombre) ? catHeader(g.nombre) + `<div class="flex flex-col gap-3">${cards}</div>` : cards;
-        }).join('')
-      : `<p class="text-sm text-slate-400 mt-6">Este restaurante todavía no ha publicado su carta.</p>`;
+    // Cada sección de la carta (Primeros, Segundos, Postres…) es una pestaña: se muestran solo los
+    // platos de la sección elegida, en vez de toda la carta seguida en una única pantalla. Si el
+    // restaurante no usa secciones, se muestra la lista tal cual (sin pestañas).
+    const seccionesConNombre = gruposConPlatos.filter(g => g.nombre);
+    const usarPestanyas = seccionesConNombre.length > 1;
+    let itemsHtml;
+    if (!menu.length) {
+      itemsHtml = `<p class="text-sm text-slate-400 mt-6">Este restaurante todavía no ha publicado su carta.</p>`;
+    } else if (!usarPestanyas) {
+      itemsHtml = gruposConPlatos.map(g => {
+        const cards = g.indices.map(i => itemCard(menu[i], i)).join('');
+        return g.nombre ? catHeader(g.nombre) + `<div class="flex flex-col gap-3">${cards}</div>` : cards;
+      }).join('');
+    } else {
+      // "Sin sección" (platos sueltos sin categoría) se muestra al final como una pestaña más.
+      const pestanyas = gruposConPlatos.map(g => ({ clave: g.nombre, etiqueta: g.nombre || 'Otros', indices: g.indices }));
+      if (!pestanyas.some(t => t.clave === publicMenuSeccionActiva)) publicMenuSeccionActiva = pestanyas[0].clave;
+      const activa = pestanyas.find(t => t.clave === publicMenuSeccionActiva) || pestanyas[0];
+      const accent = temaActivo ? paleta.color1 : '#16294A';
+      // Se pasa el ÍNDICE de la pestaña, no su nombre: así un nombre de sección con apóstrofo
+      // ("Entrants d'estiu") no rompe el onclick.
+      publicMenuSeccionesRender = pestanyas.map(t => t.clave);
+      const tabsHtml = `<div id="pubMenuTabs" class="pubmenu-tabs" style="--pubmenu-accent:${accent};">${pestanyas.map((t, ti) => `
+        <button type="button" onclick="publicElegirSeccionPorIndice(${ti})" class="pubmenu-tab ${t.clave === activa.clave ? 'sel' : ''}">${svgEsc(t.etiqueta)}<span class="pubmenu-tab-count">${t.indices.length}</span></button>`).join('')}</div>`;
+      const cards = activa.indices.map(i => itemCard(menu[i], i)).join('');
+      itemsHtml = tabsHtml + `<div class="flex flex-col gap-3">${cards}</div>`;
+    }
     const totalItems = Object.values(publicPedidoCarrito).reduce((a, b) => a + b, 0);
     const total = menu.reduce((sum, m, idx) => sum + precioToNumero(m.precio) * (publicPedidoCarrito[idx] || 0), 0);
     const wrap = body.parentElement;
