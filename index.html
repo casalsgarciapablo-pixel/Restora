@@ -4895,6 +4895,11 @@
   // llevaba a mano y podía decir "Libre" mientras esa misma mesa tenía pedidos activos (de ahí el
   // "0/15 ocupadas" con comandas en marcha). Esto lo mantiene coherente solo. No toca mesas marcadas
   // "Reservada" a mano ni fuerza a "Libre" (liberar la mesa sigue siendo decisión del personal).
+  const MESA_AVISO_HORAS = 4; // a partir de aquí, una mesa ocupada se marca como "revisar"
+  function pedidosActivosDeMesa(acc, idx) {
+    const target = ('mesa ' + (idx + 1)).toLowerCase();
+    return acc.data.pedidos.filter(p => p.estado !== 'Pagado' && p.estado !== 'Anulado' && (p.mesa || '').toLowerCase() === target);
+  }
   function sincronizarMesasConPedidos(acc) {
     if (!acc || !acc.data.mesaEstados.length) return false;
     let cambiado = false;
@@ -4908,7 +4913,30 @@
       marcarEstadoMesa(acc, idx, 'Ocupada');
       cambiado = true;
     });
+    // Cierre de servicio: una mesa que sigue "Ocupada" desde un día anterior no tiene a nadie sentado
+    // (se quedó sin liberar al cerrar). Se libera sola, salvo que tenga una comanda abierta de HOY.
+    acc.data.mesaEstados.forEach((estado, idx) => {
+      if (estado !== 'Ocupada') return;
+      const activos = pedidosActivosDeMesa(acc, idx);
+      if (activos.some(p => !esPedidoDeOtroDia(p.fecha))) return; // servicio en curso: no tocar
+      const desde = acc.data.mesaOcupadaDesde[idx];
+      const ocupadaDeOtroDia = desde ? esPedidoDeOtroDia(desde) : false;
+      // Sin comanda de hoy y (ocupada desde otro día o con comandas solo de días anteriores) → liberar.
+      if (ocupadaDeOtroDia || (activos.length && activos.every(p => esPedidoDeOtroDia(p.fecha)))) {
+        marcarEstadoMesa(acc, idx, 'Libre');
+        cambiado = true;
+      }
+    });
     return cambiado;
+  }
+  // Horas que lleva ocupada una mesa (para avisar de comandas huérfanas). null si no aplica.
+  function horasOcupadaMesa(acc, i) {
+    if (acc.data.mesaEstados[i] !== 'Ocupada') return null;
+    let desde = acc.data.mesaOcupadaDesde[i];
+    if (!desde) pedidosActivosDeMesa(acc, i).forEach(p => { if (p.fecha && (!desde || new Date(p.fecha) < new Date(desde))) desde = p.fecha; });
+    if (!desde) return null;
+    const ms = Date.now() - new Date(desde).getTime();
+    return isNaN(ms) || ms < 0 ? null : ms / 3600000;
   }
   function renderMesas() {
     const acc = getCurrentAccount();
@@ -4929,9 +4957,14 @@
     const estadosEspacio = indices.map(i => acc.data.mesaEstados[i]);
     const sinDefinir = estadosEspacio.filter(s => s === 'Sin definir').length;
     const ocupadas = estadosEspacio.filter(s => s === 'Ocupada').length;
-    document.getElementById('mesasResumen').textContent = sinDefinir
+    // Mesas ocupadas desde hace demasiado: casi siempre es una comanda que se quedó sin cobrar.
+    const mesasEstancadas = indices.filter(i => (horasOcupadaMesa(acc, i) || 0) >= MESA_AVISO_HORAS);
+    const resumenEl = document.getElementById('mesasResumen');
+    resumenEl.textContent = sinDefinir
       ? 'Toca cada mesa para indicar su estado (' + sinDefinir + ' sin definir todavía).'
-      : ocupadas + '/' + indices.length + ' mesas ocupadas ahora mismo.';
+      : ocupadas + '/' + indices.length + ' mesas ocupadas ahora mismo.'
+        + (mesasEstancadas.length ? '  ⚠️ ' + mesasEstancadas.length + (mesasEstancadas.length === 1 ? ' lleva' : ' llevan') + ' más de ' + MESA_AVISO_HORAS + ' h ocupada' + (mesasEstancadas.length === 1 ? '' : 's') + ': revisa si falta cobrarla' + (mesasEstancadas.length === 1 ? '' : 's') + '.' : '');
+    resumenEl.className = mesasEstancadas.length && !sinDefinir ? 'mt-5 text-sm text-amber-700' : 'mt-5 text-sm text-slate-500';
     const total = indices.length;
     document.getElementById('tableGrid').innerHTML = indices.map((i, posIdx) => {
       const s = acc.data.mesaEstados[i];
