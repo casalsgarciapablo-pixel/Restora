@@ -6423,6 +6423,11 @@
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Cliente</label>
       <input id="resCliente" type="text" placeholder="Nombre del cliente" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
       <div class="grid grid-cols-2 gap-3 mt-4">
+        <div><label class="block text-sm font-medium text-navy mb-1.5">Teléfono</label><input id="resTelefono" type="tel" placeholder="600 000 000" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+        <div><label class="block text-sm font-medium text-navy mb-1.5">Email</label><input id="resEmail" type="email" placeholder="tu@correo.com" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+      </div>
+      <p class="mt-1.5 text-xs text-slate-400">Opcional, pero útil para avisar al cliente si hay algún cambio.</p>
+      <div class="grid grid-cols-2 gap-3 mt-4">
         <div><label class="block text-sm font-medium text-navy mb-1.5">Personas</label><input id="resPersonas" type="number" min="1" placeholder="2" oninput="autosugerirMesaReserva()" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
         <div><label class="block text-sm font-medium text-navy mb-1.5">Mesa</label><input id="resMesa" type="text" placeholder="Mesa 3" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
       </div>
@@ -6439,12 +6444,14 @@
     const fecha = document.getElementById('resFecha').value;
     const hora = document.getElementById('resHora').value;
     const cliente = document.getElementById('resCliente').value.trim();
+    const telefono = ((document.getElementById('resTelefono') || {}).value || '').trim();
+    const email = ((document.getElementById('resEmail') || {}).value || '').trim();
     const personas = document.getElementById('resPersonas').value.trim();
     const mesa = document.getElementById('resMesa').value.trim();
     const estado = document.getElementById('resEstado').value;
-    if (!fecha || !hora || !cliente || !personas || !mesa) return modalFormError('Rellena todos los campos.');
+    if (!fecha || !hora || !cliente || !personas || !mesa) return modalFormError('Rellena la fecha, la hora, el cliente, las personas y la mesa.');
     const acc = getCurrentAccount();
-    const reserva = { fecha, hora, cliente, personas, mesa, estado, canal: 'manual' };
+    const reserva = { fecha, hora, cliente, telefono, email, personas, mesa, estado, canal: 'manual' };
     acc.data.reservas.push(reserva);
     // PRIMERO guardamos y confirmamos: la reserva no se puede perder nunca aunque un refresco de UI
     // posterior fallara. Marcar la mesa va protegido para no cortar el guardado si algo saliera mal.
