@@ -5649,15 +5649,21 @@
     const inicioMes = new Date(n.getFullYear(), n.getMonth(), 1);
     let ventasHoy = 0, ventasSemana = 0, ventasMes = 0, pedidosHoy = 0;
     (d.pedidos || []).forEach(p => {
-      const f = new Date(p.fecha);
-      if (isNaN(f)) return;
-      const esHoy = f.getFullYear() === n.getFullYear() && f.getMonth() === n.getMonth() && f.getDate() === n.getDate();
-      if (esHoy) pedidosHoy += 1;
-      if (p.estado !== 'Pagado') return;
+      // El dinero se imputa al día en que se COBRA (fechaEfectivaPedido), igual que el Dashboard. Antes
+      // aquí se usaba p.fecha (día en que se abrió la comanda): al cobrar hoy una comanda abierta ayer,
+      // el Dashboard la contaba en hoy y el asistente no → "hemos facturado 0€" con ventas reales.
+      const fEfectiva = new Date(fechaEfectivaPedido(p));
+      const fCreacion = new Date(p.fecha);
+      if (!isNaN(fCreacion)) {
+        const creadoHoy = fCreacion.getFullYear() === n.getFullYear() && fCreacion.getMonth() === n.getMonth() && fCreacion.getDate() === n.getDate();
+        if (creadoHoy) pedidosHoy += 1; // nº de comandas abiertas hoy (no es dinero)
+      }
+      if (p.estado !== 'Pagado' || isNaN(fEfectiva)) return;
       const c = p.total || 0;
-      if (esHoy) ventasHoy += c;
-      if (f >= inicioSemana) ventasSemana += c;
-      if (f >= inicioMes) ventasMes += c;
+      const cobradoHoy = fEfectiva.getFullYear() === n.getFullYear() && fEfectiva.getMonth() === n.getMonth() && fEfectiva.getDate() === n.getDate();
+      if (cobradoHoy) ventasHoy += c;
+      if (fEfectiva >= inicioSemana) ventasSemana += c;
+      if (fEfectiva >= inicioMes) ventasMes += c;
     });
     const mesasPorEstado = {};
     (d.mesaEstados || []).forEach(e => { mesasPorEstado[e] = (mesasPorEstado[e] || 0) + 1; });
@@ -9903,9 +9909,30 @@
     const diasReservas = reservasPorDia(reservas);
     renderKpiExtra('kpiReservas', diasReservas.map(d => d.count));
     renderAllDashboardCharts(pedidos, reservas);
+    try { comprobarCoherenciaIngresos(true); } catch (e) {}
   }
   function renderKpiExtra(baseId, serie, esMedia) {
     setTrend(baseId + 'Trend', esMedia ? deltaMedia(serie) : deltaSuma(serie), true);
+  }
+  // Comprobación de coherencia: el importe que ve el Ayudante IA y el que muestra el Dashboard tienen
+  // que salir del MISMO criterio (pedidos pagados, imputados al día de cobro). Si algún día vuelven a
+  // divergir, esto lo canta en consola en vez de dejar que el asistente responda una cifra falsa.
+  // Ejecutable a mano desde la consola del navegador: comprobarCoherenciaIngresos()
+  function comprobarCoherenciaIngresos(silencioso) {
+    const acc = getCurrentAccount();
+    if (!acc) return null;
+    const n = new Date();
+    const mismoDia = (f) => { const d = new Date(f); return !isNaN(d) && d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate(); };
+    // Dashboard: pedidos pagados cuya fecha efectiva (la de cobro) es hoy.
+    const dashboardHoy = acc.data.pedidos
+      .filter(p => p.estado === 'Pagado' && mismoDia(fechaEfectivaPedido(p)))
+      .reduce((s, p) => s + (p.total || 0), 0);
+    // Asistente IA: lo que se le envía como resumen.ventasHoy.
+    const iaHoy = resumenParaIA(acc, contextoAhoraIA()).ventasHoy;
+    const coincide = Math.abs(round2(dashboardHoy) - round2(iaHoy)) < 0.01;
+    if (!coincide) console.error('[Restora] Descuadre ingresos de hoy → Dashboard:', round2(dashboardHoy), '€ vs Asistente IA:', round2(iaHoy), '€');
+    else if (!silencioso) console.log('[Restora] Ingresos de hoy coherentes:', round2(iaHoy), '€ (Dashboard y Asistente IA)');
+    return { dashboardHoy: round2(dashboardHoy), iaHoy: round2(iaHoy), coincide };
   }
   function deltaSuma(vals) {
     if (vals.length < 4) return null;
