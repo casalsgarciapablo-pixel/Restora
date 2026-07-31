@@ -6591,10 +6591,30 @@
     const d = new Date(fecha);
     return isNaN(d) ? '' : d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   }
+  function fechaCortaKDS(fecha) {
+    const d = new Date(fecha);
+    return isNaN(d) ? '' : d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+  }
   function minutosDesde(fecha) {
     const d = new Date(fecha);
     if (isNaN(d)) return 0;
     return Math.max(0, Math.round((Date.now() - d.getTime()) / 60000));
+  }
+  // Espera en formato legible para cocina: "8 min", "1h 25min", "2 días". Mostrar "27927 min" no le
+  // dice nada al cocinero; lo que necesita es ver de un vistazo si el plato lleva minutos u horas.
+  function fmtEspera(mins) {
+    if (mins < 60) return mins + ' min';
+    if (mins < 1440) { const h = Math.floor(mins / 60), m = mins % 60; return m ? (h + 'h ' + m + 'min') : (h + 'h'); }
+    const d = Math.round(mins / 1440);
+    return d === 1 ? '1 día' : d + ' días';
+  }
+  // ¿El pedido es de un día anterior? Entonces no es una comanda "en curso": se quedó sin cerrar
+  // (pruebas, un servicio que acabó, etc.). Se marca aparte para que no se confunda con las de hoy.
+  function esPedidoDeOtroDia(fecha) {
+    const d = new Date(fecha);
+    if (isNaN(d)) return false;
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    return d.getTime() < hoy.getTime();
   }
   // Devuelve las "líneas de plato" del tablero: una fila por cada plato de cada pedido activo (no pagado)
   function lineasPlatos(acc, filtroEstado) {
@@ -6611,7 +6631,10 @@
   function platoRowHtml(f, columna) {
     const p = f.pedido, pl = f.plato;
     const mins = minutosDesde(p.fecha);
-    const urgente = columna === 'cocina' && mins >= 15;
+    const otroDia = esPedidoDeOtroDia(p.fecha);
+    // "Urgente" solo tiene sentido dentro del propio servicio: un pedido de otro día no es una comanda
+    // que corra prisa, es una que se quedó sin cerrar (se señala aparte, no en rojo de urgencia).
+    const urgente = columna === 'cocina' && mins >= 15 && !otroDia;
     const cant = pl.cantidad || 1;
     let accion = '';
     if (columna === 'cocina') {
@@ -6624,7 +6647,7 @@
     return `<div class="kds-plato ${urgente ? 'kds-plato-urgente' : ''}">
       <div class="kds-plato-top">
         <span class="kds-mesa">${svgEsc(p.mesa)}</span>
-        <span class="kds-hora">${p.origen === 'qr' ? '📱 ' : ''}${['glovo', 'uber', 'justeat'].includes(p.origen) ? '🛵 ' : ''}${horaCorta(p.fecha)}${columna === 'cocina' && mins > 0 ? ' · ' + mins + ' min' : ''}</span>
+        <span class="kds-hora">${p.origen === 'qr' ? '📱 ' : ''}${['glovo', 'uber', 'justeat'].includes(p.origen) ? '🛵 ' : ''}${otroDia ? fechaCortaKDS(p.fecha) + ' · ' : ''}${horaCorta(p.fecha)}${columna === 'cocina' && mins > 0 ? ' · ' + fmtEspera(mins) : ''}</span>
       </div>
       <div class="kds-plato-mid">
         <span class="kds-cant">${cant}×</span>
@@ -6678,11 +6701,34 @@
       </div>`;
       return;
     }
+    // Comandas de días anteriores que siguen abiertas: no son trabajo de este servicio, ensucian el
+    // tablero de cocina. Se avisa y se ofrece cerrarlas de golpe.
+    const viejos = acc.data.pedidos.filter(p => p.estado !== 'Pagado' && p.estado !== 'Anulado' && esPedidoDeOtroDia(p.fecha));
+    const avisoViejos = viejos.length ? `
+      <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 mb-3 flex items-center justify-between gap-3 flex-wrap">
+        <p class="text-sm text-amber-800">Hay <b>${viejos.length}</b> ${viejos.length === 1 ? 'comanda de un día anterior que sigue abierta' : 'comandas de días anteriores que siguen abiertas'}. No son de este servicio.</p>
+        <button onclick="cerrarPedidosAntiguos()" class="rounded-full bg-amber-600 hover:bg-amber-700 transition text-white text-xs font-semibold px-4 py-2 shrink-0">Cerrarlas</button>
+      </div>` : '';
     grid.innerHTML = `
       <p class="text-xs text-slate-400 mb-3">${etapa.sub}</p>
+      ${avisoViejos}
       ${filas.length
         ? `<div class="kds-cards">${filas.map(f => platoRowHtml(f, pedidosEtapaActiva)).join('')}</div>`
         : `<div class="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center"><p class="text-sm text-slate-400">${etapa.vacio}</p></div>`}`;
+  }
+  // Marca como anuladas las comandas abiertas de días anteriores (quedaron sin cerrar). No toca las de
+  // hoy ni las ya pagadas, y no cuentan como venta: solo dejan de ocupar el tablero de cocina.
+  function cerrarPedidosAntiguos() {
+    const acc = getCurrentAccount();
+    const viejos = acc.data.pedidos.filter(p => p.estado !== 'Pagado' && p.estado !== 'Anulado' && esPedidoDeOtroDia(p.fecha));
+    if (!viejos.length) return;
+    if (!confirm('¿Cerrar ' + viejos.length + (viejos.length === 1 ? ' comanda de un día anterior' : ' comandas de días anteriores') + '?\n\nSe marcarán como anuladas y dejarán de aparecer en cocina. No se contarán como venta.')) return;
+    viejos.forEach(p => { p.estado = 'Anulado'; p.anulado = true; });
+    saveCurrentAccountData(acc.data);
+    renderPedidos();
+    renderMesas();
+    renderTPV();
+    showToast(viejos.length + (viejos.length === 1 ? ' comanda cerrada' : ' comandas cerradas'));
   }
   // Pestaña "Pagado": pedidos ya servidos (todos sus platos) que aún no se han cobrado, con acceso directo
   // al cobro real (reutiliza abrirCobroPedido, el mismo flujo del TPV), y debajo lo ya facturado hoy.
