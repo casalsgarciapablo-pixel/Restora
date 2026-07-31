@@ -4617,6 +4617,12 @@
     document.getElementById('perfilTelefono').value = p.telefono || '';
     renderHorarioForm();
     renderCartaDigitalPreview();
+    // Cierre de servicio: al entrar (y cada media hora) se archivan solas las comandas abandonadas,
+    // para que el tablero de cocina y las mesas empiecen limpios cada servicio.
+    try { archivarPedidosAbandonados(); } catch (e) { console.error('archivarPedidosAbandonados', e); }
+    if (!window._abandonoTimer) window._abandonoTimer = setInterval(() => {
+      try { if (archivarPedidosAbandonados()) { renderPedidos(); renderMesas(); renderTPV(); } } catch (e) {}
+    }, 1800000);
     actualizarMesasPorReservas();
     if (!window._reservaMesaTimer) window._reservaMesaTimer = setInterval(actualizarMesasPorReservas, 60000);
     // Refresca la hora de reserva / tiempo ocupada sobre cada mesa cada minuto, aunque su estado no cambie
@@ -6792,14 +6798,45 @@
         ? `<div class="kds-cards">${filas.map(f => platoRowHtml(f, pedidosEtapaActiva)).join('')}</div>`
         : `<div class="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center"><p class="text-sm text-slate-400">${etapa.vacio}</p></div>`}`;
   }
-  // Marca como anuladas las comandas abiertas de días anteriores (quedaron sin cerrar). No toca las de
-  // hoy ni las ya pagadas, y no cuentan como venta: solo dejan de ocupar el tablero de cocina.
+  // Archiva una comanda abandonada: fuera del tablero, sin contar como venta y dejando constancia de
+  // por qué se cerró (queda en Anulaciones, con su importe, para que no desaparezca sin rastro).
+  function archivarPedidoAbandonado(acc, p, motivo) {
+    acc.data.anulaciones = acc.data.anulaciones || [];
+    acc.data.anulaciones.push({
+      id: 'anul-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+      pedidoId: p.id, mesa: p.mesa, tipo: 'anulacion', importe: p.total,
+      motivo, quien: 'Sistema', fecha: new Date().toISOString(),
+    });
+    p.anulado = true;
+    p.estado = 'Anulado';
+    p.pagado = 0;
+  }
+  // Cierre de servicio automático: una comanda que lleva MÁS DE 12 HORAS abierta está abandonada (nadie
+  // tarda medio día en cobrar una mesa). Se usan horas y no "de otro día" a propósito, para no cerrar
+  // por sorpresa una cena que empezó a las 23:00 y se cobra a la 1:00 — ese servicio cruza medianoche.
+  const PEDIDO_ABANDONO_HORAS = 12;
+  function archivarPedidosAbandonados() {
+    const acc = getCurrentAccount();
+    if (!acc) return 0;
+    const limite = Date.now() - PEDIDO_ABANDONO_HORAS * 3600000;
+    const abandonados = acc.data.pedidos.filter(p => {
+      if (p.estado === 'Pagado' || p.estado === 'Anulado') return false;
+      const f = new Date(p.fecha);
+      return !isNaN(f) && f.getTime() < limite;
+    });
+    if (!abandonados.length) return 0;
+    abandonados.forEach(p => archivarPedidoAbandonado(acc, p, 'Cierre automático: comanda abierta más de ' + PEDIDO_ABANDONO_HORAS + ' h'));
+    saveCurrentAccountData(acc.data);
+    return abandonados.length;
+  }
+  // Cierra a mano el resto de comandas de días anteriores (las que aún no llegan a 12 h, p. ej. las de
+  // anoche). No toca las de hoy ni las ya pagadas, y no cuentan como venta.
   function cerrarPedidosAntiguos() {
     const acc = getCurrentAccount();
     const viejos = acc.data.pedidos.filter(p => p.estado !== 'Pagado' && p.estado !== 'Anulado' && esPedidoDeOtroDia(p.fecha));
     if (!viejos.length) return;
     if (!confirm('¿Cerrar ' + viejos.length + (viejos.length === 1 ? ' comanda de un día anterior' : ' comandas de días anteriores') + '?\n\nSe marcarán como anuladas y dejarán de aparecer en cocina. No se contarán como venta.')) return;
-    viejos.forEach(p => { p.estado = 'Anulado'; p.anulado = true; });
+    viejos.forEach(p => archivarPedidoAbandonado(acc, p, 'Cerrada manualmente: comanda de un día anterior'));
     saveCurrentAccountData(acc.data);
     renderPedidos();
     renderMesas();
