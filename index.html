@@ -408,6 +408,9 @@
   .pubmenu-tab:hover { border-color: #C9C5E8; color: #0B1B33; }
   .pubmenu-tab.sel { background: var(--pubmenu-accent, #16294A); border-color: var(--pubmenu-accent, #16294A); color: #fff; }
   .pubmenu-tab-count { opacity: .65; font-weight: 700; margin-left: 4px; }
+  /* Alérgenos del plato en la carta pública (obligatorio declararlos, Reglamento UE 1169/2011). */
+  .pubmenu-alergenos { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .pubmenu-alergeno { font-size: 10.5px; font-weight: 600; color: #92400E; background: #FEF3C7; border-radius: 999px; padding: 2px 7px; white-space: nowrap; }
 
   .menu-sec { border: 1px solid #E9E9EF; border-radius: 16px; background: #fff; overflow: hidden; box-shadow: 0 1px 2px rgba(22,22,29,0.04); }
   .menu-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; background: #F5F7FA; border-bottom: 1px solid #EFEFF4; }
@@ -3454,6 +3457,7 @@
       m.descripcion = typeof m.descripcion === 'string' ? m.descripcion : '';
       m.costo = typeof m.costo === 'string' ? m.costo : '';
       m.fotosRestaurante = Array.isArray(m.fotosRestaurante) ? m.fotosRestaurante : [];
+      m.alergenos = Array.isArray(m.alergenos) ? m.alergenos : [];
       m.fotosClientes = Array.isArray(m.fotosClientes) ? m.fotosClientes : [];
     });
     data.promociones = Array.isArray(data.promociones) ? data.promociones : [];
@@ -8396,6 +8400,9 @@
           ${agotado ? '<span class="text-[10px] font-semibold text-rose-500 bg-rose-50 rounded-full px-2 py-0.5 shrink-0">Agotado</span>' : ''}
         </div>
         ${descripcionLinea}
+        ${!m.esMenu && alergenosDePlato(m).length
+          ? `<p class="text-[10px] text-amber-700 mt-0.5 truncate">${alergenosDePlato(m).map(id => (alergenoPorId(id) || {}).icono || '').join(' ')} ${alergenosDePlato(m).length} alérgeno${alergenosDePlato(m).length === 1 ? '' : 's'}</p>`
+          : (!m.esMenu ? `<p class="text-[10px] text-slate-300 mt-0.5">Sin alérgenos declarados</p>` : '')}
       </div>
       <p class="text-sm font-bold text-navy shrink-0">${fmtPrecioPlato(m.precio) || '—'}</p>
       <svg class="w-4 h-4 text-slate-300 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
@@ -8791,6 +8798,39 @@
     if (platoRecetaEdicion[idx]) platoRecetaEdicion[idx].cantidad = val;
     renderPlatoEstadoSeccion();
   }
+  // Los 14 alérgenos de declaración obligatoria (Reglamento UE 1169/2011, anexo II). Declararlos en la
+  // carta —también en la digital— es obligatorio para cualquier establecimiento que sirva comida.
+  const ALERGENOS = [
+    { id: 'gluten', nombre: 'Gluten', icono: '🌾' },
+    { id: 'crustaceos', nombre: 'Crustáceos', icono: '🦐' },
+    { id: 'huevos', nombre: 'Huevos', icono: '🥚' },
+    { id: 'pescado', nombre: 'Pescado', icono: '🐟' },
+    { id: 'cacahuetes', nombre: 'Cacahuetes', icono: '🥜' },
+    { id: 'soja', nombre: 'Soja', icono: '🫘' },
+    { id: 'lacteos', nombre: 'Lácteos', icono: '🥛' },
+    { id: 'frutos_cascara', nombre: 'Frutos de cáscara', icono: '🌰' },
+    { id: 'apio', nombre: 'Apio', icono: '🥬' },
+    { id: 'mostaza', nombre: 'Mostaza', icono: '🌭' },
+    { id: 'sesamo', nombre: 'Sésamo', icono: '🫓' },
+    { id: 'sulfitos', nombre: 'Sulfitos', icono: '🍷' },
+    { id: 'altramuces', nombre: 'Altramuces', icono: '🫛' },
+    { id: 'moluscos', nombre: 'Moluscos', icono: '🦑' },
+  ];
+  function alergenoPorId(id) { return ALERGENOS.find(a => a.id === id) || null; }
+  function alergenosDePlato(m) { return Array.isArray(m && m.alergenos) ? m.alergenos : []; }
+  function platoAlergenosHtml(m) {
+    const marcados = alergenosDePlato(m);
+    return `<div class="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-1">
+      ${ALERGENOS.map(a => `
+        <label class="flex items-center gap-2 text-sm text-navy cursor-pointer">
+          <input type="checkbox" class="platoAlergenoChk" value="${a.id}" ${marcados.includes(a.id) ? 'checked' : ''}>
+          <span>${a.icono} ${a.nombre}</span>
+        </label>`).join('')}
+    </div>`;
+  }
+  function alergenosSeleccionados() {
+    return Array.from(document.querySelectorAll('.platoAlergenoChk:checked')).map(el => el.value);
+  }
   function platoFormFieldsHtml(acc, m) {
     m = m || { nombre: '', precio: '', descripcion: '', categoria: '', estado: 'Disponible', foto: '', costo: '' };
     return `
@@ -8809,6 +8849,9 @@
       <p class="mt-1 text-xs text-slate-400">Lo que te cuesta prepararlo (ingredientes). Sirve para calcular el margen en los informes.</p>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Sección</label>
       <select id="menuCategoria" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${opcionesSeccionSelect(acc, m.categoria)}</select>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Alérgenos <span class="text-rose-500">*</span></label>
+      <p class="text-xs text-slate-400">Marca los que contenga el plato. Declararlos es <b>obligatorio por ley</b> (Reglamento UE 1169/2011) y se muestran en tu carta digital.</p>
+      ${platoAlergenosHtml(m)}
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Descripción (opcional)</label>
       <textarea id="menuDescripcion" rows="2" placeholder="Arroz con pollo, conejo y verduras, al estilo tradicional" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(m.descripcion || '')}</textarea>
       <p class="mt-1 text-xs text-slate-400">Aparecerá bajo el nombre del plato en tu web pública.</p>
@@ -8866,11 +8909,12 @@
     // fotos adicionales. Se cambia arrastrando el ★ "Hacer principal" — nunca desde aquí un fichero suelto.
     const fotosRestaurante = platoFotosEdicion.slice();
     const foto = fotosRestaurante[0] || '';
+    const alergenos = alergenosSeleccionados();
     if (i === -1) {
-      acc.data.menu.push({ nombre, precio, estado, categoria, descripcion, costo, foto, fotosRestaurante, fotosClientes: [], receta });
+      acc.data.menu.push({ nombre, precio, estado, categoria, descripcion, costo, foto, fotosRestaurante, fotosClientes: [], receta, alergenos });
     } else {
       const m = acc.data.menu[i];
-      Object.assign(m, { nombre, precio, estado, categoria, descripcion, costo, foto, fotosRestaurante, receta });
+      Object.assign(m, { nombre, precio, estado, categoria, descripcion, costo, foto, fotosRestaurante, receta, alergenos });
     }
     actualizarDisponibilidadPorStock(acc);
     platoFotosEdicion = [];
@@ -10980,6 +11024,29 @@
       body.innerHTML = `<p class="text-sm text-slate-400">No se ha podido cargar la carta (${(e && e.message) || 'error de red'}). Prueba a escanear el QR de nuevo.</p>`;
     }
   }
+  // Alérgenos visibles en la carta pública: obligatorio por el Reglamento UE 1169/2011. Se muestran como
+  // etiquetas bajo cada plato para que el cliente los vea sin tener que preguntar.
+  function alergenosPublicoHtml(m) {
+    const ids = alergenosDePlato(m);
+    if (!ids.length) return '';
+    const etiquetas = ids.map(id => {
+      const a = alergenoPorId(id);
+      return a ? `<span class="pubmenu-alergeno" title="Contiene ${svgEsc(a.nombre)}">${a.icono} ${svgEsc(a.nombre)}</span>` : '';
+    }).filter(Boolean).join('');
+    return `<div class="pubmenu-alergenos">${etiquetas}</div>`;
+  }
+  // Aviso obligatorio al pie de la carta: informa de que se puede consultar al personal y advierte de
+  // posible contaminación cruzada (exigido en la práctica junto a la declaración de alérgenos).
+  function avisoAlergenosHtml(menu) {
+    const algunoDeclarado = (menu || []).some(m => alergenosDePlato(m).length);
+    return `<div class="mt-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <p class="text-[11px] font-semibold text-slate-600">Información sobre alérgenos</p>
+      <p class="text-[11px] text-slate-500 mt-1">${algunoDeclarado
+        ? 'Los alérgenos de cada plato aparecen indicados bajo su nombre.'
+        : 'Consulta al personal la información de alérgenos de cada plato.'}
+        Nuestros platos se elaboran en cocinas donde se manipulan los 14 alérgenos de declaración obligatoria, por lo que <b>no podemos garantizar la ausencia total de trazas</b>. Si tienes alguna alergia o intolerancia, avísanos antes de pedir.</p>
+    </div>`;
+  }
   function renderPublicMenuBody() {
     const body = document.getElementById('publicMenuBody');
     const nombre = publicMenuData.restaurant_name || 'Restaurante';
@@ -11039,6 +11106,7 @@
           <div class="min-w-0 flex-1 text-left"${clickFotos}>
             <p class="text-sm font-semibold text-navy truncate">${svgEsc(m.nombre)}${!esBebida ? ' <span class="text-slate-300 font-normal">· fotos</span>' : ''}</p>
             ${m.descripcion ? `<p class="text-xs text-slate-500 mt-0.5" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${svgEsc(m.descripcion)}</p>` : `<p class="text-xs text-slate-400 mt-0.5">${disponible ? 'Disponible' : 'Agotado'}</p>`}
+            ${alergenosPublicoHtml(m)}
           </div>
           <p class="text-sm font-bold shrink-0 ${temaActivo ? '' : 'text-navy'}" ${precioStyle}>${fmtPrecioPlato(m.precio)}</p>
           ${stepper}
@@ -11124,6 +11192,7 @@
         <div class="${temaActivo ? '' : 'mt-6'} space-y-3">${itemsHtml}</div>
         ${notaGeneralHtml}
         <p id="pubPedError" class="text-xs text-rose-600 hidden mt-3"></p>
+        ${avisoAlergenosHtml(menu)}
         ${temaActivo ? `<p class="text-center text-[11px] text-slate-300 mt-8">Carta digital creada con Restora</p>` : ''}
       </div>
     `;
