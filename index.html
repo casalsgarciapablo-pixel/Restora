@@ -1892,6 +1892,7 @@
           <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Ventas por camarero</p>
           <p class="text-xs text-slate-400 mt-1 mb-3">Ingresos generados por cada persona</p>
           <div id="dashChartCamareros"></div>
+          <p class="text-[11px] text-slate-400 mt-2">«Sin camarero asignado» son ventas que no guardaron quién las tomó. Puedes asignarlas abriendo el pedido en <b>Pedidos</b> y eligiendo el camarero.</p>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-white p-5">
           <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Rentabilidad por plato</p>
@@ -2868,7 +2869,11 @@
   function identidadChatActual() {
     if (staffSession) return { nombre: staffSession.nombre || 'Trabajador', email: staffSession.email || '' };
     const acc = getCurrentAccount();
-    return { nombre: (acc && acc.data.perfil.nombre) || 'Encargado', email: (acc && acc.email) || '' };
+    // Ojo: perfil.nombre es el nombre del RESTAURANTE ("Restora"), no el de una persona. Si se usara
+    // aquí, las ventas del dueño quedarían atribuidas al restaurante en "Ventas por camarero".
+    // Se usa el titular de la cuenta y, si no lo ha rellenado, un genérico honesto.
+    const titular = (acc && acc.data.cuenta && acc.data.cuenta.titular || '').trim();
+    return { nombre: titular || 'Dirección', email: (acc && acc.email) || '' };
   }
   function chatSeccionActiva() {
     const sec = document.getElementById('sec-chat');
@@ -7696,6 +7701,8 @@
         <h3 class="text-xl font-bold text-navy">Elige los platos</h3>
       </div>
       <div class="mt-3 grid grid-cols-2 platos-grid">${filas}</div>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Camarero</label>
+      ${selectCamareroHtml('ventaRapidaCamarero')}
       <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
         <p class="text-sm font-semibold text-navy">Total</p>
         <p class="text-lg font-bold text-navy">${fmtMoneda(total)}</p>
@@ -7718,7 +7725,8 @@
     const total = totalConPromos(elegidos.map(m => ({ nombre: m.nombre, precio: m.precio, cantidad: ventaRapidaEnCurso.cantidades[m.idx] })));
     const mesa = ventaRapidaEnCurso.mesaNumero ? 'Mesa ' + ventaRapidaEnCurso.mesaNumero : 'Venta directa';
     const acc = getCurrentAccount();
-    acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: null, total, estado: 'Servido', fecha: new Date().toISOString(), origen: 'tpv', creadoPor: identidadChatActual().nombre });
+    const camareroVenta = valorCamareroSeleccionado('ventaRapidaCamarero');
+    acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: null, total, estado: 'Servido', fecha: new Date().toISOString(), origen: 'tpv', creadoPor: camareroVenta });
     if (ventaRapidaEnCurso.mesaNumero) marcarEstadoMesa(acc, ventaRapidaEnCurso.mesaNumero - 1, 'Ocupada');
     saveCurrentAccountData(acc.data);
     const nuevoIdx = acc.data.pedidos.length - 1;
@@ -7948,6 +7956,8 @@
       <div class="mt-3 grid grid-cols-2 platos-grid">${filas}</div>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Observaciones del pedido (alergias, peticiones generales…)</label>
       <textarea oninput="pedidoEnCurso.notaGeneral = this.value" rows="2" placeholder="Ej. alergia a los frutos secos en la mesa" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(pedidoEnCurso.notaGeneral || '')}</textarea>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Camarero</label>
+      ${selectCamareroHtml('pedidoCamarero')}
       <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
         <p class="text-sm font-semibold text-navy">Total</p>
         <p class="text-lg font-bold text-navy">${fmtMoneda(total)}</p>
@@ -7955,6 +7965,24 @@
       <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
       <button type="button" onclick="submitPedidoFinal()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar pedido</button>
     `;
+  }
+  // Desplegable de personal para atribuir una venta. Por defecto viene marcado quien está usando la
+  // app; si el dueño toma la comanda para otro camarero, puede cambiarlo aquí.
+  function selectCamareroHtml(id, seleccionado) {
+    const acc = getCurrentAccount();
+    const yo = identidadChatActual().nombre;
+    const actual = seleccionado != null ? seleccionado : yo;
+    const nombres = (acc.data.personal || []).map(p => (p.nombre || '').trim()).filter(Boolean);
+    if (!nombres.includes(actual) && actual) nombres.unshift(actual);
+    const clase = 'w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent';
+    return `<select id="${id}" class="${clase}">
+      ${nombres.map(n => `<option value="${escAttr(n)}" ${n === actual ? 'selected' : ''}>${svgEsc(n)}</option>`).join('')}
+    </select>`;
+  }
+  function valorCamareroSeleccionado(id) {
+    const el = document.getElementById(id);
+    const v = el && el.value ? el.value.trim() : '';
+    return v || identidadChatActual().nombre;
   }
   function cambiarCantidadPlato(idx, delta) {
     const actual = pedidoEnCurso.cantidades[idx] || 0;
@@ -7970,7 +7998,7 @@
     const total = totalConPromos(elegidos.map(m => ({ nombre: m.nombre, precio: m.precio, cantidad: pedidoEnCurso.cantidades[m.idx] })));
     const mesa = 'Mesa ' + pedidoEnCurso.numero;
     const acc = getCurrentAccount();
-    acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: pedidoEnCurso.personas, total, estado: 'En cocina', fecha: new Date().toISOString(), creadoPor: identidadChatActual().nombre, notaGeneral: (pedidoEnCurso.notaGeneral || '').trim() });
+    acc.data.pedidos.push({ id: 'ped-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), mesa, items, platos, personas: pedidoEnCurso.personas, total, estado: 'En cocina', fecha: new Date().toISOString(), creadoPor: valorCamareroSeleccionado('pedidoCamarero'), notaGeneral: (pedidoEnCurso.notaGeneral || '').trim() });
     marcarEstadoMesa(acc, pedidoEnCurso.numero - 1, 'Ocupada');
     saveCurrentAccountData(acc.data);
     renderPedidos();
@@ -8034,6 +8062,8 @@
       ${filasAnadir ? `<label class="block text-sm font-medium text-navy mb-1.5 mt-4">Añadir otro plato</label><div class="border border-slate-200 rounded-lg px-3 max-h-40 overflow-y-auto">${filasAnadir}</div>` : ''}
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Observaciones del pedido (alergias, peticiones generales…)</label>
       <textarea oninput="pedidoEditando.notaGeneral = this.value" rows="2" placeholder="Ej. alergia a los frutos secos en la mesa" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">${svgEsc(pedidoEditando.notaGeneral || '')}</textarea>
+      <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Camarero (a quién se atribuye la venta)</label>
+      ${selectCamareroHtml('pedEditCamarero', p.creadoPor || '')}
       <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
         <p class="text-sm font-semibold text-navy">Total</p>
         <p class="text-lg font-bold text-navy">${fmtMoneda(total)}</p>
@@ -8076,6 +8106,9 @@
     p.total = totalConPromos(p.platos.map(pl => ({ nombre: pl.nombre, precio: pl.precio, cantidad: pl.cantidad || 1 })));
     p.estado = estadoPedidoDesdePlatos(p);
     p.notaGeneral = (pedidoEditando.notaGeneral || '').trim();
+    // Permite reasignar la venta al camarero correcto (p. ej. las que entraron "Sin asignar").
+    const camareroEdit = (document.getElementById('pedEditCamarero') || {}).value;
+    if (camareroEdit && camareroEdit.trim()) p.creadoPor = camareroEdit.trim();
     saveCurrentAccountData(acc.data);
     pedidoEditando = null;
     closeModal();
@@ -10290,7 +10323,11 @@
   function chartCamareros(pedidos) {
     const map = new Map();
     pedidos.forEach(p => {
-      const nombre = p.creadoPor || (p.origen === 'qr' ? 'Pedidos QR (cliente)' : 'Sin asignar');
+      // "Sin camarero asignado" = la comanda no guardó quién la tomó (delivery, importaciones o
+      // pedidos anteriores a que se registrara el camarero). Se pueden reasignar editando el pedido.
+      const auto = p.origen === 'qr' ? 'Pedidos QR (cliente)'
+        : (['glovo', 'uber', 'justeat'].includes(p.origen) ? 'Delivery (plataformas)' : 'Sin camarero asignado');
+      const nombre = (p.creadoPor || '').trim() || auto;
       map.set(nombre, (map.get(nombre) || 0) + (p.total || 0));
     });
     const arr = Array.from(map.entries()).map(([nombre, ing]) => ({ label: nombre, value: ing })).sort((a, b) => b.value - a.value).slice(0, 8);
