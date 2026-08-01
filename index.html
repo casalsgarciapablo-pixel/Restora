@@ -146,8 +146,15 @@
     #qrPrintRoot { position: absolute; left: 0; top: 0; width: 100%; display: flex !important; }
   }
   .mesa-label { font-size: 11px; font-weight: 600; }
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) scale(.9); background: #16294A; color: #fff; font-size: 13px; font-weight: 600; padding: 10px 18px; border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 200; opacity: 0; pointer-events: none; transition: opacity .25s cubic-bezier(.34,1.56,.64,1), transform .25s cubic-bezier(.34,1.56,.64,1); }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px) scale(1); }
+  /* Avisos anclados en la esquina inferior DERECHA (antes iban centrados abajo y tapaban justo los
+     controles del medio: selectores de horario, primer mensaje del chat…). Van por encima del botón
+     flotante del asistente (que ocupa hasta ~78px) para no solaparse con él. */
+  .toast { position: fixed; bottom: 94px; right: 22px; left: auto; max-width: min(360px, calc(100vw - 44px)); transform: translateY(8px) scale(.96); background: #16294A; color: #fff; font-size: 13px; font-weight: 600; padding: 10px 18px; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 200; opacity: 0; pointer-events: none; transition: opacity .25s cubic-bezier(.34,1.56,.64,1), transform .25s cubic-bezier(.34,1.56,.64,1); }
+  .toast.show { opacity: 1; transform: translateY(0) scale(1); }
+  @media (max-width: 880px) {
+    /* En móvil ocupa el ancho disponible pero sigue abajo, sin tapar el centro de la pantalla. */
+    .toast { bottom: 88px; right: 12px; left: 12px; max-width: none; text-align: left; }
+  }
   /* El toast normal no se puede tocar (pointer-events:none) para no tapar la pantalla; los avisos con
      destino sí, para poder ir al apartado desde el propio mensaje. */
   .toast.show.clicable { pointer-events: auto; cursor: pointer; }
@@ -5469,15 +5476,24 @@
     panel.classList.toggle('open', open);
   }
 
+  let toastTimer = null;
   function showToast(msg, destino) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     // Solo los avisos con destino son clicables; los mensajes normales ("Guardado") no deben serlo,
     // y hay que limpiar el destino anterior para que un toast viejo no siga llevando a otro sitio.
-    t.onclick = destino ? function () { irADestinoAviso(destino); } : null;
+    t.onclick = destino ? function () { irADestinoAviso(destino); ocultarToast(); } : null;
     t.classList.toggle('clicable', !!destino);
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), destino ? 4200 : 1800);
+    // Un solo temporizador: si entran varios avisos seguidos (hora punta), el nuevo reinicia la cuenta
+    // en vez de heredar el cierre del anterior, que hacía desaparecer el mensaje casi al instante.
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(ocultarToast, destino ? 4200 : 1800);
+  }
+  function ocultarToast() {
+    clearTimeout(toastTimer);
+    const t = document.getElementById('toast');
+    if (t) { t.classList.remove('show'); t.onclick = null; t.classList.remove('clicable'); }
   }
 
   let iaConversacionActualId = null;
