@@ -222,6 +222,23 @@
   .app-main, .ia-quick-panel, #iaChat, .modal-overlay { overscroll-behavior: contain; }
   .negocio-carousel { overscroll-behavior-x: contain; }
 
+  /* Tablas de datos: en anchos intermedios (tablet, ventana a media pantalla) la tabla no cabe pero
+     todavía no se ha convertido en tarjetas (eso ocurre por debajo de 880px). Antes el contenedor
+     llevaba overflow-hidden y CORTABA las últimas columnas (Canal, Enlace…). Ahora cada tabla tiene su
+     propio scroll horizontal, sin arrastrar a toda la página. */
+  #reservasTableWrap, #personalTableWrap, #inventarioTableWrap, #invPlatosWrap, #invDetalleWrap,
+  #menuTableWrap { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+  /* Ancho mínimo para que las columnas no se aplasten ilegibles: por debajo, aparece el scroll. */
+  #reservasTableWrap table, #personalTableWrap table, #inventarioTableWrap table,
+  #invPlatosWrap table, #invDetalleWrap table { min-width: 720px; }
+  @media (max-width: 880px) {
+    /* En móvil las tablas ya se muestran como tarjetas apiladas: ni scroll ni ancho mínimo. */
+    #reservasTableWrap, #personalTableWrap, #inventarioTableWrap, #invPlatosWrap, #invDetalleWrap,
+    #menuTableWrap { overflow-x: visible; }
+    #reservasTableWrap table, #personalTableWrap table, #inventarioTableWrap table,
+    #invPlatosWrap table, #invDetalleWrap table { min-width: 0; }
+  }
+
   /* Tables: refined header row */
   #appRoot table thead tr th { font-size: 10.5px; letter-spacing: 0.045em; text-transform: uppercase; font-weight: 700; }
   #appRoot table tbody tr:hover { background-color: #f8fafc; }
