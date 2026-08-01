@@ -229,6 +229,17 @@
   .app-main, .ia-quick-panel, #iaChat, .modal-overlay { overscroll-behavior: contain; }
   .negocio-carousel { overscroll-behavior-x: contain; }
 
+  /* Ayudante IA: dos columnas reales (historial | conversación) con rejilla, en vez de flex con anchos
+     sueltos que en pantallas intermedias se montaban una encima de otra. La rejilla reserva SIEMPRE
+     una columna propia para el historial, así no puede taparse con los mensajes ni con el escritorio. */
+  .ia-layout { display: grid !important; grid-template-columns: 224px minmax(0, 1fr); gap: 2rem; align-items: start; }
+  .ia-sidebar { width: auto !important; min-width: 0; position: sticky; top: 8px; max-height: calc(100vh - 140px); overflow-y: auto; }
+  .ia-chat-col { min-width: 0; }
+  @media (max-width: 1100px) {
+    /* Portátiles estrechos y tablets en horizontal: el historial se estrecha antes de romperse. */
+    .ia-layout { grid-template-columns: 190px minmax(0, 1fr); gap: 1.25rem; }
+  }
+
   /* Tablas de datos: en anchos intermedios (tablet, ventana a media pantalla) la tabla no cabe pero
      todavía no se ha convertido en tarjetas (eso ocurre por debajo de 880px). Antes el contenedor
      llevaba overflow-hidden y CORTABA las últimas columnas (Canal, Enlace…). Ahora cada tabla tiene su
@@ -892,9 +903,10 @@
     #invPlatosWrap td[data-label], #invDetalleWrap td[data-label] { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: right; }
     #invPlatosWrap td[data-label]::before, #invDetalleWrap td[data-label]::before { content: attr(data-label); font-size: 11px; font-weight: 600; color: #8B93A6; text-align: left; flex-shrink: 0; }
 
-    /* IA assistant: stack conversations above the chat, let the page scroll normally so input/send are always reachable */
-    .ia-layout { flex-direction: column !important; gap: 12px !important; }
-    .ia-sidebar { width: 100% !important; }
+    /* IA assistant: una sola columna, historial arriba (plegado) y conversación debajo, para que el
+       campo de escritura siempre quede accesible. */
+    .ia-layout { grid-template-columns: minmax(0, 1fr) !important; gap: 12px !important; }
+    .ia-sidebar { width: 100% !important; position: static; max-height: none; overflow: visible; }
     #iaConversacionesList { max-height: 90px !important; }
     .ia-chat-col { max-width: 100% !important; height: auto !important; }
     #iaChat { max-height: 42vh !important; }
@@ -2095,8 +2107,8 @@
         </div>
         <button onclick="abrirInformeSemanal()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2 shrink-0">📄 Informe Semanal</button>
       </div>
-      <div class="ia-layout mt-4 flex items-start" style="gap:2.5rem;">
-        <aside class="ia-sidebar w-56 shrink-0 rounded-xl border border-slate-200 bg-white p-2">
+      <div class="ia-layout mt-4">
+        <aside class="ia-sidebar rounded-xl border border-slate-200 bg-white p-2">
           <button onclick="nuevaConversacionIA()" class="w-full rounded-lg bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-3 py-2 mb-2">+ Nueva conversación</button>
           <div id="iaConversacionesList" class="space-y-1 max-h-96 overflow-y-auto"></div>
           <button id="iaBorrarTodasBtn" onclick="eliminarTodasConversacionesIA()" class="w-full mt-2 pt-2 border-t border-slate-100 text-xs font-semibold text-slate-400 hover:text-rose-500 transition flex items-center justify-center gap-1.5 hidden">
@@ -2104,7 +2116,7 @@
             Eliminar todas
           </button>
         </aside>
-        <div class="ia-chat-col flex-1 min-w-0 max-w-2xl flex flex-col" style="height:70vh;">
+        <div class="ia-chat-col flex flex-col" style="height:70vh;">
           <div id="iaChat" class="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1"></div>
           <div id="iaInputWrap" class="ia-input-wrap mt-4 shrink-0">
             <div class="ia-input-row">
