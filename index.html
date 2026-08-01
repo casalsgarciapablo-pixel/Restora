@@ -155,6 +155,14 @@
     /* En móvil ocupa el ancho disponible pero sigue abajo, sin tapar el centro de la pantalla. */
     .toast { bottom: 88px; right: 12px; left: 12px; max-width: none; text-align: left; }
   }
+  /* Barra de "Deshacer" tras un borrado. Va en la misma esquina que los avisos, algo más abajo. */
+  .undo-bar { position: fixed; bottom: 24px; right: 22px; left: auto; max-width: min(400px, calc(100vw - 44px)); display: none; align-items: center; gap: 12px; background: #16294A; color: #fff; font-size: 13px; font-weight: 600; padding: 11px 14px 11px 18px; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); z-index: 201; }
+  .undo-bar.show { display: flex; }
+  .undo-btn { background: #fff; color: #16294A; border: none; border-radius: 999px; padding: 6px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .undo-btn:hover { background: #EEF2FF; }
+  .undo-x { background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 13px; padding: 2px 4px; }
+  .undo-x:hover { color: #fff; }
+  @media (max-width: 880px) { .undo-bar { right: 12px; left: 12px; max-width: none; bottom: 18px; } }
   /* El toast normal no se puede tocar (pointer-events:none) para no tapar la pantalla; los avisos con
      destino sí, para poder ir al apartado desde el propio mensaje. */
   .toast.show.clicable { pointer-events: auto; cursor: pointer; }
@@ -2367,6 +2375,12 @@
 </div>
 
 <div id="toast" class="toast"></div>
+<!-- Barra para deshacer el último borrado (aparece unos segundos tras una acción destructiva) -->
+<div id="undoBar" class="undo-bar">
+  <span id="undoTexto"></span>
+  <button type="button" onclick="deshacerUltimoBorrado()" class="undo-btn">Deshacer</button>
+  <button type="button" onclick="cerrarDeshacer()" class="undo-x" aria-label="Cerrar">✕</button>
+</div>
 
 <!-- Aviso de cookies: se muestra hasta que el visitante elige, y bloquea cualquier cookie/almacenamiento
      no esencial hasta entonces (ver gestionConsentimientoAnaliticas más abajo). -->
@@ -5499,6 +5513,43 @@
     if (!reservaVigenteDeMesa(idx)) marcarEstadoMesa(acc, idx, 'Libre');
   }
 
+  // ---- Deshacer un borrado (red de seguridad para las acciones destructivas) ----
+  // Guarda una copia del bloque de datos afectado ANTES de borrar y ofrece restaurarla durante unos
+  // segundos desde un aviso propio. Si no se usa, el borrado queda como definitivo.
+  let undoState = null;
+  let undoTimer = null;
+  function ofrecerDeshacer(texto, restaurar, segundos) {
+    clearTimeout(undoTimer);
+    undoState = restaurar;
+    const barra = document.getElementById('undoBar');
+    if (!barra) return;
+    document.getElementById('undoTexto').textContent = texto;
+    barra.classList.add('show');
+    undoTimer = setTimeout(cerrarDeshacer, (segundos || 8) * 1000);
+  }
+  function cerrarDeshacer() {
+    clearTimeout(undoTimer);
+    undoState = null;
+    const barra = document.getElementById('undoBar');
+    if (barra) barra.classList.remove('show');
+  }
+  function deshacerUltimoBorrado() {
+    if (typeof undoState !== 'function') return cerrarDeshacer();
+    const restaurar = undoState;
+    cerrarDeshacer();
+    restaurar();
+    const acc = getCurrentAccount();
+    saveCurrentAccountData(acc.data);
+    renderAllSections();
+    showToast('Cambios restaurados');
+  }
+  // Confirmación reforzada para acciones masivas: hay que escribir la palabra exacta, para que no se
+  // borre media carta por un clic de más.
+  function confirmarEscribiendo(palabra, mensaje) {
+    const r = prompt(mensaje + '\n\nEscribe ' + palabra + ' para confirmar:');
+    return r != null && r.trim().toUpperCase() === palabra.toUpperCase();
+  }
+
   // ---- Nav, toasts ----
   const sectionNames = { dashboard:'Dashboard', reservas:'Reservas', pedidos:'Pedidos', mesas:'Mesas', menu:'Carta', delivery:'Delivery', inventario:'Inventario', tpv:'TPV', ia:'Ayudante IA', restaurante:'Mi restaurante', personal:'Personal', chat:'Chat', apps:'Apps', config:'Configuración' };
   function showSection(name, el) {
@@ -6558,13 +6609,16 @@
   function eliminarReserva(i) {
     const acc = getCurrentAccount();
     const reserva = acc.data.reservas[i];
+    if (!reserva) return;
+    const quien = (reserva.cliente || 'esta reserva') + (reserva.hora ? ' (' + reserva.hora + ')' : '');
+    if (!confirm('¿Eliminar la reserva de ' + quien + '?')) return;
     acc.data.reservas.splice(i, 1);
     liberarMesaSiEraEstaReserva(acc, reserva);
     saveCurrentAccountData(acc.data);
     renderReservas();
     renderDashboardStats();
     renderMesas();
-    showToast('Reserva eliminada');
+    ofrecerDeshacer('Reserva de ' + (reserva.cliente || '—') + ' eliminada', () => { acc.data.reservas.splice(i, 0, reserva); });
   }
   // Solo rellena la mesa si el campo está vacío, para no pisar lo que el personal haya escrito a mano.
   function autosugerirMesaReserva() {
@@ -9040,33 +9094,41 @@
     const acc = getCurrentAccount();
     const n = acc.data.menu.filter(m => !m.esMenu).length;
     if (!n) { showToast('La carta ya está vacía'); return; }
-    if (!confirm('¿Eliminar TODOS los platos de la carta (' + n + ')? Los menús de precio fijo no se tocan. Esto no se puede deshacer.')) return;
+    if (!confirmarEscribiendo('BORRAR', 'Vas a eliminar ' + n + (n === 1 ? ' plato' : ' platos') + ' de la carta (los menús de precio fijo no se tocan).')) return;
+    const copia = acc.data.menu.slice();
     acc.data.menu = acc.data.menu.filter(m => m.esMenu);
     saveCurrentAccountData(acc.data);
     renderMenu();
     renderCartaDigitalPreview();
-    showToast('Todos los platos de la carta han sido eliminados');
+    ofrecerDeshacer(n + (n === 1 ? ' plato eliminado' : ' platos eliminados'), () => { acc.data.menu = copia; }, 12);
   }
   function confirmarEliminarTodosMenus() {
     const acc = getCurrentAccount();
     const n = acc.data.menu.filter(m => m.esMenu).length;
     if (!n) { showToast('No tienes ningún menú'); return; }
-    if (!confirm('¿Eliminar TODOS los menús de precio fijo (' + n + ')? Los platos de la carta no se tocan. Esto no se puede deshacer.')) return;
+    if (!confirmarEscribiendo('BORRAR', 'Vas a eliminar ' + n + (n === 1 ? ' menú de precio fijo' : ' menús de precio fijo') + ' (los platos de la carta no se tocan).')) return;
+    const copia = acc.data.menu.slice();
     acc.data.menu = acc.data.menu.filter(m => !m.esMenu);
     saveCurrentAccountData(acc.data);
     renderMenu();
     renderCartaDigitalPreview();
-    showToast('Todos los menús han sido eliminados');
+    ofrecerDeshacer(n + (n === 1 ? ' menú eliminado' : ' menús eliminados'), () => { acc.data.menu = copia; }, 12);
   }
   function confirmarEliminarTodasSecciones() {
     const acc = getCurrentAccount();
     if (!acc.data.menuSecciones.length) { showToast('No tienes ninguna sección'); return; }
-    if (!confirm('¿Eliminar TODAS las secciones (' + acc.data.menuSecciones.length + ')? Los platos no se borran, pasarán a "Sin sección". Esto no se puede deshacer.')) return;
+    const nSec = acc.data.menuSecciones.length;
+    if (!confirm('¿Eliminar las ' + nSec + ' secciones? Los platos NO se borran: pasarán a "Sin sección".')) return;
+    const seccionesPrevias = acc.data.menuSecciones.slice();
+    const categoriasPrevias = acc.data.menu.map(m => m.categoria);
     acc.data.menu.forEach(m => { m.categoria = ''; });
     acc.data.menuSecciones = [];
     saveCurrentAccountData(acc.data);
     renderMenu();
-    showToast('Todas las secciones han sido eliminadas');
+    ofrecerDeshacer(nSec + (nSec === 1 ? ' sección eliminada' : ' secciones eliminadas'), () => {
+      acc.data.menuSecciones = seccionesPrevias;
+      acc.data.menu.forEach((m, i) => { m.categoria = categoriasPrevias[i] != null ? categoriasPrevias[i] : m.categoria; });
+    }, 12);
   }
   function uploadMenuFormHtml() {
     return `
@@ -9229,10 +9291,12 @@
   }
   function eliminarEmpleado(i) {
     const acc = getCurrentAccount();
+    const empleado = acc.data.personal[i];
+    if (!empleado) return;
     acc.data.personal.splice(i, 1);
     saveCurrentAccountData(acc.data);
     renderPersonal();
-    showToast('Empleado eliminado');
+    ofrecerDeshacer((empleado.nombre || 'Empleado') + ' eliminado del equipo', () => { acc.data.personal.splice(i, 0, empleado); });
   }
   function eliminarEmpleadoConfirmado(i) {
     const acc = getCurrentAccount();
@@ -9606,25 +9670,30 @@
   function eliminarPlatoDesdeInventario(i) {
     const acc = getCurrentAccount();
     if (!acc.data.menu[i]) return;
-    if (!confirm('¿Eliminar "' + acc.data.menu[i].nombre + '" de la carta? Esto no se puede deshacer.')) return;
+    const plato = acc.data.menu[i];
+    if (!confirm('¿Eliminar "' + plato.nombre + '" de la carta?')) return;
     acc.data.menu.splice(i, 1);
     saveCurrentAccountData(acc.data);
     renderCartaDigitalPreview();
     invPlatoAbierto = null;
     renderInventario();
-    showToast('Plato eliminado');
+    ofrecerDeshacer('"' + plato.nombre + '" eliminado', () => { acc.data.menu.splice(i, 0, plato); });
   }
   function confirmarEliminarTodosPlatosInventario() {
     const acc = getCurrentAccount();
     const n = acc.data.menu.filter(m => !m.esMenu).length;
     if (!n) { showToast('No tienes ningún plato'); return; }
-    if (!confirm('¿Eliminar TODOS los platos (' + n + ')? Esto no se puede deshacer.')) return;
+    // Acción masiva: pide escribir la palabra, para que no se borre la carta entera por un clic de más.
+    if (!confirmarEscribiendo('BORRAR', 'Vas a eliminar ' + n + (n === 1 ? ' plato' : ' platos') + ' de la carta, con sus recetas y fotos.')) return;
+    const copia = acc.data.menu.slice(); // para poder deshacer
     acc.data.menu = acc.data.menu.filter(m => m.esMenu);
+    actualizarDisponibilidadPorStock(acc);
     saveCurrentAccountData(acc.data);
     renderCartaDigitalPreview();
     invPlatoAbierto = null;
     renderInventario();
-    showToast('Todos los platos han sido eliminados');
+    renderMenu();
+    ofrecerDeshacer(n + (n === 1 ? ' plato eliminado' : ' platos eliminados'), () => { acc.data.menu = copia; }, 12);
   }
   function renderInventario() {
     const cont = document.getElementById('inventarioContenido');
@@ -9783,7 +9852,14 @@
 
   function eliminarProducto(i) {
     const acc = getCurrentAccount();
-    const nombre = acc.data.inventario[i].producto;
+    const ingrediente = acc.data.inventario[i];
+    if (!ingrediente) return;
+    const nombre = ingrediente.producto;
+    // Avisa de las recetas afectadas: borrar un ingrediente lo quita de todos los platos que lo usan.
+    const enRecetas = acc.data.menu.filter(m => Array.isArray(m.receta) && m.receta.some(r => r.producto === nombre)).length;
+    const aviso = enRecetas ? '\n\nSe quitará también de ' + enRecetas + (enRecetas === 1 ? ' receta' : ' recetas') + '.' : '';
+    if (!confirm('¿Eliminar "' + nombre + '" del inventario?' + aviso)) return;
+    const recetasPrevias = acc.data.menu.map(m => Array.isArray(m.receta) ? m.receta.slice() : m.receta);
     acc.data.inventario.splice(i, 1);
     acc.data.menu.forEach(m => { if (Array.isArray(m.receta)) m.receta = m.receta.filter(r => r.producto !== nombre); });
     actualizarDisponibilidadPorStock(acc);
@@ -9791,7 +9867,11 @@
     renderInventario();
     renderMenu();
     renderCartaDigitalPreview();
-    showToast('Ingrediente eliminado');
+    ofrecerDeshacer('"' + nombre + '" eliminado del inventario', () => {
+      acc.data.inventario.splice(i, 0, ingrediente);
+      acc.data.menu.forEach((m, k) => { if (recetasPrevias[k] !== undefined) m.receta = recetasPrevias[k]; });
+      actualizarDisponibilidadPorStock(acc);
+    });
   }
 
   function ingredienteFormHtml(i) {
