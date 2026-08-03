@@ -551,12 +551,43 @@
   .modal-overlay { backdrop-filter: blur(4px); }
 
   /* Aviso de cookies */
-  #cookieBanner { position: fixed; left: 0; right: 0; bottom: 0; z-index: 200; background: #0B1B33; color: #fff; padding: 18px 20px; display: none; }
+  #cookieBanner { position: fixed; left: 0; right: 0; bottom: 0; z-index: 200; background: #0B1B33; color: #fff; padding: 18px 20px; display: none; max-height: 85vh; overflow-y: auto; box-shadow: 0 -8px 30px rgba(0,0,0,0.25); }
   #cookieBanner.open { display: block; }
   #cookieBanner .cb-wrap { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
-  #cookieBanner p { font-size: 13px; color: #C7C7D1; flex: 1 1 320px; margin: 0; }
+  #cookieBanner .cb-texto { flex: 1 1 320px; }
+  #cookieBanner p { font-size: 13px; color: #C7C7D1; margin: 0; line-height: 1.55; }
+  #cookieBanner .cb-titulo { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 3px; }
   #cookieBanner a { color: #fff; text-decoration: underline; }
   #cookieBanner .cb-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  /* Aceptar y Rechazar deben tener el MISMO peso visual: rechazar no puede ser más difícil que
+     aceptar (criterio de la AEPD sobre patrones oscuros en banners de cookies). */
+  .cb-btn { border-radius: 999px; font-size: 13px; font-weight: 600; padding: 9px 18px; border: 1px solid transparent; cursor: pointer; transition: background-color .15s ease, border-color .15s ease; white-space: nowrap; }
+  .cb-btn-pri { background: #fff; color: #0B1B33; }
+  .cb-btn-pri:hover { background: #E7ECF5; }
+  .cb-btn-sec { background: transparent; color: #fff; border-color: rgba(255,255,255,0.35); }
+  .cb-btn-sec:hover { background: rgba(255,255,255,0.12); }
+  .cb-panel { max-width: 1000px; margin: 18px auto 0; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.15); }
+  .cb-cat { display: flex; align-items: flex-start; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .cb-cat:last-of-type { border-bottom: 0; }
+  .cb-cat-info { flex: 1 1 auto; min-width: 0; }
+  .cb-cat-nombre { font-size: 13.5px; font-weight: 700; color: #fff; }
+  .cb-cat-desc { font-size: 12.5px; color: #A9B0C0; margin-top: 3px; line-height: 1.5; }
+  .cb-cat-fija { font-size: 11.5px; font-weight: 600; color: #A9B0C0; white-space: nowrap; padding-top: 2px; }
+  /* Interruptor accesible: es un checkbox real (navegable con teclado y anunciado por lectores de
+     pantalla) al que solo se le cambia la apariencia. */
+  .cb-switch { position: relative; flex: 0 0 auto; width: 42px; height: 24px; }
+  .cb-switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .cb-switch span { position: absolute; inset: 0; border-radius: 999px; background: rgba(255,255,255,0.22); transition: background-color .18s ease; pointer-events: none; }
+  .cb-switch span::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .18s ease; }
+  .cb-switch input:checked + span { background: #3D7FFF; }
+  .cb-switch input:checked + span::after { transform: translateX(18px); }
+  .cb-switch input:focus-visible + span { outline: 2px solid #fff; outline-offset: 2px; }
+  .cb-panel-acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+  @media (max-width: 560px) {
+    #cookieBanner .cb-btns { width: 100%; }
+    #cookieBanner .cb-btns .cb-btn { flex: 1 1 auto; }
+    .cb-panel-acciones .cb-btn { flex: 1 1 auto; }
+  }
 
   .dash-two-col { grid-template-columns: 1fr; }
   @media (min-width: 881px) { .dash-two-col { grid-template-columns: 1fr 1fr; } }
@@ -1716,6 +1747,7 @@
         <li><a href="?legal=terminos" onclick="return irALegal('terminos', event)" class="hover:text-accent">Términos de servicio</a></li>
         <li><a href="?legal=privacidad" onclick="return irALegal('privacidad', event)" class="hover:text-accent">Política de privacidad</a></li>
         <li><a href="?legal=cookies" onclick="return irALegal('cookies', event)" class="hover:text-accent">Cookies</a></li>
+        <li><a href="javascript:void(0)" onclick="abrirPreferenciasCookies()" class="hover:text-accent">Preferencias de cookies</a></li>
         <li><a href="?legal=seguridad" onclick="return irALegal('seguridad', event)" class="hover:text-accent">Seguridad</a></li>
         <li><a href="?legal=aviso-legal" onclick="return irALegal('aviso-legal', event)" class="hover:text-accent">Aviso legal</a></li>
         <li><a href="javascript:void(0)" onclick="openModal('contacto')" class="hover:text-accent">Hablar con ventas</a></li>
@@ -2345,6 +2377,10 @@
               <p class="text-sm font-medium text-navy">Exportar registro horario</p>
               <p class="text-xs text-slate-400 mt-0.5">Fichajes en CSV para la Inspección de Trabajo (conservación obligatoria: 4 años).</p>
             </button>
+            <button onclick="abrirPreferenciasCookies()" class="w-full text-left rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-3">
+              <p class="text-sm font-medium text-navy">Preferencias de cookies</p>
+              <p class="text-xs text-slate-400 mt-0.5">Cambia qué almacenamiento no esencial permites en este dispositivo.</p>
+            </button>
             <button onclick="eliminarMiCuenta()" class="w-full text-left rounded-lg border border-slate-200 hover:border-rose-300 hover:bg-rose-50 transition px-4 py-3">
               <p class="text-sm font-medium text-rose-600">Eliminar mi cuenta y mis datos</p>
               <p class="text-xs text-slate-400 mt-0.5">Borra definitivamente el restaurante y toda su información (derecho de supresión).</p>
@@ -2414,12 +2450,24 @@
 
 <!-- Aviso de cookies: se muestra hasta que el visitante elige, y bloquea cualquier cookie/almacenamiento
      no esencial hasta entonces (ver gestionConsentimientoAnaliticas más abajo). -->
-<div id="cookieBanner" role="dialog" aria-label="Aviso de cookies">
+<div id="cookieBanner" role="dialog" aria-labelledby="cbTitulo" aria-describedby="cbTexto">
   <div class="cb-wrap">
-    <p>Usamos únicamente cookies técnicas necesarias para que Restora funcione (mantener tu sesión, tu pedido en curso, etc.). No usamos cookies de analítica ni publicidad. Puedes leer más en nuestra <a href="javascript:void(0)" onclick="mostrarPoliticaCookiesModal()">Política de cookies</a>.</p>
+    <div class="cb-texto">
+      <p class="cb-titulo" id="cbTitulo">Tu privacidad</p>
+      <p id="cbTexto">Restora usa almacenamiento en tu dispositivo. El necesario para que el servicio funcione está siempre activo; <b>el resto permanece desactivado hasta que tú lo aceptes</b>. Puedes elegir por categorías y cambiar de opinión cuando quieras. Más detalle en la <a href="javascript:void(0)" onclick="mostrarPoliticaCookiesModal()">Política de cookies</a>.</p>
+    </div>
     <div class="cb-btns">
-      <button type="button" onclick="rechazarCookiesNoEsenciales()" class="rounded-full bg-transparent border border-white/30 hover:bg-white/10 transition text-white text-sm font-semibold px-4 py-2">Rechazar no esenciales</button>
-      <button type="button" onclick="aceptarCookies()" class="rounded-full bg-white hover:bg-slate-100 transition text-navy text-sm font-semibold px-5 py-2">Aceptar</button>
+      <button type="button" onclick="rechazarCookiesNoEsenciales()" class="cb-btn cb-btn-sec">Rechazar todo</button>
+      <button type="button" id="cbConfigBtn" onclick="alternarPanelCookies()" class="cb-btn cb-btn-sec" aria-expanded="false" aria-controls="cookiePanel">Configurar</button>
+      <button type="button" onclick="aceptarCookies()" class="cb-btn cb-btn-pri">Aceptar todo</button>
+    </div>
+  </div>
+  <!-- Las filas de categorías las pinta renderPanelCookies() a partir de COOKIE_CATEGORIAS, que es
+       también la lista que se muestra en la Política de cookies: una sola fuente de verdad. -->
+  <div id="cookiePanel" class="cb-panel" hidden>
+    <div id="cookiePanelCats"></div>
+    <div class="cb-panel-acciones">
+      <button type="button" onclick="guardarPreferenciasCookies()" class="cb-btn cb-btn-pri">Guardar preferencias</button>
     </div>
   </div>
 </div>
@@ -2746,51 +2794,157 @@
   function alternarTema() {
     const oscuro = !document.documentElement.classList.contains('tema-oscuro');
     aplicarTema(oscuro);
-    try { localStorage.setItem(TEMA_KEY, oscuro ? 'oscuro' : 'claro'); } catch (e) {}
+    // El tema solo se recuerda entre visitas si se ha aceptado la categoría "Preferencias". Sin ese
+    // permiso el cambio se aplica igual, pero se queda en esta sesión y no se escribe nada.
+    if (tieneConsentimiento('preferencias')) {
+      try { localStorage.setItem(TEMA_KEY, oscuro ? 'oscuro' : 'claro'); } catch (e) {}
+    }
   }
-  try { aplicarTema(localStorage.getItem(TEMA_KEY) === 'oscuro'); } catch (e) {}
+  // Se ejecuta después del bloque de consentimiento (más abajo) para poder consultarlo: ver aplicarTemaGuardado().
 
-  // ---- Consentimiento de cookies ----
-  // No usamos, a día de hoy, ninguna cookie/almacenamiento no esencial (analítica, publicidad, etc.).
-  // El almacenamiento que ya usa la app (sesión de Supabase, carrito del pedido, snapshot offline...) es
-  // estrictamente técnico/necesario para el servicio y no requiere consentimiento (art. 22.2 LSSI y
-  // guías del RGPD sobre cookies exentas). Este banner deja constancia de la elección del visitante y
-  // sirve de interruptor para el día en que se añada analítica: cualquier script de ese tipo debe
-  // comprobar tieneConsentimientoAnaliticas() antes de cargarse o de escribir ninguna cookie/almacenamiento.
+  // ---- Consentimiento de cookies / almacenamiento (RGPD + art. 22.2 LSSI) ----
+  // Regla que cumple todo el archivo: NADA que no sea estrictamente necesario para prestar el servicio
+  // se escribe en el dispositivo antes de que la persona lo acepte. Lo necesario (sesión de Supabase,
+  // carrito del pedido en curso, copia offline y el propio registro de esta elección) está exento de
+  // consentimiento y por eso no se puede desactivar. Todo lo demás pasa por tieneConsentimiento().
   const COOKIE_CONSENT_KEY = 'restora_cookie_consent';
-  const COOKIE_CONSENT_VERSION = 1;
+  // Al cambiar las categorías cambia el significado del consentimiento guardado: subir la versión
+  // invalida los antiguos y vuelve a preguntar, que es lo que exige el RGPD ante un cambio sustancial.
+  const COOKIE_CONSENT_VERSION = 2;
+  const COOKIE_CATEGORIAS = [
+    {
+      id: 'necesarias', nombre: 'Necesarias', fija: true,
+      desc: 'Imprescindibles para que Restora funcione: mantener tu sesión iniciada, guardar el pedido que estás montando desde el QR, conservar una copia local por si se cae la conexión y recordar esta misma elección. No se pueden desactivar y no requieren consentimiento.',
+    },
+    {
+      id: 'preferencias', nombre: 'Preferencias', desc: 'Recuerdan cómo te gusta ver la aplicación entre visitas: el modo claro u oscuro y, en la carta pública, un identificador anónimo de tu dispositivo que sirve para dejarte borrar las fotos que tú mismo hayas subido. Sin esto todo sigue funcionando, pero se olvida al cerrar.',
+    },
+    {
+      id: 'analiticas', nombre: 'Analíticas', desc: 'Medirían de forma agregada qué secciones se usan más, para mejorar el producto. Hoy no hay ninguna herramienta de analítica instalada: este interruptor deja tu decisión tomada de antemano, y si algún día se añade, no se cargará sin tu permiso.',
+    },
+  ];
+  // Qué se borra del dispositivo si se retira el consentimiento de una categoría.
+  const CLAVES_POR_CATEGORIA = {
+    preferencias: ['restora_tema', 'restora_cliente_id'],
+    analiticas: [],
+  };
+
   function obtenerConsentimientoCookies() {
     try {
       const raw = localStorage.getItem(COOKIE_CONSENT_KEY);
       if (!raw) return null;
       const v = JSON.parse(raw);
-      return v && v.version === COOKIE_CONSENT_VERSION ? v : null;
+      return v && v.version === COOKIE_CONSENT_VERSION && v.cats ? v : null;
     } catch (e) { return null; }
   }
-  function tieneConsentimientoAnaliticas() {
+  // Única puerta de entrada para cualquier almacenamiento no esencial. Sin elección previa devuelve
+  // false: por defecto se bloquea, nunca se asume el consentimiento.
+  function tieneConsentimiento(categoria) {
+    if (categoria === 'necesarias') return true;
     const c = obtenerConsentimientoCookies();
-    return !!(c && c.analiticas);
+    return !!(c && c.cats && c.cats[categoria]);
   }
-  function guardarConsentimientoCookies(analiticas) {
+
+  // Borra lo ya guardado de las categorías que se acaban de rechazar: retirar el consentimiento tiene
+  // que surtir efecto sobre lo que ya estaba en el dispositivo, no solo sobre lo que venga después.
+  function purgarAlmacenamientoNoEsencial(cats) {
+    Object.keys(CLAVES_POR_CATEGORIA).forEach(cat => {
+      if (cats[cat]) return;
+      CLAVES_POR_CATEGORIA[cat].forEach(clave => {
+        try { localStorage.removeItem(clave); } catch (e) {}
+      });
+    });
+  }
+  function guardarConsentimientoCookies(cats) {
+    const limpio = {};
+    COOKIE_CATEGORIAS.forEach(c => { if (!c.fija) limpio[c.id] = !!cats[c.id]; });
+    purgarAlmacenamientoNoEsencial(limpio);
     try {
-      localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify({ version: COOKIE_CONSENT_VERSION, analiticas, fecha: new Date().toISOString() }));
+      localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify({ version: COOKIE_CONSENT_VERSION, cats: limpio, fecha: new Date().toISOString() }));
     } catch (e) {}
+    cerrarBannerCookies();
+  }
+  function cerrarBannerCookies() {
     const banner = document.getElementById('cookieBanner');
     if (banner) banner.classList.remove('open');
+    const panel = document.getElementById('cookiePanel');
+    if (panel) panel.hidden = true;
+    const btn = document.getElementById('cbConfigBtn');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
   }
-  function aceptarCookies() { guardarConsentimientoCookies(true); showToast('Preferencia de cookies guardada'); }
-  function rechazarCookiesNoEsenciales() { guardarConsentimientoCookies(false); showToast('Solo se usarán las cookies necesarias'); }
+  function aceptarCookies() {
+    const todas = {};
+    COOKIE_CATEGORIAS.forEach(c => { if (!c.fija) todas[c.id] = true; });
+    guardarConsentimientoCookies(todas);
+    showToast('Preferencias de cookies guardadas');
+  }
+  function rechazarCookiesNoEsenciales() {
+    guardarConsentimientoCookies({});
+    showToast('Solo se usará el almacenamiento necesario');
+  }
+  function guardarPreferenciasCookies() {
+    const cats = {};
+    COOKIE_CATEGORIAS.forEach(c => {
+      if (c.fija) return;
+      const input = document.getElementById('cbCat-' + c.id);
+      cats[c.id] = !!(input && input.checked);
+    });
+    guardarConsentimientoCookies(cats);
+    showToast('Preferencias de cookies guardadas');
+  }
+  function renderPanelCookies() {
+    const cont = document.getElementById('cookiePanelCats');
+    if (!cont) return;
+    const actual = obtenerConsentimientoCookies();
+    cont.innerHTML = COOKIE_CATEGORIAS.map(c => {
+      const marcado = c.fija || !!(actual && actual.cats && actual.cats[c.id]);
+      const control = c.fija
+        ? `<span class="cb-cat-fija">Siempre activas</span>`
+        : `<label class="cb-switch"><input type="checkbox" id="cbCat-${c.id}" ${marcado ? 'checked' : ''} aria-label="${c.nombre}"><span aria-hidden="true"></span></label>`;
+      return `<div class="cb-cat">
+        <div class="cb-cat-info">
+          <p class="cb-cat-nombre">${c.nombre}</p>
+          <p class="cb-cat-desc">${c.desc}</p>
+        </div>
+        ${control}
+      </div>`;
+    }).join('');
+  }
+  function alternarPanelCookies() {
+    const panel = document.getElementById('cookiePanel');
+    const btn = document.getElementById('cbConfigBtn');
+    if (!panel) return;
+    const abrir = panel.hidden;
+    if (abrir) renderPanelCookies();
+    panel.hidden = !abrir;
+    if (btn) btn.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+  }
   function mostrarBannerCookiesSiHaceFalta() {
     if (obtenerConsentimientoCookies()) return;
     const banner = document.getElementById('cookieBanner');
     if (banner) banner.classList.add('open');
   }
-  function cambiarConsentimientoCookies() {
+  // Punto de entrada para volver a decidir en cualquier momento (footer, Política de cookies y
+  // Configuración del panel). Abre el banner ya desplegado por categorías, con la elección actual.
+  function abrirPreferenciasCookies() {
     closeModal();
-    document.getElementById('modalCard').classList.remove('modal-wide');
+    const card = document.getElementById('modalCard');
+    if (card) card.classList.remove('modal-wide');
     const banner = document.getElementById('cookieBanner');
     if (banner) banner.classList.add('open');
+    renderPanelCookies();
+    const panel = document.getElementById('cookiePanel');
+    if (panel) panel.hidden = false;
+    const btn = document.getElementById('cbConfigBtn');
+    if (btn) { btn.setAttribute('aria-expanded', 'true'); btn.focus(); }
   }
+
+  // Restaura el tema guardado, pero solo si hay consentimiento para "Preferencias". Va aquí y no junto
+  // a alternarTema() porque necesita que las constantes del consentimiento ya estén inicializadas.
+  (function aplicarTemaGuardado() {
+    if (!tieneConsentimiento('preferencias')) return;
+    try { aplicarTema(localStorage.getItem(TEMA_KEY) === 'oscuro'); } catch (e) {}
+  })();
 
   // ===================== DOCUMENTOS LEGALES (rutas ?legal=<slug>) =====================
   // Datos identificativos del titular. Son OBLIGATORIOS antes de operar comercialmente (art. 10 LSSI
@@ -2923,25 +3077,24 @@
       resumen: 'Qué guardamos en tu dispositivo, por qué y cómo cambiar tu elección.',
       html: () => `
         <h2>¿Qué son las cookies?</h2>
-        <p>Son pequeños archivos (o tecnologías equivalentes, como el almacenamiento local del navegador) que se guardan en tu dispositivo al usar una web o aplicación, y sirven para recordar información entre visitas.</p>
+        <p>Son pequeños archivos (o tecnologías equivalentes, como el almacenamiento local del navegador) que se guardan en tu dispositivo al usar una web o aplicación, y sirven para recordar información entre visitas. En Restora usamos principalmente almacenamiento local propio, no cookies de terceros.</p>
 
-        <h2>¿Qué usa Restora hoy?</h2>
-        <p>Solo almacenamiento técnico, estrictamente necesario para que el servicio funcione y exento de pedir tu consentimiento (art. 22.2 de la LSSI y el RGPD):</p>
-        <ul>
-          <li>Mantener tu sesión iniciada en tu cuenta.</li>
-          <li>El pedido/carrito que estás montando desde el QR de una mesa.</li>
-          <li>Una copia local de tus datos por si se pierde la conexión a internet.</li>
-          <li>Tu preferencia de idioma y de modo claro/oscuro.</li>
-          <li>Tu propia elección en este aviso de cookies.</li>
-        </ul>
-        <p>No usamos, a día de hoy, cookies de analítica, publicidad ni de terceros con fines de seguimiento.</p>
+        <h2>Categorías que puedes elegir</h2>
+        <p>Salvo las necesarias, ninguna se activa hasta que tú lo aceptas en el aviso que aparece al entrar:</p>
+        ${COOKIE_CATEGORIAS.map(c => `<p class="mt-3"><b>${c.nombre}${c.fija ? ' (siempre activas)' : ''}.</b> ${c.desc}</p>`).join('')}
+
+        <h2>Terceros</h2>
+        <p>No usamos, a día de hoy, cookies de analítica, publicidad ni de seguimiento de terceros. El almacenamiento de sesión lo gestiona <b>Supabase</b> como proveedor de autenticación, y es necesario para mantenerte identificado.</p>
 
         <h2>¿Qué pasa si rechazo?</h2>
-        <p>Como no usamos cookies no esenciales, tu elección no cambia el funcionamiento de Restora. Si en el futuro incorporamos analítica u otros terceros no esenciales, actualizaremos este aviso y pediremos tu consentimiento explícito antes de activarlos.</p>
+        <p>Restora sigue funcionando igual. Lo único que notarás es que no se recuerdan entre visitas las preferencias (como el modo oscuro) y que, en la carta pública, el permiso para borrar tus propias fotos dura solo mientras tengas la pestaña abierta. Al rechazar, además, se <b>borra</b> lo que ya se hubiera guardado de esas categorías.</p>
+
+        <h2>¿Cuánto dura tu elección?</h2>
+        <p>Se guarda en tu dispositivo y se te vuelve a preguntar si cambiamos las categorías o su finalidad. Puedes modificarla en cualquier momento sin dar explicaciones, y retirarla es tan fácil como darla.</p>
 
         <h2>¿Cómo cambio mi elección?</h2>
-        <p>Con el botón que hay justo debajo, cuando quieras.</p>
-        <p><button type="button" onclick="cambiarConsentimientoCookies()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Cambiar mi elección de cookies</button></p>
+        <p>Con el botón que hay justo debajo, o desde el enlace <i>Preferencias de cookies</i> del pie de página, cuando quieras.</p>
+        <p><button type="button" onclick="abrirPreferenciasCookies()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Cambiar mis preferencias de cookies</button></p>
       `,
     },
 
@@ -11728,12 +11881,17 @@
   let publicFotoZoomTouchX = null;
   // Identificador anónimo del dispositivo (no hay login en la carta pública): permite saber qué
   // fotos ha subido "este" cliente para dejarle borrarlas, sin tocar las de los demás.
+  // Un identificador persistente de dispositivo NO es almacenamiento exento: solo se guarda entre
+  // visitas si se ha aceptado la categoría "Preferencias". Sin ese permiso se usa sessionStorage, así
+  // el cliente puede seguir borrando las fotos que suba durante su visita y no queda rastro después.
   function publicClienteId() {
+    const persistente = tieneConsentimiento('preferencias');
+    const almacen = persistente ? localStorage : sessionStorage;
     let id = '';
-    try { id = localStorage.getItem('restora_cliente_id') || ''; } catch (e) {}
+    try { id = almacen.getItem('restora_cliente_id') || ''; } catch (e) {}
     if (!id) {
       id = (crypto.randomUUID ? crypto.randomUUID() : (Date.now() + '-' + Math.random())).replace(/-/g, '');
-      try { localStorage.setItem('restora_cliente_id', id); } catch (e) {}
+      try { almacen.setItem('restora_cliente_id', id); } catch (e) {}
     }
     return id;
   }
@@ -13494,6 +13652,17 @@
     "Política de cookies": ["Política de galetes", "Cookie policy"],
     "Seguridad": ["Seguretat", "Security"],
     "Aviso legal": ["Avís legal", "Legal notice"],
+    "Preferencias de cookies": ["Preferències de galetes", "Cookie preferences"],
+    // Banner de consentimiento
+    "Tu privacidad": ["La teva privacitat", "Your privacy"],
+    "Rechazar todo": ["Rebutjar-ho tot", "Reject all"],
+    "Configurar": ["Configurar", "Customize"],
+    "Aceptar todo": ["Acceptar-ho tot", "Accept all"],
+    "Guardar preferencias": ["Desar preferències", "Save preferences"],
+    "Necesarias": ["Necessàries", "Necessary"],
+    "Preferencias": ["Preferències", "Preferences"],
+    "Analíticas": ["Analítiques", "Analytics"],
+    "Siempre activas": ["Sempre actives", "Always on"],
     "Volver a Restora": ["Tornar a Restora", "Back to Restora"],
     "Legal": ["Legal", "Legal"],
     "Aún no tenemos redes sociales activas": ["Encara no tenim xarxes socials actives", "We don't have active social networks yet"],
