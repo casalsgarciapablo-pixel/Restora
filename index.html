@@ -744,6 +744,7 @@
   html.tema-oscuro .lang-switcher-fixed,
   html.tema-oscuro .theme-toggle-fixed,
   html.tema-oscuro #cookieBanner,
+  html.tema-oscuro #legalRoot,
   html.tema-oscuro #modalCard,
   html.tema-oscuro #toast { filter: invert(0.94) hue-rotate(180deg); }
   /* #appRoot filtrado se convierte en bloque contenedor de sus elementos position:fixed (panel del
@@ -772,6 +773,22 @@
      sombra sutil original de control segmentado. */
   html:not(.tema-oscuro) #landingRoot .dash-seg button { box-shadow: none; }
   html:not(.tema-oscuro) #landingRoot .dash-seg button.active { box-shadow: 0 1px 2px rgba(22,22,29,0.09), 0 1px 3px rgba(22,22,29,0.05); }
+  /* Documentos legales (páginas ?legal=…): tipografía de lectura larga y sumario lateral. */
+  .legal-doc { font-size: 15px; line-height: 1.75; color: #475569; }
+  .legal-doc h2 { font-size: 17px; font-weight: 700; color: #0b2142; margin: 34px 0 10px; scroll-margin-top: 90px; }
+  .legal-doc h2:first-child { margin-top: 0; }
+  .legal-doc p { margin: 10px 0; }
+  .legal-doc ul { list-style: disc; padding-left: 22px; margin: 10px 0; }
+  .legal-doc li { margin: 5px 0; }
+  .legal-doc a { color: #3D7FFF; text-decoration: underline; }
+  .legal-doc b { color: #0b2142; }
+  .legal-aviso { border-radius: 14px; padding: 14px 16px; font-size: 13.5px; line-height: 1.6; margin-bottom: 26px; background: #FEF6E7; border: 1px solid #F5D99B; color: #7C4A03; }
+  .legal-index { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 30px; padding: 0 0 26px; border-bottom: 1px solid #e2e8f0; }
+  .legal-index a { font-size: 13px; font-weight: 600; color: #475569; background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 6px 13px; text-decoration: none; transition: .15s; }
+  .legal-index a:hover { color: #0b2142; border-color: #cbd5e1; }
+  .legal-index a.on { background: #0b2142; border-color: #0b2142; color: #fff; }
+  .legal-doc .legal-pendiente { background: #F8FAFC; border-left: 3px solid #cbd5e1; padding: 10px 14px; border-radius: 0 8px 8px 0; color: #64748b; font-style: italic; }
+  .legal-fecha { font-size: 12px; color: #94a3b8; margin-top: 34px; padding-top: 18px; border-top: 1px solid #e2e8f0; }
   .landing-mobile-panel .lang-switcher { align-self: flex-start; margin-top: 12px; font-size: 15px; padding: 8px 14px; border-bottom: 1px solid #e2e8f0 !important; }
   .landing-mobile-btn { display: none; background: none; border: none; padding: 6px; color: #0b2142; cursor: pointer; }
   .landing-mobile-panel { display: none; }
@@ -1696,10 +1713,11 @@
     <div>
       <p class="text-slate-400 font-medium mb-4">Legal</p>
       <ul class="space-y-3 text-navy font-medium">
-        <li><a href="javascript:void(0)" onclick="showInfoModal('Términos de servicio', 'Restora está en fase inicial. Tus datos (cuenta, mesas, pedidos, menú, personal e inventario) se guardan en una base de datos en la nube asociada a tu cuenta, no solo en este navegador. Al ser un producto en desarrollo, todavía no ofrecemos garantías formales de disponibilidad ni soporte comercial.')" class="hover:text-accent">Términos de servicio</a></li>
-        <li><a href="javascript:void(0)" onclick="mostrarPoliticaPrivacidad()" class="hover:text-accent">Política de privacidad</a></li>
-        <li><a href="javascript:void(0)" onclick="mostrarPoliticaCookies()" class="hover:text-accent">Cookies</a></li>
-        <li><a href="javascript:void(0)" onclick="showInfoModal('Seguridad', 'Los datos viajan siempre cifrados (HTTPS) y se guardan en un servidor en la nube con copias de seguridad, no solo en tu navegador. Las contraseñas nunca se guardan en texto plano. Aun así, no introduzcas datos bancarios reales de terceros ni información que no quieras que quede registrada.')" class="hover:text-accent">Seguridad</a></li>
+        <li><a href="?legal=terminos" onclick="return irALegal('terminos', event)" class="hover:text-accent">Términos de servicio</a></li>
+        <li><a href="?legal=privacidad" onclick="return irALegal('privacidad', event)" class="hover:text-accent">Política de privacidad</a></li>
+        <li><a href="?legal=cookies" onclick="return irALegal('cookies', event)" class="hover:text-accent">Cookies</a></li>
+        <li><a href="?legal=seguridad" onclick="return irALegal('seguridad', event)" class="hover:text-accent">Seguridad</a></li>
+        <li><a href="?legal=aviso-legal" onclick="return irALegal('aviso-legal', event)" class="hover:text-accent">Aviso legal</a></li>
         <li><a href="javascript:void(0)" onclick="openModal('contacto')" class="hover:text-accent">Hablar con ventas</a></li>
       </ul>
     </div>
@@ -2398,7 +2416,7 @@
      no esencial hasta entonces (ver gestionConsentimientoAnaliticas más abajo). -->
 <div id="cookieBanner" role="dialog" aria-label="Aviso de cookies">
   <div class="cb-wrap">
-    <p>Usamos únicamente cookies técnicas necesarias para que Restora funcione (mantener tu sesión, tu pedido en curso, etc.). No usamos cookies de analítica ni publicidad. Puedes leer más en nuestra <a href="javascript:void(0)" onclick="mostrarPoliticaCookies()">Política de cookies</a>.</p>
+    <p>Usamos únicamente cookies técnicas necesarias para que Restora funcione (mantener tu sesión, tu pedido en curso, etc.). No usamos cookies de analítica ni publicidad. Puedes leer más en nuestra <a href="javascript:void(0)" onclick="mostrarPoliticaCookiesModal()">Política de cookies</a>.</p>
     <div class="cb-btns">
       <button type="button" onclick="rechazarCookiesNoEsenciales()" class="rounded-full bg-transparent border border-white/30 hover:bg-white/10 transition text-white text-sm font-semibold px-4 py-2">Rechazar no esenciales</button>
       <button type="button" onclick="aceptarCookies()" class="rounded-full bg-white hover:bg-slate-100 transition text-navy text-sm font-semibold px-5 py-2">Aceptar</button>
@@ -2498,6 +2516,20 @@
     <span class="flex items-center gap-2"><span class="app-brand-mark">R</span><span class="text-sm font-bold text-navy">Restora</span></span>
   </header>
   <div id="funcionBody" class="max-w-5xl mx-auto px-6 py-10"></div>
+</div>
+
+<!-- Páginas legales con ruta propia (?legal=<slug>): enlazables, compartibles y navegables con el
+     botón "atrás". Mismo patrón que #funcionRoot: se muestra ocultando #landingRoot, con lo que la
+     barra flotante y el selector de idioma se esconden solos por CSS. -->
+<div id="legalRoot" class="min-h-screen font-sans text-navy antialiased" style="display:none; background:linear-gradient(180deg,#F1F4FB 0%,#F5F7FA 30%)">
+  <header class="max-w-3xl mx-auto px-6 pt-6 flex items-center justify-between">
+    <button onclick="cerrarLegalPage()" class="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-navy transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+      Volver a Restora
+    </button>
+    <span class="flex items-center gap-2"><span class="app-brand-mark">R</span><span class="text-sm font-bold text-navy">Restora</span></span>
+  </header>
+  <div id="legalBody" class="max-w-3xl mx-auto px-6 py-10"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2730,51 +2762,293 @@
     if (banner) banner.classList.add('open');
   }
 
-  function mostrarPoliticaCookies() {
-    showLegalModal('Política de cookies', `
-      <p><b>¿Qué son las cookies?</b> Son pequeños archivos (o tecnologías equivalentes, como el almacenamiento local del navegador) que se guardan en tu dispositivo al usar una web o aplicación, y sirven para recordar información entre visitas.</p>
-      <p class="mt-3"><b>¿Qué usa Restora hoy?</b> Solo almacenamiento técnico, estrictamente necesario para que el servicio funcione y exento de pedir tu consentimiento (art. 22.2 de la LSSI y el RGPD):</p>
-      <ul class="list-disc pl-5 space-y-0.5">
-        <li>Mantener tu sesión iniciada en tu cuenta.</li>
-        <li>El pedido/carrito que estás montando desde el QR de una mesa.</li>
-        <li>Una copia local de tus datos por si se pierde la conexión a internet.</li>
-        <li>Tu propia elección en este aviso de cookies.</li>
-      </ul>
-      <p class="mt-3">No usamos, a día de hoy, cookies de analítica, publicidad ni de terceros con fines de seguimiento.</p>
-      <p class="mt-3"><b>¿Qué pasa si rechazo?</b> Como no usamos cookies no esenciales, tu elección no cambia el funcionamiento de Restora. Si en el futuro incorporamos analítica u otros terceros no esenciales, actualizaremos este aviso y pediremos tu consentimiento explícito antes de activarlos.</p>
-      <p class="mt-3"><b>¿Cómo cambio mi elección?</b> Pulsa el botón de abajo cuando quieras.</p>
-      <p class="mt-3 text-xs text-slate-400">Última actualización: julio de 2026.</p>
-    `, `<button type="button" onclick="cambiarConsentimientoCookies()" class="mt-4 w-full rounded-full border border-slate-200 hover:bg-slate-50 transition text-navy text-sm font-semibold px-5 py-2.5">Cambiar mi elección de cookies</button>`);
+  // ===================== DOCUMENTOS LEGALES (rutas ?legal=<slug>) =====================
+  // Datos identificativos del titular. Son OBLIGATORIOS antes de operar comercialmente (art. 10 LSSI
+  // y art. 13 RGPD) y se inyectan a la vez en todos los documentos: se rellenan UNA sola vez aquí.
+  const LEGAL_TITULAR = {
+    razonSocial: '[Nombre completo o razón social]',
+    nif: '[NIF/CIF]',
+    direccion: '[dirección postal completa]',
+    email: '[email de contacto]',
+    telefono: '[teléfono de contacto]',
+    registro: '[datos registrales: Registro Mercantil, tomo, folio y hoja — solo si eres sociedad]',
+  };
+  const LEGAL_ACTUALIZADO = 'agosto de 2026';
+  const LEGAL_TITULO_BASE = document.title; // para restaurar el <title> al salir de un documento legal
+  // Aviso que se muestra en los documentos aún no validados por un abogado. Quítalo del documento
+  // (revisionPendiente: false) solo cuando esa revisión exista de verdad.
+  const LEGAL_AVISO_BORRADOR = `<div class="legal-aviso"><b>Contenido pendiente de revisión legal.</b> Este documento es un borrador de trabajo con la estructura y las cláusulas habituales del sector, pero todavía no lo ha validado un profesional ni sustituye a un texto redactado por un abogado. Los campos entre corchetes están sin rellenar. No lo consideres vinculante hasta que se publique la versión definitiva.</div>`;
+
+  const LEGAL_PAGES = {
+    'terminos': {
+      titulo: 'Términos de servicio',
+      resumen: 'Las condiciones bajo las que se contrata y se usa Restora.',
+      revisionPendiente: true,
+      html: () => `
+        <h2>1. Quién presta el servicio</h2>
+        <p>Restora es un servicio de software como servicio (SaaS) para la gestión de restaurantes, prestado por <b>${LEGAL_TITULAR.razonSocial}</b>, con NIF <b>${LEGAL_TITULAR.nif}</b> y domicilio en ${LEGAL_TITULAR.direccion}. Puedes contactar en <b>${LEGAL_TITULAR.email}</b>.</p>
+        <p>Al crear una cuenta aceptas estos términos. Si los aceptas en nombre de una empresa, declaras tener capacidad para obligarla.</p>
+
+        <h2>2. Qué incluye el servicio</h2>
+        <p>Restora te da acceso a un panel de gestión con módulos de mesas, reservas, pedidos, TPV, carta digital, inventario, personal, delivery e informes, además de páginas públicas (carta por QR y reservas online) enlazadas a tu cuenta. Las funciones concretas disponibles dependen del plan contratado y pueden evolucionar.</p>
+        <p>Algunas funciones se apoyan en <b>inteligencia artificial</b> (asistente, transcripción de cartas a partir de fotos, informes). Sus resultados son orientativos y pueden contener errores: revísalos antes de tomar decisiones de negocio y antes de publicar precios o alérgenos.</p>
+
+        <h2>3. Tu cuenta</h2>
+        <ul>
+          <li>Debes facilitar datos veraces y mantenerlos actualizados.</li>
+          <li>Eres responsable de la confidencialidad de tu contraseña y de los códigos de acceso que generes para tu personal, así como de toda la actividad realizada desde ellos.</li>
+          <li>Debes avisarnos sin demora si detectas un acceso no autorizado.</li>
+          <li>El servicio está dirigido exclusivamente a profesionales y empresas, no a consumidores particulares.</li>
+        </ul>
+
+        <h2>4. Uso aceptable</h2>
+        <p>No está permitido: usar el servicio con fines ilícitos; intentar acceder a datos de otras cuentas; realizar ingeniería inversa, extracción masiva de datos o pruebas de carga sin autorización; introducir contenido que infrinja derechos de terceros; ni utilizar la plataforma para enviar comunicaciones comerciales no solicitadas a los clientes de tu restaurante.</p>
+
+        <h2>5. Planes, precios y facturación</h2>
+        <p class="legal-pendiente">[Pendiente de concretar: importes de cada plan, periodicidad de la facturación, impuestos aplicables, método de pago, política de renovación automática, consecuencias del impago y condiciones de reembolso.]</p>
+        <p>Los precios que se muestren en la página de precios se entenderán sin IVA salvo que se indique lo contrario.</p>
+
+        <h2>6. Duración y baja</h2>
+        <p>El contrato se renueva por periodos iguales al contratado salvo baja. Puedes darte de baja en cualquier momento desde <b>Configuración → Tus datos</b>, donde también puedes descargar previamente una copia completa de tu información. Tras la baja eliminaremos tus datos salvo lo que estemos obligados a conservar por ley.</p>
+        <p>Podemos suspender o cancelar una cuenta que incumpla gravemente estos términos, avisando previamente salvo que exista riesgo de seguridad o una obligación legal que lo impida.</p>
+
+        <h2>7. Disponibilidad y soporte</h2>
+        <p class="legal-pendiente">[Pendiente de concretar: compromiso de disponibilidad (SLA), ventanas de mantenimiento, canales y horarios de soporte y tiempos de respuesta por plan.]</p>
+        <p>El servicio se presta "tal cual" en cuanto a disponibilidad continua. Podemos realizar tareas de mantenimiento y actualizaciones; intentaremos hacerlas fuera de horas punta de servicio.</p>
+
+        <h2>8. Tus datos y contenidos</h2>
+        <p>Los datos que introduces (carta, precios, reservas, pedidos, plantilla, inventario) <b>son tuyos</b>. No adquirimos su propiedad ni los vendemos ni los usamos para fines publicitarios. Los tratamos únicamente para prestarte el servicio, según se detalla en la <a href="?legal=privacidad" onclick="return irALegal('privacidad', event)">Política de privacidad</a>.</p>
+        <p>Respecto de los datos personales de tus clientes y de tu personal, <b>tú eres el responsable del tratamiento y nosotros el encargado</b> (art. 28 RGPD). Debes informar a esas personas y contar con base legal para tratarlos.</p>
+
+        <h2>9. Propiedad intelectual</h2>
+        <p>El software, la marca, el diseño y la documentación de Restora son de su titular. Se te concede una licencia de uso no exclusiva, intransferible y limitada a la vigencia del contrato.</p>
+
+        <h2>10. Responsabilidad</h2>
+        <p>Restora es una herramienta de apoyo a la gestión. No respondemos del uso que hagas de ella ni de las decisiones de negocio que tomes a partir de sus datos o de sus sugerencias de IA. En particular, <b>eres tú quien responde de la exactitud de precios, ingredientes y alérgenos</b> publicados en tu carta, y de tus obligaciones fiscales, laborales y sanitarias.</p>
+        <p class="legal-pendiente">[Pendiente de concretar con asesoría: límite cuantitativo de responsabilidad y exclusión de daños indirectos, que deben ser proporcionados y no abusivos.]</p>
+
+        <h2>11. Obligaciones fiscales del cliente</h2>
+        <p>La emisión de tickets y facturas conforme a la normativa de sistemas informáticos de facturación (RD 1007/2023, Verifactu) es responsabilidad del titular del restaurante. <b>Restora no es a día de hoy un sistema de facturación homologado</b>: sus tickets tienen valor de comanda y control interno. No los uses como justificante fiscal sin comprobar tu situación con tu asesoría.</p>
+
+        <h2>12. Cambios en los términos</h2>
+        <p>Podemos modificar estos términos por motivos legales, técnicos o de evolución del servicio. Te avisaremos con antelación razonable de los cambios sustanciales; si no los aceptas, podrás darte de baja sin penalización.</p>
+
+        <h2>13. Ley aplicable</h2>
+        <p>Estos términos se rigen por la legislación española. Para cualquier controversia, las partes se someten a los juzgados y tribunales que correspondan legalmente.</p>
+      `,
+    },
+
+    'privacidad': {
+      titulo: 'Política de privacidad',
+      resumen: 'Qué datos tratamos, para qué, con quién los compartimos y cómo ejercer tus derechos.',
+      html: () => `
+        <h2>Responsable del tratamiento</h2>
+        <p><b>${LEGAL_TITULAR.razonSocial}</b> · NIF: <b>${LEGAL_TITULAR.nif}</b> · Dirección: ${LEGAL_TITULAR.direccion} · Contacto: <b>${LEGAL_TITULAR.email}</b>.</p>
+
+        <h2>¿Qué datos tratamos?</h2>
+        <ul>
+          <li>De tu cuenta: nombre del restaurante, email, contraseña (guardada cifrada, nunca en texto plano), dirección y teléfono. <b>No pedimos ni almacenamos datos bancarios</b> (IBAN, tarjetas).</li>
+          <li>De tu personal, si das de alta empleados: nombre, email, rol, código de acceso, horario y fichajes.</li>
+          <li>De los clientes de tu restaurante: nombre y número de comensales en reservas, mesa y notas de pedidos (alergias, peticiones) que ellos mismos introducen al reservar o pedir desde el QR/enlace público.</li>
+          <li>Datos técnicos recogidos automáticamente por motivos de seguridad (dirección IP, navegador, dispositivo).</li>
+        </ul>
+
+        <h2>¿Con qué finalidad?</h2>
+        <p>Prestarte el servicio de gestión de tu restaurante; permitir que tus clientes reserven o pidan desde el QR/enlace público; generar recomendaciones, transcripciones de carta e informes mediante inteligencia artificial a partir de los datos que tú introduces; enviarte comunicaciones sobre el servicio; y cumplir obligaciones legales (fiscales, contables).</p>
+
+        <h2>Base legal</h2>
+        <p>Ejecución del contrato de servicio (art. 6.1.b RGPD); consentimiento para funcionalidades opcionales que actives tú mismo, como Google Calendar o las plataformas de delivery (art. 6.1.a); interés legítimo en la seguridad de la plataforma (art. 6.1.f); y obligación legal para datos fiscales/contables (art. 6.1.c).</p>
+
+        <h2>¿A quién se comunican tus datos?</h2>
+        <p>Trabajamos con encargados de tratamiento que solo acceden a los datos para prestarnos su servicio técnico:</p>
+        <ul>
+          <li><b>Supabase, Inc.</b> — alojamiento de la base de datos y autenticación (puede implicar transferencia internacional amparada por Cláusulas Contractuales Tipo de la Comisión Europea).</li>
+          <li><b>Anthropic, PBC</b> — inteligencia artificial del asistente, transcripción de carta e informes, solo con los datos que tú decides enviarle usando esas funciones.</li>
+          <li><b>Cloudflare, Inc.</b> — alojamiento y entrega del sitio web.</li>
+          <li><b>Google LLC</b> — solo si conectas voluntariamente la sincronización con Google Calendar.</li>
+          <li><b>Glovo, Uber Eats, Just Eat</b> — solo si conectas voluntariamente estas plataformas de delivery.</li>
+        </ul>
+        <p>No vendemos ni cedemos tus datos a terceros con fines publicitarios.</p>
+
+        <h2>¿Cuánto tiempo los conservamos?</h2>
+        <p>Mientras tu cuenta esté activa. Si la das de baja, conservaremos únicamente lo que la ley exija (p. ej. documentación fiscal, hasta 6 años según el Código de Comercio; registro de jornada, 4 años según el RD-ley 8/2019) y eliminaremos el resto.</p>
+
+        <h2>Tus derechos</h2>
+        <p>Puedes ejercer en cualquier momento tus derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad escribiendo a <b>${LEGAL_TITULAR.email}</b>. Desde <b>Configuración → Tus datos</b> puedes además, por ti mismo y al instante, descargar toda tu información en formato reutilizable y eliminar tu cuenta.</p>
+        <p>Tienes también derecho a reclamar ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es" target="_blank" rel="noopener">www.aepd.es</a>) si consideras que no hemos tratado tus datos correctamente.</p>
+
+        <h2>Seguridad</h2>
+        <p>Aplicamos medidas técnicas y organizativas para proteger tus datos: cifrado en tránsito (HTTPS), contraseñas nunca almacenadas en texto plano y acceso restringido a cada cuenta mediante autenticación. Puedes leer el detalle en la página de <a href="?legal=seguridad" onclick="return irALegal('seguridad', event)">Seguridad</a>.</p>
+
+        <h2>Menores de edad</h2>
+        <p>Restora no está dirigido a menores de 14 años.</p>
+
+        <h2>Cambios</h2>
+        <p>Podemos actualizar esta política para adaptarla a novedades legislativas o del servicio; te avisaremos de cambios sustanciales.</p>
+      `,
+    },
+
+    'cookies': {
+      titulo: 'Política de cookies',
+      resumen: 'Qué guardamos en tu dispositivo, por qué y cómo cambiar tu elección.',
+      html: () => `
+        <h2>¿Qué son las cookies?</h2>
+        <p>Son pequeños archivos (o tecnologías equivalentes, como el almacenamiento local del navegador) que se guardan en tu dispositivo al usar una web o aplicación, y sirven para recordar información entre visitas.</p>
+
+        <h2>¿Qué usa Restora hoy?</h2>
+        <p>Solo almacenamiento técnico, estrictamente necesario para que el servicio funcione y exento de pedir tu consentimiento (art. 22.2 de la LSSI y el RGPD):</p>
+        <ul>
+          <li>Mantener tu sesión iniciada en tu cuenta.</li>
+          <li>El pedido/carrito que estás montando desde el QR de una mesa.</li>
+          <li>Una copia local de tus datos por si se pierde la conexión a internet.</li>
+          <li>Tu preferencia de idioma y de modo claro/oscuro.</li>
+          <li>Tu propia elección en este aviso de cookies.</li>
+        </ul>
+        <p>No usamos, a día de hoy, cookies de analítica, publicidad ni de terceros con fines de seguimiento.</p>
+
+        <h2>¿Qué pasa si rechazo?</h2>
+        <p>Como no usamos cookies no esenciales, tu elección no cambia el funcionamiento de Restora. Si en el futuro incorporamos analítica u otros terceros no esenciales, actualizaremos este aviso y pediremos tu consentimiento explícito antes de activarlos.</p>
+
+        <h2>¿Cómo cambio mi elección?</h2>
+        <p>Con el botón que hay justo debajo, cuando quieras.</p>
+        <p><button type="button" onclick="cambiarConsentimientoCookies()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Cambiar mi elección de cookies</button></p>
+      `,
+    },
+
+    'seguridad': {
+      titulo: 'Seguridad',
+      resumen: 'Cómo protegemos tu cuenta y los datos de tu restaurante.',
+      html: () => `
+        <h2>Cifrado y transporte</h2>
+        <p>Todo el tráfico entre tu dispositivo y nuestros servidores viaja cifrado mediante HTTPS/TLS. No se transmite información de la cuenta por canales sin cifrar.</p>
+
+        <h2>Contraseñas y acceso</h2>
+        <ul>
+          <li>Las contraseñas <b>nunca</b> se guardan en texto plano: se almacenan con funciones de hash en el proveedor de autenticación.</li>
+          <li>Puedes entrar con email y contraseña o con tu cuenta de Google (OAuth), sin que Restora llegue a ver esas credenciales.</li>
+          <li>Los intentos de acceso están limitados en frecuencia para frenar ataques de fuerza bruta.</li>
+          <li>Tu personal entra con un código propio por empleado, revocable en cualquier momento desde el módulo de Personal, y con permisos limitados a su rol.</li>
+        </ul>
+
+        <h2>Aislamiento de los datos</h2>
+        <p>Los datos de cada restaurante están asociados a su cuenta y protegidos en el servidor por reglas de acceso a nivel de fila: una cuenta no puede leer ni escribir los datos de otra, aunque manipule las peticiones desde el navegador. Las páginas públicas (carta por QR y reservas) exponen únicamente la información que tú decides publicar.</p>
+
+        <h2>Claves y credenciales</h2>
+        <p>Las claves de los servicios externos (inteligencia artificial, plataformas de delivery, calendario) se guardan en el servidor y nunca se envían al navegador. Las operaciones sensibles se ejecutan en funciones de servidor, no en el código de la página.</p>
+
+        <h2>Qué no guardamos</h2>
+        <p>Restora <b>no pide ni almacena datos bancarios</b>: ni IBAN, ni números de tarjeta, ni credenciales de banca. Si algún día se añaden cobros en línea, se harán a través de una pasarela de pago certificada que procese esos datos por su cuenta.</p>
+
+        <h2>Copias de seguridad y continuidad</h2>
+        <p>La base de datos se aloja en infraestructura gestionada con copias de seguridad automáticas. Además, el panel mantiene una copia local en tu dispositivo para que puedas seguir trabajando si se cae la conexión, y sincroniza los cambios <b>fusionándolos</b> con los del resto de dispositivos, de forma que dos personas trabajando a la vez no se pisan el trabajo.</p>
+
+        <h2>Cómo informar de un problema de seguridad</h2>
+        <p>Si detectas una vulnerabilidad, escríbenos a <b>${LEGAL_TITULAR.email}</b> con los detalles antes de hacerla pública. Investigamos todos los avisos y agradecemos que se comuniquen de forma responsable.</p>
+
+        <h2>Qué esperamos de ti</h2>
+        <ul>
+          <li>Usa una contraseña única y no la compartas; da de alta a cada empleado con su propio código.</li>
+          <li>Revoca el acceso del personal que cause baja.</li>
+          <li>No introduzcas en campos de texto libre datos de terceros que no necesites (datos bancarios, datos de salud) ni información que no quieras que quede registrada.</li>
+        </ul>
+      `,
+    },
+
+    'aviso-legal': {
+      titulo: 'Aviso legal',
+      resumen: 'Datos identificativos del titular del sitio, exigidos por la LSSI.',
+      revisionPendiente: true,
+      html: () => `
+        <h2>Titular del sitio web</h2>
+        <p>En cumplimiento del artículo 10 de la Ley 34/2002 de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se informa de los datos identificativos del titular:</p>
+        <ul>
+          <li><b>Titular:</b> ${LEGAL_TITULAR.razonSocial}</li>
+          <li><b>NIF/CIF:</b> ${LEGAL_TITULAR.nif}</li>
+          <li><b>Domicilio:</b> ${LEGAL_TITULAR.direccion}</li>
+          <li><b>Email:</b> ${LEGAL_TITULAR.email}</li>
+          <li><b>Teléfono:</b> ${LEGAL_TITULAR.telefono}</li>
+          <li><b>Datos registrales:</b> ${LEGAL_TITULAR.registro}</li>
+        </ul>
+
+        <h2>Objeto</h2>
+        <p>Este sitio web ofrece información sobre Restora y da acceso a la plataforma de gestión para restaurantes. Las condiciones de uso del servicio se recogen en los <a href="?legal=terminos" onclick="return irALegal('terminos', event)">Términos de servicio</a>.</p>
+
+        <h2>Propiedad intelectual e industrial</h2>
+        <p>Los contenidos de este sitio (textos, diseño, código, marca y logotipos) pertenecen a su titular o se usan con autorización. Queda prohibida su reproducción o distribución sin permiso expreso.</p>
+
+        <h2>Responsabilidad sobre los enlaces</h2>
+        <p>El sitio puede contener enlaces a páginas de terceros sobre cuyo contenido no ejercemos control ni asumimos responsabilidad.</p>
+
+        <h2>Protección de datos</h2>
+        <p>El tratamiento de datos personales se describe en la <a href="?legal=privacidad" onclick="return irALegal('privacidad', event)">Política de privacidad</a> y el uso de almacenamiento en el dispositivo en la <a href="?legal=cookies" onclick="return irALegal('cookies', event)">Política de cookies</a>.</p>
+
+        <h2>Legislación aplicable</h2>
+        <p>Este aviso legal se rige por la legislación española.</p>
+      `,
+    },
+  };
+
+  const LEGAL_ORDEN = ['terminos', 'privacidad', 'cookies', 'seguridad', 'aviso-legal'];
+
+  function legalIndiceHtml(activo) {
+    return `<nav class="legal-index" aria-label="Documentos legales">${LEGAL_ORDEN.map(s =>
+      `<a href="?legal=${s}" onclick="return irALegal('${s}', event)" class="${s === activo ? 'on' : ''}">${LEGAL_PAGES[s].titulo}</a>`
+    ).join('')}</nav>`;
   }
 
-  function mostrarPoliticaPrivacidad() {
-    showLegalModal('Política de privacidad', `
-      <p><b>Responsable del tratamiento.</b> [Nombre completo o razón social] · NIF: [NIF/CIF] · Dirección: [dirección postal] · Contacto: [email de contacto].</p>
-      <p class="mt-3"><b>¿Qué datos tratamos?</b></p>
-      <ul class="list-disc pl-5 space-y-0.5">
-        <li>De tu cuenta: nombre del restaurante, email, contraseña (guardada cifrada, nunca en texto plano), dirección y teléfono. <b>No pedimos ni almacenamos datos bancarios</b> (IBAN, tarjetas).</li>
-        <li>De tu personal, si das de alta empleados: nombre, email, rol, código de acceso, horario y fichajes.</li>
-        <li>De los clientes de tu restaurante: nombre y número de comensales en reservas, mesa y notas de pedidos (alergias, peticiones) que ellos mismos introducen al reservar o pedir desde el QR/enlace público.</li>
-        <li>Datos técnicos recogidos automáticamente por motivos de seguridad (dirección IP, navegador, dispositivo).</li>
-      </ul>
-      <p class="mt-3"><b>¿Con qué finalidad?</b> Prestarte el servicio de gestión de tu restaurante; permitir que tus clientes reserven o pidan desde el QR/enlace público; generar recomendaciones, transcripciones de carta e informes mediante inteligencia artificial a partir de los datos que tú introduces; enviarte comunicaciones sobre el servicio; y cumplir obligaciones legales (fiscales, contables).</p>
-      <p class="mt-3"><b>Base legal.</b> Ejecución del contrato de servicio (art. 6.1.b RGPD); consentimiento para funcionalidades opcionales que actives tú mismo, como Google Calendar o las plataformas de delivery (art. 6.1.a); interés legítimo en la seguridad de la plataforma (art. 6.1.f); y obligación legal para datos fiscales/contables (art. 6.1.c).</p>
-      <p class="mt-3"><b>¿A quién se comunican tus datos?</b> Trabajamos con encargados de tratamiento que solo acceden a los datos para prestarnos su servicio técnico:</p>
-      <ul class="list-disc pl-5 space-y-0.5">
-        <li><b>Supabase, Inc.</b> — alojamiento de la base de datos y autenticación (puede implicar transferencia internacional amparada por Cláusulas Contractuales Tipo de la Comisión Europea).</li>
-        <li><b>Anthropic, PBC</b> — inteligencia artificial del asistente, transcripción de carta e informes, solo con los datos que tú decides enviarle usando esas funciones.</li>
-        <li><b>Cloudflare, Inc.</b> — alojamiento y entrega del sitio web.</li>
-        <li><b>Google LLC</b> — solo si conectas voluntariamente la sincronización con Google Calendar.</li>
-        <li><b>Glovo, Uber Eats, Just Eat</b> — solo si conectas voluntariamente estas plataformas de delivery.</li>
-      </ul>
-      <p class="mt-3">No vendemos ni cedemos tus datos a terceros con fines publicitarios.</p>
-      <p class="mt-3"><b>¿Cuánto tiempo los conservamos?</b> Mientras tu cuenta esté activa. Si la das de baja, conservaremos únicamente lo que la ley exija (p. ej. documentación fiscal, hasta 6 años según el Código de Comercio) y eliminaremos el resto.</p>
-      <p class="mt-3"><b>Tus derechos.</b> Puedes ejercer en cualquier momento tus derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad escribiendo a [email de contacto]. Tienes también derecho a reclamar ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es" target="_blank" rel="noopener">www.aepd.es</a>) si consideras que no hemos tratado tus datos correctamente.</p>
-      <p class="mt-3"><b>Seguridad.</b> Aplicamos medidas técnicas y organizativas para proteger tus datos: cifrado en tránsito (HTTPS), contraseñas nunca almacenadas en texto plano, y acceso restringido a cada cuenta mediante autenticación.</p>
-      <p class="mt-3"><b>Menores de edad.</b> Restora no está dirigido a menores de 14 años.</p>
-      <p class="mt-3"><b>Cambios.</b> Podemos actualizar esta política para adaptarla a novedades legislativas o del servicio; te avisaremos de cambios sustanciales.</p>
-      <p class="mt-3 text-xs text-slate-400">Última actualización: julio de 2026.</p>
-    `);
+  function renderLegalPage(slug) {
+    const doc = LEGAL_PAGES[slug];
+    if (!doc) return;
+    document.getElementById('legalBody').innerHTML = `
+      <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Legal</p>
+      <h1 class="mt-2 text-3xl sm:text-4xl font-extrabold text-navy" style="letter-spacing:-.02em">${doc.titulo}</h1>
+      <p class="mt-3 text-slate-500">${doc.resumen}</p>
+      <div class="mt-8">${legalIndiceHtml(slug)}</div>
+      ${doc.revisionPendiente ? LEGAL_AVISO_BORRADOR : ''}
+      <div class="legal-doc">${doc.html()}</div>
+      <p class="legal-fecha">Última actualización: ${LEGAL_ACTUALIZADO}. Para cualquier duda sobre estos documentos, escribe a ${LEGAL_TITULAR.email}.</p>
+    `;
+    document.title = doc.titulo + ' · Restora';
+  }
+
+  // Abre la página legal como ruta real: cambia la URL a ?legal=<slug>, oculta la landing (con lo que
+  // la barra flotante desaparece sola por CSS) y pinta el documento.
+  function abrirLegalPage(slug, sinHistorial) {
+    if (!LEGAL_PAGES[slug]) return;
+    if (typeof detenerDemo === 'function') detenerDemo();
+    closeModal();
+    const card = document.getElementById('modalCard');
+    if (card) card.classList.remove('modal-wide');
+    if (!sinHistorial) history.pushState({ legal: slug }, '', location.pathname + '?legal=' + slug);
+    const landing = document.getElementById('landingRoot');
+    const funcion = document.getElementById('funcionRoot');
+    if (landing) landing.style.display = 'none';
+    if (funcion) funcion.style.display = 'none';
+    document.getElementById('legalRoot').style.display = 'block';
+    renderLegalPage(slug);
+    window.scrollTo(0, 0);
+  }
+  function cerrarLegalPage() {
+    history.pushState({}, '', location.pathname);
+    document.getElementById('legalRoot').style.display = 'none';
+    document.getElementById('landingRoot').style.display = 'block';
+    document.title = LEGAL_TITULO_BASE;
+    window.scrollTo(0, 0);
+  }
+  // Usado por los <a href="?legal=…">: navega sin recargar, pero el enlace sigue siendo un enlace real
+  // (se puede copiar, abrir en pestaña nueva o indexar).
+  function irALegal(slug, ev) {
+    if (ev) ev.preventDefault();
+    abrirLegalPage(slug);
+    return false;
+  }
+  function mostrarPoliticaPrivacidad() { abrirLegalPage('privacidad'); }
+  function mostrarPoliticaCookies() { abrirLegalPage('cookies'); }
+  // Versión en ventana para el banner de cookies: quien lo ve puede estar a mitad de un pedido desde
+  // el QR o de una reserva, y sacarlo de esa página le haría perder lo que llevaba escrito.
+  function mostrarPoliticaCookiesModal() {
+    showLegalModal(LEGAL_PAGES['cookies'].titulo, `<div class="legal-doc">${LEGAL_PAGES['cookies'].html()}</div>
+      <p class="mt-3 text-xs text-slate-400">Última actualización: ${LEGAL_ACTUALIZADO}.</p>`);
   }
 
   let negocioCurrent = 0;
@@ -12498,7 +12772,16 @@
     if (anchor) anchor.scrollIntoView({ block: 'center' });
   }
   window.addEventListener('popstate', () => {
-    const key = new URLSearchParams(location.search).get('funcion');
+    const params = new URLSearchParams(location.search);
+    const legalSlug = params.get('legal');
+    const legalRoot = document.getElementById('legalRoot');
+    if (legalSlug && LEGAL_PAGES[legalSlug]) { abrirLegalPage(legalSlug, true); return; }
+    if (legalRoot && legalRoot.style.display === 'block') {
+      legalRoot.style.display = 'none';
+      document.getElementById('landingRoot').style.display = 'block';
+      document.title = LEGAL_TITULO_BASE;
+    }
+    const key = params.get('funcion');
     if (key && FUNCIONES_INFO[key]) abrirFuncionPage(key, true);
     else if (document.getElementById('funcionRoot').style.display === 'block') {
       detenerDemo();
@@ -12755,6 +13038,13 @@
   (async function initAuth() {
     mostrarBannerCookiesSiHaceFalta();
     const params = new URLSearchParams(location.search);
+    // Enlace directo a un documento legal (?legal=…): se muestra sin exigir sesión, porque debe poder
+    // leerse antes de registrarse y ser compartible/indexable.
+    const legalSlug = params.get('legal');
+    if (legalSlug && LEGAL_PAGES[legalSlug]) {
+      abrirLegalPage(legalSlug, true);
+      return;
+    }
     const funcionKey = params.get('funcion');
     if (FUNC_PAGES_ACTIVAS && funcionKey && FUNCIONES_INFO[funcionKey]) {
       abrirFuncionPage(funcionKey, true);
@@ -13165,7 +13455,11 @@
     "Ventas": ["Vendes", "Sales"],
     "Términos de servicio": ["Termes de servei", "Terms of service"],
     "Política de privacidad": ["Política de privacitat", "Privacy policy"],
+    "Política de cookies": ["Política de galetes", "Cookie policy"],
     "Seguridad": ["Seguretat", "Security"],
+    "Aviso legal": ["Avís legal", "Legal notice"],
+    "Volver a Restora": ["Tornar a Restora", "Back to Restora"],
+    "Legal": ["Legal", "Legal"],
     "Aún no tenemos redes sociales activas": ["Encara no tenim xarxes socials actives", "We don't have active social networks yet"],
     // Modales de acceso
     "Entra con el correo y la contraseña de tu restaurante.": ["Entra amb el correu i la contrasenya del teu restaurant.", "Sign in with your restaurant's email and password."],
