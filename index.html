@@ -3853,6 +3853,10 @@
       ultimoTicketHash: '',
     };
   }
+  // Campos bancarios que llegó a haber en versiones anteriores y que ya no se piden ni se guardan.
+  const CLAVES_BANCARIAS = ['iban', 'bancoTitular'];
+  let purgaBancariaPendiente = false;
+
   function normalizeAccountData(data) {
     data = data || {};
     data.perfil = data.perfil || {};
@@ -3876,8 +3880,10 @@
     // Los datos bancarios (IBAN y titular de la cuenta) se retiraron: no se usaban para nada en la app
     // y guardar un IBAN sin cifrar —en el navegador y en la base de datos— es un riesgo innecesario.
     // Se borran de las cuentas que ya los tuvieran guardados, para no conservar el dato sensible.
-    delete data.cuenta.bancoTitular;
-    delete data.cuenta.iban;
+    // Borrarlos aquí solo limpia la copia en memoria: la fila de Supabase conserva el IBAN hasta que
+    // se suba la versión limpia, así que se deja constancia para forzar esa subida (ver enterApp).
+    if (CLAVES_BANCARIAS.some(k => k in data.cuenta)) purgaBancariaPendiente = true;
+    CLAVES_BANCARIAS.forEach(k => { delete data.cuenta[k]; });
     data.cuenta.idioma = data.cuenta.idioma || 'es';
     data.cuenta.moneda = data.cuenta.moneda || 'EUR';
     data.mesaEstados = Array.isArray(data.mesaEstados) ? data.mesaEstados : [];
@@ -4360,11 +4366,34 @@
     // Baseline = versión del servidor recién cargada. A partir de aquí, cada guardado envía solo el
     // patch de diferencias respecto a esto (ver syncAccountToServer), no el bloque entero.
     if (currentAccount) { asegurarIdsSync(currentAccount.data); currentAccount.baseline = clonarProfundo(currentAccount.data); }
+    purgarDatosBancariosHeredados();
     resetNavVisibility();
     comprobarSnapshotOfflinePendiente();
     actualizarIndicadorOffline();
     hydrateApp();
     subscribeRealtime();
+  }
+
+  // Cuentas creadas cuando Configuración todavía pedía IBAN: el dato sigue en la fila de Supabase y en
+  // la copia offline de este dispositivo. normalizeAccountData ya lo quita de memoria, pero eso solo no
+  // basta — como la baseline se toma DESPUÉS de limpiar, el diff no ve ningún cambio y nunca se sube.
+  // Aquí se deja a propósito el valor viejo en la baseline para que el patch incluya `cuenta` completa
+  // y el servidor la sobrescriba sin el IBAN, y se limpia también el snapshot offline si lo hubiera.
+  function purgarDatosBancariosHeredados() {
+    if (!purgaBancariaPendiente || !currentAccount || !currentAccount.baseline) return;
+    purgaBancariaPendiente = false;
+    currentAccount.baseline.cuenta = Object.assign({}, currentAccount.baseline.cuenta || {}, { iban: '' });
+    const key = offlineKey();
+    if (key) {
+      try {
+        const snap = JSON.parse(localStorage.getItem(key) || 'null');
+        if (snap && snap.data && snap.data.cuenta) {
+          CLAVES_BANCARIAS.forEach(k => { delete snap.data.cuenta[k]; });
+          localStorage.setItem(key, JSON.stringify(snap));
+        }
+      } catch (e) {}
+    }
+    saveCurrentAccountData(currentAccount.data);
   }
 
   function goToLanding() {
