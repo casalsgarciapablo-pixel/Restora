@@ -3505,9 +3505,12 @@
             if (esDispositivoSala()) pushNotification('🔔 Plato listo para servir · ' + p.mesa, 'listo', 'listos');
           }
         });
-        // Reservas nuevas (del enlace público, de otro dispositivo o creadas por el Ayudante IA)
+        // Reservas nuevas (del enlace público, de otro dispositivo o creadas por el Ayudante IA).
+        // Una reserva cuya hora ya pasó no es una novedad aunque este dispositivo no la conociera:
+        // suele ser una reserva antigua que vuelve del servidor, y avisar de ella es puro ruido.
         (currentAccount.data.reservas || []).forEach(r => {
           if (reservasAntes.has(claveReserva(r))) return;
+          if (reservaYaPasada(r)) return;
           pushNotification('📅 Nueva reserva · ' + textoReserva(r), null, 'reservas');
         });
         // Mensajes de chat nuevos (de otra persona) → aviso instantáneo sin sonido
@@ -3907,6 +3910,9 @@
       data.espacios[0].mesaIndices = data.mesaEstados.map((_, i) => i);
     }
     data.reservas = Array.isArray(data.reservas) ? data.reservas : [];
+    // Reservas ya pasadas. Salen de la lista de trabajo (y de los avisos), pero NO se borran: el
+    // Dashboard, el informe semanal y el Ayudante IA siguen contándolas para no falsear el histórico.
+    data.reservasHistorico = Array.isArray(data.reservasHistorico) ? data.reservasHistorico : [];
     data.reservasWebUrl = data.reservasWebUrl || '';
     data.pedidos = Array.isArray(data.pedidos) ? data.pedidos : [];
     data.pedidos.forEach((p, pi) => {
@@ -4115,14 +4121,16 @@
   //    distintas no se pisan).  - el resto de claves: se escriben enteras solo si ESTE dispositivo las
   //    cambió (así editar la carta no pisa un pedido que otro está tomando).
   // Si la función SQL aún no está instalada, se cae automáticamente al método antiguo (bloque entero).
-  const MERGE_BYID = ['pedidos', 'reservas', 'chatMensajes', 'anulaciones'];
+  const MERGE_BYID = ['pedidos', 'reservas', 'reservasHistorico', 'chatMensajes', 'anulaciones'];
   const MERGE_POS = ['mesaEstados', 'mesaNombres', 'mesaCapacidades', 'mesaFormas', 'mesaPosiciones', 'mesaOcupadaDesde'];
   let mergeRpcDisponible = true; // se pone a false si la función no existe, para no reintentar en bucle
   function clonarProfundo(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
   function hashCorto(s) { let h = 0; s = String(s); for (let i = 0; i < s.length; i++) { h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0; } return (h >>> 0).toString(36); }
   function asegurarIdsSync(data) {
     if (!data) return data;
-    (data.reservas || []).forEach(r => { if (r && !r.id) r.id = 'r_' + hashCorto((r.fecha || '') + '|' + (r.hora || '') + '|' + (r.cliente || '') + '|' + (r.personas || '') + '|' + (r.canal || '')); });
+    const idReserva = (r) => 'r_' + hashCorto((r.fecha || '') + '|' + (r.hora || '') + '|' + (r.cliente || '') + '|' + (r.personas || '') + '|' + (r.canal || ''));
+    (data.reservas || []).forEach(r => { if (r && !r.id) r.id = idReserva(r); });
+    (data.reservasHistorico || []).forEach(r => { if (r && !r.id) r.id = idReserva(r); });
     (data.chatMensajes || []).forEach(m => { if (m && !m.id) m.id = 'c_' + hashCorto((m.fecha || '') + '|' + (m.autorEmail || '') + '|' + (m.texto || '')); });
     (data.anulaciones || []).forEach(a => { if (a && !a.id) a.id = 'a_' + hashCorto(JSON.stringify(a)); });
     return data;
@@ -5223,8 +5231,14 @@
     if (!window._abandonoTimer) window._abandonoTimer = setInterval(() => {
       try { if (archivarPedidosAbandonados()) { renderPedidos(); renderMesas(); renderTPV(); } } catch (e) {}
     }, 1800000);
+    // Al entrar (y cada minuto) se retiran solas las reservas cuya fecha y hora ya han pasado, para que
+    // la lista muestre solo lo que queda por atender.
+    try { if (archivarReservasPasadas()) renderReservas(); } catch (e) { console.error('archivarReservasPasadas', e); }
     actualizarMesasPorReservas();
-    if (!window._reservaMesaTimer) window._reservaMesaTimer = setInterval(actualizarMesasPorReservas, 60000);
+    if (!window._reservaMesaTimer) window._reservaMesaTimer = setInterval(() => {
+      try { if (archivarReservasPasadas()) renderReservas(); } catch (e) {}
+      actualizarMesasPorReservas();
+    }, 60000);
     // Refresca la hora de reserva / tiempo ocupada sobre cada mesa cada minuto, aunque su estado no cambie
     if (!window._mesaTiempoTimer) window._mesaTiempoTimer = setInterval(() => {
       const sec = document.getElementById('sec-mesas');
@@ -5358,12 +5372,18 @@
     });
     return mejor ? mejor.r : null;
   }
-  // Al sentarse el cliente (mesa Reservada → Ocupada), su reserva de hoy se da por cumplida y se borra.
+  // Al sentarse el cliente (mesa Reservada → Ocupada), su reserva de hoy se da por cumplida: sale de la
+  // lista de trabajo, pero se archiva en vez de borrarse para que siga contando en las estadísticas.
   function eliminarReservaCumplidaDeMesa(acc, i) {
     const r = reservaVigenteDeMesa(i);
     if (!r) return;
     const idx = acc.data.reservas.indexOf(r);
-    if (idx !== -1) acc.data.reservas.splice(idx, 1);
+    if (idx === -1) return;
+    acc.data.reservas.splice(idx, 1);
+    if (!Array.isArray(acc.data.reservasHistorico)) acc.data.reservasHistorico = [];
+    r.cumplida = true;
+    r.archivadaEn = new Date().toISOString();
+    acc.data.reservasHistorico.push(r);
   }
   function fechaHoraReserva(r) {
     const [y, m, d] = (r.fecha || '').split('-').map(n => parseInt(n, 10));
@@ -5962,21 +5982,50 @@
         cambiado = true;
       }
     });
-    // Pasados los 20 min de gracia, la reserva se retira de la lista, se haya presentado el cliente o
-    // no: si vino, ya se borró al sentarlo (eliminarReservaCumplidaDeMesa); esto es la red de
-    // seguridad para los que no se presentaron, y de paso limpia reservas de días anteriores.
-    const totalAntes = acc.data.reservas.length;
-    acc.data.reservas = acc.data.reservas.filter(r => {
-      const dt = fechaHoraReserva(r);
-      if (isNaN(dt)) return true; // dato corrupto: mejor conservarlo que perderlo en silencio
-      return (ahora - dt) / 60000 < RESERVA_GRACIA_MIN;
-    });
-    const reservasCambiadas = acc.data.reservas.length !== totalAntes;
-    if (cambiado || reservasCambiadas) {
+    if (cambiado) {
       saveCurrentAccountData(acc.data);
       renderMesas();
-      if (reservasCambiadas) renderReservas();
     }
+  }
+
+  // ---- Retirada automática de las reservas ya pasadas ----
+  // Vive aparte de actualizarMesasPorReservas() a propósito: aquella solo actúa si el restaurante tiene
+  // mesas definidas, y con esa condición las reservas de días anteriores se quedaban en la lista para
+  // siempre en cuantas cuentas aún no habían configurado el plano de mesas.
+  // No se borran: se mueven a reservasHistorico. Así desaparecen de la pantalla de trabajo y dejan de
+  // avisar, pero el Dashboard y el informe semanal siguen viendo lo que pasó.
+  const RESERVAS_HISTORICO_MAX = 500;
+  function reservaYaPasada(r) {
+    const dt = fechaHoraReserva(r);
+    if (isNaN(dt)) return false; // dato corrupto: mejor conservarlo que perderlo en silencio
+    return (Date.now() - dt) / 60000 >= RESERVA_GRACIA_MIN;
+  }
+  function archivarReservasPasadas() {
+    const acc = getCurrentAccount();
+    if (!acc || !Array.isArray(acc.data.reservas) || !acc.data.reservas.length) return false;
+    const pasadas = [];
+    const vigentes = [];
+    acc.data.reservas.forEach(r => (reservaYaPasada(r) ? pasadas : vigentes).push(r));
+    if (!pasadas.length) return false;
+    acc.data.reservas = vigentes;
+    const hist = Array.isArray(acc.data.reservasHistorico) ? acc.data.reservasHistorico : [];
+    const yaEstan = new Set(hist.map(r => r && r.id).filter(Boolean));
+    pasadas.forEach(r => {
+      if (r && r.id && yaEstan.has(r.id)) return;
+      if (r && !r.archivadaEn) r.archivadaEn = new Date().toISOString();
+      hist.push(r);
+    });
+    // El histórico se recorta por fecha de reserva: se conservan las más recientes.
+    hist.sort((a, b) => fechaHoraReserva(a) - fechaHoraReserva(b));
+    acc.data.reservasHistorico = hist.slice(-RESERVAS_HISTORICO_MAX);
+    saveCurrentAccountData(acc.data);
+    return true;
+  }
+  // Reservas vigentes + archivadas: lo que deben mirar las estadísticas para no perder el pasado.
+  function todasLasReservas(acc) {
+    const a = (acc && acc.data && acc.data.reservas) || [];
+    const b = (acc && acc.data && acc.data.reservasHistorico) || [];
+    return b.length ? a.concat(b) : a;
   }
   // Al confirmar (o crear ya confirmada) una reserva para HOY con una mesa concreta: si la hora ya ha
   // llegado, la persona se da por sentada (Ocupada). Si aún falta más que la ventana previa, la mesa
@@ -6349,7 +6398,9 @@
     });
     const mesasPorEstado = {};
     (d.mesaEstados || []).forEach(e => { mesasPorEstado[e] = (mesasPorEstado[e] || 0) + 1; });
-    const reservasHoy = (d.reservas || []).filter(r => r.fecha === ahora.fecha);
+    // Las de hoy que ya han pasado están archivadas: hay que sumarlas o el asistente diría que hoy
+    // hubo menos reservas de las que realmente hubo.
+    const reservasHoy = (d.reservas || []).concat(d.reservasHistorico || []).filter(r => r.fecha === ahora.fecha);
     const pendientesHoy = reservasHoy
       .filter(r => (r.hora || '') >= ahora.hora)
       .sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
@@ -6913,10 +6964,12 @@
     informeCargando = true;
     document.getElementById('informeBody').innerHTML = informeSkeletonHtml(forzarRegenerar ? 'Regenerando informe con los datos más recientes…' : 'Analizando la semana del ' + fmtFechaCorta(inicio) + ' al ' + fmtFechaCorta(fin) + '…');
     const pedidosSemana = acc.data.pedidos.filter(p => p.fecha && new Date(p.fecha) >= inicio && new Date(p.fecha) <= fin);
-    const reservasSemana = acc.data.reservas.filter(r => r.fecha && new Date(r.fecha) >= inicio && new Date(r.fecha) <= fin);
+    // El informe mira una semana ya terminada: sus reservas están archivadas, no en la lista de trabajo.
+    const reservasTodas = todasLasReservas(acc);
+    const reservasSemana = reservasTodas.filter(r => r.fecha && new Date(r.fecha) >= inicio && new Date(r.fecha) <= fin);
     const rangoAnterior = getRangoSemanaDe(new Date(inicio.getTime() - 3 * 86400000));
     const pedidosSemanaAnterior = acc.data.pedidos.filter(p => p.fecha && new Date(p.fecha) >= rangoAnterior.inicio && new Date(p.fecha) <= rangoAnterior.fin);
-    const reservasSemanaAnterior = acc.data.reservas.filter(r => r.fecha && new Date(r.fecha) >= rangoAnterior.inicio && new Date(r.fecha) <= rangoAnterior.fin);
+    const reservasSemanaAnterior = reservasTodas.filter(r => r.fecha && new Date(r.fecha) >= rangoAnterior.inicio && new Date(r.fecha) <= rangoAnterior.fin);
     if (!pedidosSemana.length && !reservasSemana.length) {
       const vacio = {
         id: idSemana, inicio: inicio.toISOString(), fin: fin.toISOString(), generadoEn: new Date().toISOString(),
@@ -7050,7 +7103,11 @@
     const acc = getCurrentAccount();
     const list = acc.data.reservas;
     if (!list.length) {
-      document.getElementById('reservasBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="9">Sin reservas todavía</td></tr>`;
+      // Si ya hubo reservas y todas han pasado, se dice explícitamente: ver "Sin reservas todavía"
+      // después de haberlas tenido hace pensar que se han perdido.
+      const hubo = (acc.data.reservasHistorico || []).length;
+      const texto = hubo ? 'No queda ninguna reserva pendiente. Las que ya han pasado se retiran solas de esta lista.' : 'Sin reservas todavía';
+      document.getElementById('reservasBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="9">${texto}</td></tr>`;
       return;
     }
     const indicesMesas = Array.from(indicesMesasActivos(acc)).sort((a, b) => a - b);
@@ -10820,7 +10877,8 @@
     // Solo pedidos ya COBRADOS: así "Ingresos" (y el resto de gráficos derivados de esta lista) coincide
     // siempre con lo que Caja/TPV dice que se ha cobrado, en vez de incluir pedidos aún en cocina/sin pagar.
     const pedidos = pedidosEnRango(acc.data.pedidos.filter(p => p.estado === 'Pagado'));
-    const reservas = reservasEnRango(acc.data.reservas);
+    // Incluye las archivadas: si no, el Dashboard iría perdiendo reservas pasadas a medida que se retiran.
+    const reservas = reservasEnRango(todasLasReservas(acc));
     const ingresos = pedidos.reduce((sum, p) => sum + (p.total || 0), 0);
     const ticket = pedidos.length ? ingresos / pedidos.length : 0;
     pulseKpi('kpiIngresos', fmtMoneda(ingresos));
@@ -11319,7 +11377,7 @@
     }
     if (!reservas) {
       if (!acc) return;
-      reservas = reservasEnRango(acc.data.reservas);
+      reservas = reservasEnRango(todasLasReservas(acc));
     }
     renderRevenueCard(pedidos);
     mountChart('dashChartPlatos', chartPlatosTop(pedidos));
