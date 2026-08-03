@@ -10935,7 +10935,7 @@
     try { comprobarCoherenciaIngresos(true); } catch (e) {}
   }
   function renderKpiExtra(baseId, serie, esMedia, muestras) {
-    setTrend(baseId + 'Trend', compararPeriodos(serie, muestras, { esMedia, minTramos: 3 }), true);
+    setTrend(baseId + 'Trend', compararPeriodos(serie, muestras, esMedia), true);
   }
   // Comprobación de coherencia: el importe que ve el Ayudante IA y el que muestra el Dashboard tienen
   // que salir del MISMO criterio (pedidos pagados, imputados al día de cobro). Si algún día vuelven a
@@ -10958,32 +10958,28 @@
     return { dashboardHoy: round2(dashboardHoy), iaHoy: round2(iaHoy), coincide };
   }
   // ---- Comparativas "vs periodo anterior" con umbral de fiabilidad ----
-  // La serie se parte por la mitad: la primera mitad hace de periodo anterior y la segunda de actual.
-  // Con muy poco histórico ese porcentaje es aritméticamente correcto pero engañoso: pasar de 1 pedido
-  // a 2 es "+100%" y no dice nada del negocio. Peor aún, pedidosPorDia() solo devuelve los días QUE
-  // TUVIERON actividad, así que la "mitad anterior" podían ser dos días sueltos de hace meses.
-  // Por eso, además de que haya suficientes días, se exige un volumen mínimo a AMBAS mitades.
+  // Las tarjetas KPI reciben la serie de los últimos días CON actividad y la parten por la mitad:
+  // los días más antiguos hacen de periodo anterior y los más recientes de actual. Con poco histórico
+  // ese porcentaje es aritméticamente correcto pero engañoso (pasar de 1 pedido a 2 es "+100%"), y como
+  // los días sin actividad ni siquiera aparecen en la serie, la "mitad anterior" podían ser dos días
+  // sueltos de hace meses. Por eso se exige a AMBAS mitades días suficientes y volumen suficiente.
   const COMPARA_MIN_MUESTRAS = 5; // pedidos (o reservas) que debe respaldar CADA mitad
+  const COMPARA_MIN_DIAS = 3;     // días con actividad que debe tener CADA mitad
   const INSUFICIENTE = { insuficiente: true };
   const sumar = a => a.reduce((x, y) => x + y, 0);
-  // valores: la magnitud a comparar por tramo. muestras: cuántos pedidos/reservas hay detrás de cada
-  // tramo (si no se pasa, se usan los propios valores: sirve para series que YA son recuentos).
-  // opts.minTramos: cuántos tramos CON actividad debe tener cada mitad. Se pasa explícitamente porque
-  // las series no tienen la misma forma: las tarjetas KPI reciben solo los días que tuvieron pedidos,
-  // mientras que la tarjeta de ingresos recibe tramos fijos (24 horas, 7 días, 5 semanas, 12 meses).
-  function compararPeriodos(valores, muestras, opts) {
-    opts = opts || {};
-    const minTramos = opts.minTramos || 3;
+  // valores: la magnitud a comparar por día. muestras: cuántos pedidos/reservas hay detrás de cada día
+  // (si no se pasa, se usan los propios valores: sirve para series que YA son recuentos).
+  function compararPeriodos(valores, muestras, esMedia) {
     valores = valores || [];
-    if (valores.length < 2) return INSUFICIENTE;
+    if (valores.length < COMPARA_MIN_DIAS * 2) return INSUFICIENTE;
     const mid = Math.floor(valores.length / 2);
     const n = muestras && muestras.length === valores.length ? muestras : valores;
     const nPrev = n.slice(0, mid), nCur = n.slice(mid);
     const conActividad = a => a.filter(x => x > 0).length;
-    if (conActividad(nPrev) < minTramos || conActividad(nCur) < minTramos) return INSUFICIENTE;
+    if (conActividad(nPrev) < COMPARA_MIN_DIAS || conActividad(nCur) < COMPARA_MIN_DIAS) return INSUFICIENTE;
     if (sumar(nPrev) < COMPARA_MIN_MUESTRAS || sumar(nCur) < COMPARA_MIN_MUESTRAS) return INSUFICIENTE;
     let prev, cur;
-    if (opts.esMedia) {
+    if (esMedia) {
       const media = a => { const v = a.filter(x => x > 0); return v.length ? sumar(v) / v.length : 0; };
       prev = media(valores.slice(0, mid)); cur = media(valores.slice(mid));
     } else {
@@ -10994,6 +10990,59 @@
     return isFinite(pct) ? { pct } : INSUFICIENTE;
   }
   const COMPARA_MOTIVO = 'Todavía no hay bastante histórico: para comparar hacen falta al menos ' + COMPARA_MIN_MUESTRAS + ' pedidos repartidos en varios días, tanto en el periodo actual como en el anterior.';
+
+  // ---- Comparación contra el periodo INMEDIATAMENTE anterior ----
+  // La tarjeta de Ingresos enseña un periodo completo (un día, una semana, un mes, un año) repartido en
+  // tramos. Partir esos tramos por la mitad comparaba la primera quincena del mes con la segunda y lo
+  // etiquetaba "vs periodo anterior", que no es lo que dice. Aquí se compara de verdad contra el mes
+  // (día, semana, año) anterior.
+  const PERIODO_ANTERIOR_NOMBRE = { dia: 'el día anterior', semana: 'la semana anterior', mes: 'el mes anterior', anio: 'el año anterior' };
+  // [inicio, fin) del periodo natural que contiene a d. Se usa aritmética de calendario (no sumas de
+  // milisegundos) para que meses de distinta duración y cambios de hora no descuadren los límites.
+  function limitesPeriodo(d, periodo) {
+    const y = d.getFullYear(), m = d.getMonth(), dia = d.getDate();
+    if (periodo === 'dia') return [new Date(y, m, dia), new Date(y, m, dia + 1)];
+    if (periodo === 'semana') {
+      const lunes = new Date(y, m, dia - ((d.getDay() + 6) % 7));
+      return [lunes, new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + 7)];
+    }
+    if (periodo === 'mes') return [new Date(y, m, 1), new Date(y, m + 1, 1)];
+    return [new Date(y, 0, 1), new Date(y + 1, 0, 1)];
+  }
+  function inicioPeriodoAnterior(d, periodo) {
+    const y = d.getFullYear(), m = d.getMonth(), dia = d.getDate();
+    if (periodo === 'dia') return limitesPeriodo(new Date(y, m, dia - 1), periodo)[0];
+    if (periodo === 'semana') return limitesPeriodo(new Date(y, m, dia - 7), periodo)[0];
+    if (periodo === 'mes') return limitesPeriodo(new Date(y, m - 1, 1), periodo)[0];
+    return limitesPeriodo(new Date(y - 1, 0, 1), periodo)[0];
+  }
+  function compararConPeriodoAnterior(pedidos, periodo, ref) {
+    const limites = limitesPeriodo(ref, periodo);
+    const iniAct = limites[0].getTime(), finAct = limites[1].getTime();
+    const iniPrev = inicioPeriodoAnterior(ref, periodo).getTime();
+    // Si el periodo actual todavía está en curso, solo se compara la parte transcurrida contra ESA
+    // MISMA parte del anterior. Medio mes contra un mes entero volvería a mentir, que es justo lo que
+    // se quiere evitar. Si el periodo ya terminó, se comparan los dos enteros.
+    const transcurrido = Math.min(Date.now(), finAct) - iniAct;
+    const corte = transcurrido > 0 ? transcurrido : finAct - iniAct;
+    const finPrevComparable = iniPrev + corte;
+    let actual = 0, anterior = 0, nAct = 0, nPrev = 0;
+    (pedidos || []).forEach(p => {
+      const t = new Date(fechaEfectivaPedido(p)).getTime();
+      if (isNaN(t)) return;
+      if (t >= iniAct && t < finAct) { actual += p.total || 0; nAct += 1; }
+      else if (t >= iniPrev && t < finPrevComparable) { anterior += p.total || 0; nPrev += 1; }
+    });
+    if (nAct < COMPARA_MIN_MUESTRAS || nPrev < COMPARA_MIN_MUESTRAS || anterior <= 0) return INSUFICIENTE;
+    const pct = (actual - anterior) / anterior * 100;
+    if (!isFinite(pct)) return INSUFICIENTE;
+    const parcial = Date.now() < finAct;
+    return {
+      pct,
+      desc: 'Comparado con ' + (PERIODO_ANTERIOR_NOMBRE[periodo] || 'el periodo anterior')
+        + (parcial ? ', hasta el mismo punto' : '') + ': ' + fmtMoneda(anterior) + '.',
+    };
+  }
   function setTrend(id, delta, texto) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -11012,7 +11061,7 @@
     }
     const r = Math.round(delta.pct);
     const up = r > 0, down = r < 0;
-    el.title = '';
+    el.title = delta.desc || '';
     if (texto) {
       el.className = 'kpi-delta mt-2 ' + (up ? 'up' : down ? 'down' : 'flat');
       el.textContent = (up ? '+' : down ? '−' : '') + Math.abs(r) + '% vs periodo anterior';
@@ -11324,14 +11373,14 @@
       const horas = [];
       for (let h = 0; h < 24; h++) {
         const ini = new Date(y, m, d, h).getTime();
-        horas.push({ ini, fin: ini + 3600000, label: h + 'h', value: 0, n: 0 });
+        horas.push({ ini, fin: ini + 3600000, label: h + 'h', value: 0 });
       }
       pedidos.forEach(p => {
         const t = new Date(fechaEfectivaPedido(p)).getTime();
         const b = horas.find(x => t >= x.ini && t < x.fin);
-        if (b) { b.value += p.total || 0; b.n += 1; }
+        if (b) b.value += p.total || 0;
       });
-      return horas.map(x => ({ label: x.label, value: x.value, n: x.n }));
+      return horas.map(x => ({ label: x.label, value: x.value }));
     }
     if (periodo === 'semana') {
       // Los 7 días de la semana (lunes a domingo) que contiene la fecha de referencia
@@ -11340,14 +11389,14 @@
       const dias = [];
       for (let i = 0; i < 7; i++) {
         const d = new Date(monday); d.setDate(monday.getDate() + i);
-        dias.push({ ini: d.getTime(), fin: d.getTime() + 86400000, label: DASH_DIAS_CORTOS[i] + ' ' + d.getDate(), value: 0, n: 0 });
+        dias.push({ ini: d.getTime(), fin: d.getTime() + 86400000, label: DASH_DIAS_CORTOS[i] + ' ' + d.getDate(), value: 0 });
       }
       pedidos.forEach(p => {
         const t = new Date(fechaEfectivaPedido(p)).getTime();
         const b = dias.find(x => t >= x.ini && t < x.fin);
-        if (b) { b.value += p.total || 0; b.n += 1; }
+        if (b) b.value += p.total || 0;
       });
-      return dias.map(x => ({ label: x.label, value: x.value, n: x.n }));
+      return dias.map(x => ({ label: x.label, value: x.value }));
     }
     if (periodo === 'mes') {
       // Las semanas del mes de referencia (1-7, 8-14, 15-21, 22-28, 29-fin)
@@ -11356,7 +11405,7 @@
       const semanas = [];
       for (let inicio = 1; inicio <= diasEnMes; inicio += 7) {
         const fin = Math.min(inicio + 6, diasEnMes);
-        semanas.push({ ini: new Date(y, m, inicio).getTime(), fin: new Date(y, m, fin).getTime() + 86400000, label: 'Sem ' + semanas.length + 1, value: 0, n: 0 });
+        semanas.push({ ini: new Date(y, m, inicio).getTime(), fin: new Date(y, m, fin).getTime() + 86400000, label: 'Sem ' + semanas.length + 1, value: 0 });
       }
       semanas.forEach((s, i) => { s.label = 'Sem ' + (i + 1); });
       pedidos.forEach(p => {
@@ -11364,20 +11413,19 @@
         if (d.getFullYear() !== y || d.getMonth() !== m) return;
         const t = d.getTime();
         const b = semanas.find(x => t >= x.ini && t < x.fin);
-        if (b) { b.value += p.total || 0; b.n += 1; }
+        if (b) b.value += p.total || 0;
       });
-      return semanas.map(x => ({ label: x.label, value: x.value, n: x.n }));
+      return semanas.map(x => ({ label: x.label, value: x.value }));
     }
     // Año: los 12 meses del año de referencia
     const y = ref.getFullYear();
-    const meses = DASH_MESES.map((nombre, i) => ({ mes: i, label: nombre, value: 0, n: 0 }));
+    const meses = DASH_MESES.map((nombre, i) => ({ mes: i, label: nombre, value: 0 }));
     pedidos.forEach(p => {
       const d = new Date(fechaEfectivaPedido(p));
       if (d.getFullYear() !== y) return;
       meses[d.getMonth()].value += p.total || 0;
-      meses[d.getMonth()].n += 1;
     });
-    return meses.map(x => ({ label: x.label, value: x.value, n: x.n }));
+    return meses.map(x => ({ label: x.label, value: x.value }));
   }
 
   function mountChart(containerId, result) {
@@ -11430,17 +11478,18 @@
     renderRevenueCard();
   }
   function renderRevenueCard(pedidos) {
-    if (!pedidos) {
-      const acc = getCurrentAccount();
-      if (!acc) return;
-      pedidos = pedidosEnRango(acc.data.pedidos.filter(p => p.estado === 'Pagado'));
-    }
+    const acc = getCurrentAccount();
+    if (!acc) return;
+    // Todos los cobros, sin el filtro de rango del Dashboard: el periodo anterior con el que hay que
+    // comparar suele caer fuera de ese rango, y sin ellos la comparativa saldría siempre a cero.
+    const todosPagados = acc.data.pedidos.filter(p => p.estado === 'Pagado');
+    if (!pedidos) pedidos = pedidosEnRango(todosPagados);
     const data = ingresosPorPeriodo(pedidos, dashRevPeriodo);
     const total = data.reduce((a, b) => a + b.value, 0);
     const hv = document.getElementById('dashRevValue'); if (hv) hv.textContent = fmtEur0(total);
-    // Tramos fijos (24 horas / 7 días / 5 semanas / 12 meses): con 2 tramos activos por mitad basta,
-    // el filtro que de verdad manda aquí es el volumen mínimo de pedidos.
-    setTrend('dashRevTrend', compararPeriodos(data.map(d => d.value), data.map(d => d.n || 0), { minTramos: 2 }));
+    // La referencia sale de lo que se está DIBUJANDO (último cobro visible), para que el porcentaje
+    // hable del mismo periodo que muestra la gráfica.
+    setTrend('dashRevTrend', compararConPeriodoAnterior(todosPagados, dashRevPeriodo, fechaReferencia(pedidos)));
     const sub = document.getElementById('dashRevSubtitle'); if (sub) sub.textContent = DASH_REV_SUB[dashRevPeriodo];
     if (!data.length) { mountChart('dashRevArea', svgEmpty('Aún no hay pedidos registrados')); return; }
     mountChart('dashRevArea', svgArea(data, { color: '#3D7FFF', fmt: fmtEur0 }, 'dashRevSvg'));
