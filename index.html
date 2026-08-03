@@ -2536,6 +2536,36 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+  // ===================== MODO PÚBLICO (carta por QR, previsualización y reservas) =====================
+  // Cualquier URL con cuenta/mesa/preview/reservar es una vista para el CLIENTE del restaurante, nunca
+  // para el dueño. Aunque quien la abra tenga sesión iniciada en este mismo navegador (el caso típico:
+  // el dueño pulsa "Abrir en pestaña" desde el panel), no debe verse ni un solo componente ni dato del
+  // panel de gestión. Para que eso no dependa de que ninguna rama del enrutado se equivoque, aquí se
+  // ARRANCAN del DOM las vistas internas antes de que se ejecute nada más: si no existen en la página,
+  // no hay forma de mostrarlas ni de inspeccionarlas.
+  const PARAMS_URL = new URLSearchParams(location.search);
+  const MODO_PUBLICO = ['cuenta', 'mesa', 'preview', 'reservar'].some(p => PARAMS_URL.has(p));
+  const VISTAS_SOLO_PANEL = ['appRoot', 'informeRoot', 'ticketRoot', 'qrPrintRoot'];
+  if (MODO_PUBLICO) {
+    VISTAS_SOLO_PANEL.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    });
+    const landing = document.getElementById('landingRoot');
+    if (landing) landing.style.display = 'none';
+  }
+
+  // Control de vistas: solo una raíz visible a la vez, para que nunca se solapen (p. ej. el panel
+  // quedando por debajo de la carta pública, o la landing asomando bajo una página legal).
+  const VISTAS_RAIZ = ['landingRoot', 'appRoot', 'funcionRoot', 'legalRoot', 'publicMenuRoot', 'publicReservaRoot', 'informeRoot', 'ticketRoot'];
+  function mostrarSoloVista(id, display) {
+    VISTAS_RAIZ.forEach(v => {
+      const el = document.getElementById(v);
+      if (el) el.style.display = (v === id) ? (display || 'block') : 'none';
+    });
+  }
+
   if (location.hash && !location.search) {
     history.replaceState(null, '', location.pathname + location.search);
     window.scrollTo(0, 0);
@@ -3020,18 +3050,13 @@
     const card = document.getElementById('modalCard');
     if (card) card.classList.remove('modal-wide');
     if (!sinHistorial) history.pushState({ legal: slug }, '', location.pathname + '?legal=' + slug);
-    const landing = document.getElementById('landingRoot');
-    const funcion = document.getElementById('funcionRoot');
-    if (landing) landing.style.display = 'none';
-    if (funcion) funcion.style.display = 'none';
-    document.getElementById('legalRoot').style.display = 'block';
+    mostrarSoloVista('legalRoot');
     renderLegalPage(slug);
     window.scrollTo(0, 0);
   }
   function cerrarLegalPage() {
     history.pushState({}, '', location.pathname);
-    document.getElementById('legalRoot').style.display = 'none';
-    document.getElementById('landingRoot').style.display = 'block';
+    mostrarSoloVista('landingRoot');
     document.title = LEGAL_TITULO_BASE;
     window.scrollTo(0, 0);
   }
@@ -4129,6 +4154,7 @@
     await enterStaffApp();
   }
   async function enterStaffApp() {
+    if (MODO_PUBLICO) return; // ver enterApp(): las URLs públicas nunca abren el panel de trabajador
     const { data, error } = await supabaseClient.rpc('staff_get_data', { p_user_id: staffSession.userId, p_email: staffSession.email, p_codigo: staffSession.codigo });
     if (error || !data) {
       staffSession = null;
@@ -4174,8 +4200,10 @@
   }
 
   function enterApp() {
-    document.getElementById('landingRoot').style.display = 'none';
-    document.getElementById('appRoot').style.display = 'flex';
+    // Cortafuegos: en una URL pública (carta/QR/preview/reservas) el panel ni siquiera existe en el
+    // DOM. Si algo intentara entrar en él, se ignora en lugar de romper o de filtrar datos internos.
+    if (MODO_PUBLICO) return;
+    mostrarSoloVista('appRoot', 'flex');
     // Baseline = versión del servidor recién cargada. A partir de aquí, cada guardado envía solo el
     // patch de diferencias respecto a esto (ver syncAccountToServer), no el bloque entero.
     if (currentAccount) { asegurarIdsSync(currentAccount.data); currentAccount.baseline = clonarProfundo(currentAccount.data); }
@@ -4187,8 +4215,7 @@
   }
 
   function goToLanding() {
-    document.getElementById('appRoot').style.display = 'none';
-    document.getElementById('landingRoot').style.display = 'block';
+    mostrarSoloVista('landingRoot');
     if (currentLang !== 'es') setLang('es');
     window.scrollTo(0, 0);
   }
@@ -11359,9 +11386,13 @@
   let publicEditandoPedidoId = null;
   let publicUltimoPedido = null; // { id, items: [{nombre, cantidad, nota}], notaGeneral }
   async function renderPublicMenu(cuentaId, mesaNumero, isPreview) {
-    document.getElementById('landingRoot').style.display = 'none';
-    document.getElementById('publicMenuRoot').style.display = 'block';
+    mostrarSoloVista('publicMenuRoot');
     const body = document.getElementById('publicMenuBody');
+    if (!cuentaId) {
+      // Enlace incompleto (p. ej. ?mesa=3 sin cuenta): se avisa, pero jamás se cae hacia el panel.
+      body.innerHTML = `<p class="text-sm text-slate-400">Este enlace está incompleto. Escanea de nuevo el código QR de tu mesa.</p>`;
+      return;
+    }
     publicMenuIsPreview = !!isPreview;
     try {
       const mesaInt = parseInt(mesaNumero, 10);
@@ -11558,12 +11589,12 @@
             ${cd.tipoRestaurante ? `<span class="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-white/15 rounded-full px-3 py-1">${TIPO_EMOJI[cd.tipoRestaurante] || '🍽️'} ${cd.tipoRestaurante}</span>` : ''}
             <h1 class="text-[26px] leading-tight font-extrabold text-white mt-3">${nombre}</h1>
             ${cd.tagline ? `<p class="text-sm text-white/90 mt-1.5 italic">"${cd.tagline}"</p>` : ''}
-            <p class="text-xs font-semibold text-white/70 mt-4">Mesa ${publicMenuMesaNumero}</p>
+            ${publicMenuMesaNumero ? `<p class="text-xs font-semibold text-white/70 mt-4">Mesa ${svgEsc(publicMenuMesaNumero)}</p>` : ''}
           </div>
         </div>
         <p class="text-xs font-bold uppercase tracking-wide mb-3" style="color:${paleta.color1};">Nuestra carta</p>
       `
-      : `<p class="text-xs font-semibold text-accent">Mesa ${publicMenuMesaNumero}</p>
+      : `${publicMenuMesaNumero ? `<p class="text-xs font-semibold text-accent">Mesa ${svgEsc(publicMenuMesaNumero)}</p>` : ''}
          <h1 class="text-2xl font-extrabold text-navy mt-1">${nombre}</h1>
          <p class="text-sm text-slate-500 mt-1">Carta del restaurante · pide desde aquí</p>`;
     const notaGeneralHtml = totalItems > 0 ? `
@@ -12017,6 +12048,13 @@
       .map(idx => ({ nombre: menu[idx] && menu[idx].nombre, cantidad: publicPedidoCarrito[idx], nota: (publicPedidoCarritoNotas[idx] || '').trim() }))
       .filter(it => it.nombre && it.cantidad > 0);
     if (!items.length) return;
+    // Sin mesa no hay a dónde mandar el pedido (enlace sin ?mesa=, o carta abierta solo para consultar).
+    if (!(parseInt(publicMenuMesaNumero, 10) > 0)) {
+      renderPublicMenuBody();
+      const err = document.getElementById('pubPedError');
+      if (err) { err.textContent = 'Escanea el código QR de tu mesa para poder enviar el pedido.'; err.classList.remove('hidden'); }
+      return;
+    }
     // Vuelve a pintar el carrito por si se han añadido recomendaciones mientras el modal estaba abierto,
     // y solo entonces coge las referencias al botón/error (si no, apuntarían a elementos ya reemplazados).
     renderPublicMenuBody();
@@ -12264,8 +12302,7 @@
   async function renderPublicReserva(cuentaId, canal) {
     canal = canal === 'web' ? 'web' : 'restora';
     publicReservaCuentaId = cuentaId;
-    document.getElementById('landingRoot').style.display = 'none';
-    document.getElementById('publicReservaRoot').style.display = 'block';
+    mostrarSoloVista('publicReservaRoot');
     const body = document.getElementById('publicReservaBody');
     try {
       const { data, error } = await supabaseClient.rpc('get_public_menu', { p_user_id: cuentaId });
@@ -12758,16 +12795,14 @@
     if (!info) return;
     detenerDemo();
     if (!sinHistorial) history.pushState({ funcion: key }, '', location.pathname + '?funcion=' + key);
-    document.getElementById('landingRoot').style.display = 'none';
-    document.getElementById('funcionRoot').style.display = 'block';
+    mostrarSoloVista('funcionRoot');
     window.scrollTo(0, 0);
     renderFuncionPage(key);
   }
   function cerrarFuncionPage() {
     detenerDemo();
     history.pushState({}, '', location.pathname);
-    document.getElementById('funcionRoot').style.display = 'none';
-    document.getElementById('landingRoot').style.display = 'block';
+    mostrarSoloVista('landingRoot');
     const anchor = document.getElementById('plantillas');
     if (anchor) anchor.scrollIntoView({ block: 'center' });
   }
@@ -12777,16 +12812,14 @@
     const legalRoot = document.getElementById('legalRoot');
     if (legalSlug && LEGAL_PAGES[legalSlug]) { abrirLegalPage(legalSlug, true); return; }
     if (legalRoot && legalRoot.style.display === 'block') {
-      legalRoot.style.display = 'none';
-      document.getElementById('landingRoot').style.display = 'block';
+      mostrarSoloVista('landingRoot');
       document.title = LEGAL_TITULO_BASE;
     }
     const key = params.get('funcion');
     if (key && FUNCIONES_INFO[key]) abrirFuncionPage(key, true);
     else if (document.getElementById('funcionRoot').style.display === 'block') {
       detenerDemo();
-      document.getElementById('funcionRoot').style.display = 'none';
-      document.getElementById('landingRoot').style.display = 'block';
+      mostrarSoloVista('landingRoot');
     }
   });
   // Visor de capturas reales del SaaS (si la sección tiene fotos); si aún no tiene, cae en la demo animada.
@@ -13037,7 +13070,21 @@
 
   (async function initAuth() {
     mostrarBannerCookiesSiHaceFalta();
-    const params = new URLSearchParams(location.search);
+    const params = PARAMS_URL;
+    // --- Vistas públicas: se resuelven ANTES que nada y siempre terminan aquí. En modo público no se
+    // recupera ninguna sesión (ni de dueño ni de trabajador), así que no hay datos internos que cargar
+    // ni panel al que caer, ni siquiera si el enlace viene mal formado. ---
+    if (MODO_PUBLICO) {
+      const reservarId = params.get('reservar');
+      if (reservarId) {
+        renderPublicReserva(reservarId, params.get('origen') === 'web' ? 'web' : 'restora');
+        return;
+      }
+      // Cualquier combinación de cuenta/mesa/preview lleva a la carta del cliente. La mesa es opcional:
+      // sin ella (o en preview) se muestra la carta sin ocupar mesa.
+      renderPublicMenu(params.get('cuenta'), params.get('mesa') || '', params.get('preview') === '1');
+      return;
+    }
     // Enlace directo a un documento legal (?legal=…): se muestra sin exigir sesión, porque debe poder
     // leerse antes de registrarse y ser compartible/indexable.
     const legalSlug = params.get('legal');
@@ -13048,17 +13095,6 @@
     const funcionKey = params.get('funcion');
     if (FUNC_PAGES_ACTIVAS && funcionKey && FUNCIONES_INFO[funcionKey]) {
       abrirFuncionPage(funcionKey, true);
-      return;
-    }
-    const cuentaId = params.get('cuenta');
-    const mesaNumero = params.get('mesa');
-    const reservarId = params.get('reservar');
-    if (cuentaId && mesaNumero) {
-      renderPublicMenu(cuentaId, mesaNumero, params.get('preview') === '1');
-      return;
-    }
-    if (reservarId) {
-      renderPublicReserva(reservarId, params.get('origen') === 'web' ? 'web' : 'restora');
       return;
     }
     const { data: { session } } = await supabaseClient.auth.getSession();
