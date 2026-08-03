@@ -618,6 +618,9 @@
   .kpi-delta.up { color: #00B388; }
   .kpi-delta.down { color: #E11D48; }
   .kpi-delta.flat { color: #8B93A6; }
+  /* Sin histórico suficiente: se dice, en gris y sin flecha, para que no se lea como una tendencia. */
+  .kpi-delta.sin-base { color: #A9B0C0; font-weight: 500; font-size: 11.5px; cursor: help; }
+  .kpi-trend.sin-base { color: #A9B0C0; font-weight: 500; cursor: help; background: transparent; }
   .topbar-search { position: relative; flex: 1; max-width: 400px; margin: 0 18px; }
   .topbar-search .ts-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #A2A2AD; pointer-events: none; }
   .topbar-search input { width: 100%; background: #F3F4F8; border: 1px solid transparent; border-radius: 999px; padding: 8.5px 16px 8.5px 38px; font-size: 13px; color: #0B1B33; transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease; }
@@ -10920,16 +10923,19 @@
     pulseKpi('kpiTicket', fmtMoneda(ticket));
     pulseKpi('kpiReservas', reservas.length);
     const dias = pedidosPorDia(pedidos);
-    renderKpiExtra('kpiIngresos', dias.map(d => d.ingresos));
-    renderKpiExtra('kpiPedidos', dias.map(d => d.count));
-    renderKpiExtra('kpiTicket', dias.map(d => d.count ? d.ingresos / d.count : 0), true);
+    // El nº de pedidos de cada día es el tamaño de muestra que respalda ingresos y ticket medio: un
+    // ticket medio calculado sobre dos pedidos no se puede comparar con nada.
+    const muestras = dias.map(d => d.count);
+    renderKpiExtra('kpiIngresos', dias.map(d => d.ingresos), false, muestras);
+    renderKpiExtra('kpiPedidos', muestras);
+    renderKpiExtra('kpiTicket', dias.map(d => d.count ? d.ingresos / d.count : 0), true, muestras);
     const diasReservas = reservasPorDia(reservas);
     renderKpiExtra('kpiReservas', diasReservas.map(d => d.count));
     renderAllDashboardCharts(pedidos, reservas);
     try { comprobarCoherenciaIngresos(true); } catch (e) {}
   }
-  function renderKpiExtra(baseId, serie, esMedia) {
-    setTrend(baseId + 'Trend', esMedia ? deltaMedia(serie) : deltaSuma(serie), true);
+  function renderKpiExtra(baseId, serie, esMedia, muestras) {
+    setTrend(baseId + 'Trend', compararPeriodos(serie, muestras, { esMedia, minTramos: 3 }), true);
   }
   // Comprobación de coherencia: el importe que ve el Ayudante IA y el que muestra el Dashboard tienen
   // que salir del MISMO criterio (pedidos pagados, imputados al día de cobro). Si algún día vuelven a
@@ -10951,29 +10957,62 @@
     else if (!silencioso) console.log('[Restora] Ingresos de hoy coherentes:', round2(iaHoy), '€ (Dashboard y Asistente IA)');
     return { dashboardHoy: round2(dashboardHoy), iaHoy: round2(iaHoy), coincide };
   }
-  function deltaSuma(vals) {
-    if (vals.length < 4) return null;
-    const mid = Math.floor(vals.length / 2);
-    const prev = vals.slice(0, mid).reduce((a, b) => a + b, 0);
-    const cur = vals.slice(mid).reduce((a, b) => a + b, 0);
-    if (prev <= 0) return null;
-    return (cur - prev) / prev * 100;
+  // ---- Comparativas "vs periodo anterior" con umbral de fiabilidad ----
+  // La serie se parte por la mitad: la primera mitad hace de periodo anterior y la segunda de actual.
+  // Con muy poco histórico ese porcentaje es aritméticamente correcto pero engañoso: pasar de 1 pedido
+  // a 2 es "+100%" y no dice nada del negocio. Peor aún, pedidosPorDia() solo devuelve los días QUE
+  // TUVIERON actividad, así que la "mitad anterior" podían ser dos días sueltos de hace meses.
+  // Por eso, además de que haya suficientes días, se exige un volumen mínimo a AMBAS mitades.
+  const COMPARA_MIN_MUESTRAS = 5; // pedidos (o reservas) que debe respaldar CADA mitad
+  const INSUFICIENTE = { insuficiente: true };
+  const sumar = a => a.reduce((x, y) => x + y, 0);
+  // valores: la magnitud a comparar por tramo. muestras: cuántos pedidos/reservas hay detrás de cada
+  // tramo (si no se pasa, se usan los propios valores: sirve para series que YA son recuentos).
+  // opts.minTramos: cuántos tramos CON actividad debe tener cada mitad. Se pasa explícitamente porque
+  // las series no tienen la misma forma: las tarjetas KPI reciben solo los días que tuvieron pedidos,
+  // mientras que la tarjeta de ingresos recibe tramos fijos (24 horas, 7 días, 5 semanas, 12 meses).
+  function compararPeriodos(valores, muestras, opts) {
+    opts = opts || {};
+    const minTramos = opts.minTramos || 3;
+    valores = valores || [];
+    if (valores.length < 2) return INSUFICIENTE;
+    const mid = Math.floor(valores.length / 2);
+    const n = muestras && muestras.length === valores.length ? muestras : valores;
+    const nPrev = n.slice(0, mid), nCur = n.slice(mid);
+    const conActividad = a => a.filter(x => x > 0).length;
+    if (conActividad(nPrev) < minTramos || conActividad(nCur) < minTramos) return INSUFICIENTE;
+    if (sumar(nPrev) < COMPARA_MIN_MUESTRAS || sumar(nCur) < COMPARA_MIN_MUESTRAS) return INSUFICIENTE;
+    let prev, cur;
+    if (opts.esMedia) {
+      const media = a => { const v = a.filter(x => x > 0); return v.length ? sumar(v) / v.length : 0; };
+      prev = media(valores.slice(0, mid)); cur = media(valores.slice(mid));
+    } else {
+      prev = sumar(valores.slice(0, mid)); cur = sumar(valores.slice(mid));
+    }
+    if (prev <= 0) return INSUFICIENTE;
+    const pct = (cur - prev) / prev * 100;
+    return isFinite(pct) ? { pct } : INSUFICIENTE;
   }
-  function deltaMedia(vals) {
-    if (vals.length < 4) return null;
-    const mid = Math.floor(vals.length / 2);
-    const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
-    const prev = avg(vals.slice(0, mid).filter(v => v > 0));
-    const cur = avg(vals.slice(mid).filter(v => v > 0));
-    if (prev <= 0) return null;
-    return (cur - prev) / prev * 100;
-  }
-  function setTrend(id, pct, texto) {
+  const COMPARA_MOTIVO = 'Todavía no hay bastante histórico: para comparar hacen falta al menos ' + COMPARA_MIN_MUESTRAS + ' pedidos repartidos en varios días, tanto en el periodo actual como en el anterior.';
+  function setTrend(id, delta, texto) {
     const el = document.getElementById(id);
     if (!el) return;
-    if (pct == null || !isFinite(pct)) { el.classList.add('hidden'); return; }
-    const r = Math.round(pct);
+    el.classList.remove('hidden');
+    if (!delta || delta.insuficiente) {
+      // Neutro y explicado, en vez de un porcentaje que no se sostiene (o de no mostrar nada).
+      el.title = COMPARA_MOTIVO;
+      if (texto) {
+        el.className = 'kpi-delta mt-2 sin-base';
+        el.textContent = 'Datos insuficientes para comparar';
+      } else {
+        el.className = 'kpi-trend sin-base';
+        el.textContent = 'Sin comparativa';
+      }
+      return;
+    }
+    const r = Math.round(delta.pct);
     const up = r > 0, down = r < 0;
+    el.title = '';
     if (texto) {
       el.className = 'kpi-delta mt-2 ' + (up ? 'up' : down ? 'down' : 'flat');
       el.textContent = (up ? '+' : down ? '−' : '') + Math.abs(r) + '% vs periodo anterior';
@@ -11285,14 +11324,14 @@
       const horas = [];
       for (let h = 0; h < 24; h++) {
         const ini = new Date(y, m, d, h).getTime();
-        horas.push({ ini, fin: ini + 3600000, label: h + 'h', value: 0 });
+        horas.push({ ini, fin: ini + 3600000, label: h + 'h', value: 0, n: 0 });
       }
       pedidos.forEach(p => {
         const t = new Date(fechaEfectivaPedido(p)).getTime();
         const b = horas.find(x => t >= x.ini && t < x.fin);
-        if (b) b.value += p.total || 0;
+        if (b) { b.value += p.total || 0; b.n += 1; }
       });
-      return horas.map(x => ({ label: x.label, value: x.value }));
+      return horas.map(x => ({ label: x.label, value: x.value, n: x.n }));
     }
     if (periodo === 'semana') {
       // Los 7 días de la semana (lunes a domingo) que contiene la fecha de referencia
@@ -11301,14 +11340,14 @@
       const dias = [];
       for (let i = 0; i < 7; i++) {
         const d = new Date(monday); d.setDate(monday.getDate() + i);
-        dias.push({ ini: d.getTime(), fin: d.getTime() + 86400000, label: DASH_DIAS_CORTOS[i] + ' ' + d.getDate(), value: 0 });
+        dias.push({ ini: d.getTime(), fin: d.getTime() + 86400000, label: DASH_DIAS_CORTOS[i] + ' ' + d.getDate(), value: 0, n: 0 });
       }
       pedidos.forEach(p => {
         const t = new Date(fechaEfectivaPedido(p)).getTime();
         const b = dias.find(x => t >= x.ini && t < x.fin);
-        if (b) b.value += p.total || 0;
+        if (b) { b.value += p.total || 0; b.n += 1; }
       });
-      return dias.map(x => ({ label: x.label, value: x.value }));
+      return dias.map(x => ({ label: x.label, value: x.value, n: x.n }));
     }
     if (periodo === 'mes') {
       // Las semanas del mes de referencia (1-7, 8-14, 15-21, 22-28, 29-fin)
@@ -11317,7 +11356,7 @@
       const semanas = [];
       for (let inicio = 1; inicio <= diasEnMes; inicio += 7) {
         const fin = Math.min(inicio + 6, diasEnMes);
-        semanas.push({ ini: new Date(y, m, inicio).getTime(), fin: new Date(y, m, fin).getTime() + 86400000, label: 'Sem ' + semanas.length + 1, value: 0 });
+        semanas.push({ ini: new Date(y, m, inicio).getTime(), fin: new Date(y, m, fin).getTime() + 86400000, label: 'Sem ' + semanas.length + 1, value: 0, n: 0 });
       }
       semanas.forEach((s, i) => { s.label = 'Sem ' + (i + 1); });
       pedidos.forEach(p => {
@@ -11325,19 +11364,20 @@
         if (d.getFullYear() !== y || d.getMonth() !== m) return;
         const t = d.getTime();
         const b = semanas.find(x => t >= x.ini && t < x.fin);
-        if (b) b.value += p.total || 0;
+        if (b) { b.value += p.total || 0; b.n += 1; }
       });
-      return semanas.map(x => ({ label: x.label, value: x.value }));
+      return semanas.map(x => ({ label: x.label, value: x.value, n: x.n }));
     }
     // Año: los 12 meses del año de referencia
     const y = ref.getFullYear();
-    const meses = DASH_MESES.map((nombre, i) => ({ mes: i, label: nombre, value: 0 }));
+    const meses = DASH_MESES.map((nombre, i) => ({ mes: i, label: nombre, value: 0, n: 0 }));
     pedidos.forEach(p => {
       const d = new Date(fechaEfectivaPedido(p));
       if (d.getFullYear() !== y) return;
       meses[d.getMonth()].value += p.total || 0;
+      meses[d.getMonth()].n += 1;
     });
-    return meses.map(x => ({ label: x.label, value: x.value }));
+    return meses.map(x => ({ label: x.label, value: x.value, n: x.n }));
   }
 
   function mountChart(containerId, result) {
@@ -11398,7 +11438,9 @@
     const data = ingresosPorPeriodo(pedidos, dashRevPeriodo);
     const total = data.reduce((a, b) => a + b.value, 0);
     const hv = document.getElementById('dashRevValue'); if (hv) hv.textContent = fmtEur0(total);
-    setTrend('dashRevTrend', deltaSuma(data.map(d => d.value)));
+    // Tramos fijos (24 horas / 7 días / 5 semanas / 12 meses): con 2 tramos activos por mitad basta,
+    // el filtro que de verdad manda aquí es el volumen mínimo de pedidos.
+    setTrend('dashRevTrend', compararPeriodos(data.map(d => d.value), data.map(d => d.n || 0), { minTramos: 2 }));
     const sub = document.getElementById('dashRevSubtitle'); if (sub) sub.textContent = DASH_REV_SUB[dashRevPeriodo];
     if (!data.length) { mountChart('dashRevArea', svgEmpty('Aún no hay pedidos registrados')); return; }
     mountChart('dashRevArea', svgArea(data, { color: '#3D7FFF', fmt: fmtEur0 }, 'dashRevSvg'));
@@ -13786,6 +13828,8 @@
     "Seguridad": ["Seguretat", "Security"],
     "Aviso legal": ["Avís legal", "Legal notice"],
     "Preferencias de cookies": ["Preferències de galetes", "Cookie preferences"],
+    "Datos insuficientes para comparar": ["Dades insuficients per comparar", "Not enough data to compare"],
+    "Sin comparativa": ["Sense comparativa", "No comparison"],
     // Banner de consentimiento
     "Tu privacidad": ["La teva privacitat", "Your privacy"],
     "Rechazar todo": ["Rebutjar-ho tot", "Reject all"],
