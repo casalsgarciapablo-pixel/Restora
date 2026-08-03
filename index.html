@@ -2316,6 +2316,24 @@
           </div>
         </div>
 
+        <div>
+          <p class="text-xs font-semibold text-slate-400 mb-3">TUS DATOS (RGPD)</p>
+          <div class="space-y-2">
+            <button onclick="exportarMisDatos()" class="w-full text-left rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-3">
+              <p class="text-sm font-medium text-navy">Descargar todos mis datos</p>
+              <p class="text-xs text-slate-400 mt-0.5">Copia completa en formato JSON (derecho de acceso y portabilidad).</p>
+            </button>
+            <button onclick="exportarRegistroHorario()" class="w-full text-left rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-3">
+              <p class="text-sm font-medium text-navy">Exportar registro horario</p>
+              <p class="text-xs text-slate-400 mt-0.5">Fichajes en CSV para la Inspección de Trabajo (conservación obligatoria: 4 años).</p>
+            </button>
+            <button onclick="eliminarMiCuenta()" class="w-full text-left rounded-lg border border-slate-200 hover:border-rose-300 hover:bg-rose-50 transition px-4 py-3">
+              <p class="text-sm font-medium text-rose-600">Eliminar mi cuenta y mis datos</p>
+              <p class="text-xs text-slate-400 mt-0.5">Borra definitivamente el restaurante y toda su información (derecho de supresión).</p>
+            </button>
+          </div>
+        </div>
+
         <div class="flex flex-col gap-3">
           <button onclick="guardarCuenta()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar preferencias</button>
           <a href="javascript:void(0)" onclick="logout()" class="block text-center rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar sesión</a>
@@ -3489,6 +3507,8 @@
       data.menu.forEach(m => { if (m.categoria && data.menuSecciones.indexOf(m.categoria) === -1) data.menuSecciones.push(m.categoria); });
     }
     data.personal = Array.isArray(data.personal) ? data.personal : [];
+    // Fichajes de empleados dados de baja: se conservan aparte para cumplir el registro de jornada.
+    data.personalHistorico = Array.isArray(data.personalHistorico) ? data.personalHistorico : [];
     data.personal.forEach(p => {
       p.fichajes = Array.isArray(p.fichajes) ? p.fichajes.filter(f => f && f.entrada) : [];
       p.email = p.email || '';
@@ -9326,16 +9346,28 @@
     const acc = getCurrentAccount();
     const empleado = acc.data.personal[i];
     if (!empleado) return;
+    // El registro de jornada debe conservarse 4 años (RD-ley 8/2019), así que al dar de baja a alguien
+    // sus fichajes NO se borran: pasan al histórico y siguen saliendo en el registro horario exportado.
+    if ((empleado.fichajes || []).length) {
+      acc.data.personalHistorico = acc.data.personalHistorico || [];
+      acc.data.personalHistorico.push({
+        nombre: empleado.nombre || '', email: empleado.email || '', rol: empleado.rol || '',
+        fichajes: empleado.fichajes, bajaEn: new Date().toISOString(),
+      });
+    }
     acc.data.personal.splice(i, 1);
     saveCurrentAccountData(acc.data);
     renderPersonal();
-    ofrecerDeshacer((empleado.nombre || 'Empleado') + ' eliminado del equipo', () => { acc.data.personal.splice(i, 0, empleado); });
+    ofrecerDeshacer((empleado.nombre || 'Empleado') + ' eliminado del equipo', () => {
+      acc.data.personal.splice(i, 0, empleado);
+      if (Array.isArray(acc.data.personalHistorico)) acc.data.personalHistorico.pop();
+    });
   }
   function eliminarEmpleadoConfirmado(i) {
     const acc = getCurrentAccount();
     const p = acc.data.personal[i];
     if (!p) return;
-    if (!confirm('¿Eliminar a ' + p.nombre + ' del equipo? No podrá volver a entrar como trabajador, pero su historial de fichajes ya guardado no se borra.')) return;
+    if (!confirm('¿Eliminar a ' + p.nombre + ' del equipo?\n\nNo podrá volver a entrar como trabajador. Sus fichajes se conservan en el registro horario (obligatorio por ley) y seguirán apareciendo al exportarlo.')) return;
     clearInterval(fichaEmpleadoTimer);
     eliminarEmpleado(i);
     closeModal();
@@ -10094,6 +10126,83 @@
       <p class="mt-3 text-xs text-slate-400">Consejo: descarga primero el CSV y úsalo como plantilla para rellenar en Excel.</p>
     `;
   }
+  // ---- Derechos RGPD y registro horario laboral ----
+  function descargarArchivo(contenido, nombre, tipo) {
+    const blob = new Blob([contenido], { type: tipo });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = nombre;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+  function filasACsv(rows) {
+    return '﻿' + rows.map(r => r.map(c => '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"').join(';')).join('\r\n');
+  }
+  // Derecho de acceso y portabilidad (arts. 15 y 20 RGPD): copia completa y legible por máquina.
+  function exportarMisDatos() {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+    const paquete = {
+      exportadoEn: new Date().toISOString(),
+      cuenta: { email: acc.email, restaurante: acc.restaurantName },
+      datos: acc.data,
+      nota: 'Copia de tus datos en Restora, generada a petición del titular (arts. 15 y 20 RGPD).',
+    };
+    descargarArchivo(JSON.stringify(paquete, null, 2), 'mis-datos-restora-' + fechaLocalISO() + '.json', 'application/json');
+    showToast('Datos descargados');
+  }
+  // Registro de jornada (RD-ley 8/2019): debe conservarse 4 años y estar a disposición de la Inspección
+  // de Trabajo. Se exporta con el detalle diario por empleado, que es lo que se pide en una inspección.
+  function exportarRegistroHorario() {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+    const filas = [['Empleado', 'Email', 'Rol', 'Fecha', 'Entrada', 'Salida', 'Horas', 'Situación']];
+    let total = 0;
+    // Incluye tanto la plantilla actual como el histórico de bajas: el registro debe estar completo.
+    const fuentes = (acc.data.personal || []).map(p => ({ p, activo: true }))
+      .concat((acc.data.personalHistorico || []).map(p => ({ p, activo: false })));
+    fuentes.forEach(({ p, activo }) => {
+      (p.fichajes || []).forEach(f => {
+        const ini = new Date(f.entrada), fin = f.salida ? new Date(f.salida) : null;
+        if (isNaN(ini)) return;
+        const horas = fin && !isNaN(fin) ? ((fin - ini) / 3600000) : null;
+        filas.push([
+          p.nombre || '', p.email || '', p.rol || '',
+          fechaLocalISO(f.entrada),
+          ini.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+          fin && !isNaN(fin) ? fin.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : 'Sin cerrar',
+          horas != null ? horas.toFixed(2).replace('.', ',') : '',
+          activo ? 'En plantilla' : 'Baja',
+        ]);
+        total++;
+      });
+    });
+    filas.sort((a, b) => (a[0] === 'Empleado' ? -1 : b[0] === 'Empleado' ? 1 : (a[3] + a[0]).localeCompare(b[3] + b[0])));
+    if (!total) { showToast('Todavía no hay fichajes registrados'); return; }
+    descargarArchivo(filasACsv(filas), 'registro-horario-' + fechaLocalISO() + '.csv', 'text/csv;charset=utf-8');
+    showToast(total + (total === 1 ? ' fichaje exportado' : ' fichajes exportados'));
+  }
+  // Derecho de supresión (art. 17 RGPD). Antes de borrar se ofrece descargar una copia, porque el
+  // borrado es irreversible y se lleva por delante pedidos, reservas, fichajes y carta.
+  async function eliminarMiCuenta() {
+    const acc = getCurrentAccount();
+    if (!acc) return;
+    if (staffSession) { alert('Solo el titular de la cuenta puede eliminar el restaurante. Pídeselo a tu encargado.'); return; }
+    if (confirm('Antes de borrar, ¿quieres descargar una copia de tus datos?\n\nAceptar: descargar copia primero.\nCancelar: continuar sin copia.')) exportarMisDatos();
+    if (!confirmarEscribiendo('ELIMINAR', 'Vas a borrar definitivamente el restaurante "' + (acc.restaurantName || '') + '" con TODOS sus datos: pedidos, reservas, carta, inventario, personal y fichajes.\n\nEsta acción no se puede deshacer.')) return;
+    try {
+      const { error } = await supabaseClient.from('restaurant_data').delete().eq('user_id', acc.userId);
+      if (error) throw error;
+      borrarSnapshotOffline();
+      await supabaseClient.auth.signOut();
+      currentAccount = null;
+      alert('Tu cuenta y tus datos se han eliminado.\n\nAviso: por obligación legal podemos conservar durante el plazo exigido los registros fiscales de las ventas ya emitidas.');
+      goToLanding();
+    } catch (e) {
+      alert('No se ha podido eliminar la cuenta: ' + ((e && e.message) || 'error desconocido') + '\n\nInténtalo de nuevo o escríbenos.');
+    }
+  }
+
   function exportarInventarioCSV() {
     const acc = getCurrentAccount();
     const rows = [['Ingrediente', 'Unidad', 'Stock', 'Mínimo']].concat(acc.data.inventario.map(p => [
