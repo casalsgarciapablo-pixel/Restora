@@ -2109,7 +2109,7 @@
           <span class="w-9 h-9 rounded-lg bg-lime-50 text-lime-600 flex items-center justify-center shrink-0"><svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="7" width="18" height="13" rx="2"/><path stroke-linecap="round" d="M8 7V5a4 4 0 018 0v2"/><path stroke-linecap="round" d="M7 12h2M15 12h2"/></svg></span>
           <div>
             <p class="text-sm font-semibold text-navy">TPV</p>
-            <p class="text-xs text-slate-400 mt-1">Cobra cuentas y gestiona la caja. <span class="font-semibold text-amber-600">Modo prueba: ningún cobro es real.</span></p>
+            <p class="text-xs text-slate-400 mt-1">Cobra cuentas y gestiona la caja. <span class="font-semibold text-amber-600">Tarjeta funciona con Stripe en modo prueba: ningún cobro con tarjeta es real todavía.</span></p>
           </div>
         </div>
         <button onclick="openModal('conectar-tpv')" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-4 py-2">Conectar</button>
@@ -7985,11 +7985,11 @@
           <button type="button" onclick="aplicarDescuentoClienteDesdeSelect(${i})" class="rounded-lg bg-slate-100 hover:bg-slate-200 transition text-navy text-xs font-semibold px-3">Aplicar</button>
         </div>
       </div>` : ''}
-      <p class="text-xs text-amber-600 font-medium mt-3">El cobro con tarjeta se registra manualmente: aún no hay datáfono conectado (falta enlazar Stripe/Redsys con una cuenta de comercio real).</p>
+      <p class="text-xs text-amber-600 font-medium mt-3">Tarjeta conecta con Stripe en modo prueba: no se cobra dinero real. Efectivo y Bizum se registran a mano, como el dinero que entra fuera de la app.</p>
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Cobrar el pendiente (${fmtMoneda(pendiente)})</label>
       <div class="grid grid-cols-3 gap-2">
         <button type="button" onclick="confirmarCobro(${i}, 'Efectivo')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy">💶 Efectivo</button>
-        <button type="button" onclick="confirmarCobro(${i}, 'Tarjeta')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy">💳 Tarjeta</button>
+        <button type="button" id="btnCobroTarjeta${i}" onclick="cobrarConTarjetaStripe(${i})" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy">💳 Tarjeta</button>
         <button type="button" onclick="confirmarCobro(${i}, 'Bizum')" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition py-3 text-sm font-medium text-navy">📱 Bizum</button>
       </div>
       <button type="button" onclick="abrirDividirCuenta(${i})" class="mt-3 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">➗ Dividir cuenta</button>
@@ -8001,6 +8001,40 @@
     const p = acc.data.pedidos[i];
     if (!p) return;
     await registrarCobroParcial(i, pendienteCobro(p), metodo, 'Pago completo');
+  }
+  // Cobro con tarjeta de verdad (Stripe): a diferencia de Efectivo/Bizum, aquí NO se marca pagado al
+  // momento. Se crea una sesión de pago y se manda al cliente a la página de Stripe (nunca vemos ni
+  // tocamos el número de tarjeta); quien de verdad marca el pedido como Pagado es el webhook de
+  // Stripe cuando confirma el cobro, no este botón.
+  async function cobrarConTarjetaStripe(i) {
+    const acc = getCurrentAccount();
+    const p = acc.data.pedidos[i];
+    if (!p) return;
+    const pendiente = pendienteCobro(p);
+    if (pendiente <= 0) return;
+    const btn = document.getElementById('btnCobroTarjeta' + i);
+    if (btn) { btn.disabled = true; btn.textContent = 'Abriendo pago…'; }
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('crear-pago-stripe', {
+        body: {
+          user_id: acc.userId,
+          pedido_id: p.id,
+          importe: pendiente,
+          moneda: monedaActual().toLowerCase(),
+          mesa: p.mesa,
+          origin: location.origin + location.pathname,
+        },
+      });
+      if (error || !data || !data.url) {
+        showToast('No se pudo iniciar el cobro con tarjeta. Inténtalo de nuevo.');
+        if (btn) { btn.disabled = false; btn.textContent = '💳 Tarjeta'; }
+        return;
+      }
+      location.href = data.url;
+    } catch (e) {
+      showToast('No se pudo iniciar el cobro con tarjeta. Inténtalo de nuevo.');
+      if (btn) { btn.disabled = false; btn.textContent = '💳 Tarjeta'; }
+    }
   }
   async function registrarCobroParcial(i, importe, metodo, detalle) {
     const acc = getCurrentAccount();
@@ -13346,14 +13380,26 @@
     if (session && session.user) {
       await cargarCuentaDesdeServidor(session.user);
       enterApp();
+      avisarRetornoPagoStripe(params);
       return;
     }
     const sesionStaffGuardada = cargarSesionStaffGuardada();
     if (sesionStaffGuardada) {
       staffSession = sesionStaffGuardada;
       await enterStaffApp();
+      avisarRetornoPagoStripe(params);
     }
   })();
+  // Al volver de la pagina de pago de Stripe (exito o cancelado). El pedido en si NO se marca pagado
+  // aqui: eso lo hace el webhook de Stripe contra el servidor; esto es solo el aviso al camarero, y
+  // el canal de tiempo real (subscribeRealtime) refleja el cambio real en cuanto el webhook procese.
+  function avisarRetornoPagoStripe(params) {
+    const pago = params.get('pago');
+    if (!pago) return;
+    history.replaceState(null, '', location.pathname);
+    if (pago === 'exito') showToast('✅ Pago con tarjeta recibido, actualizando…');
+    else if (pago === 'cancelado') showToast('Pago con tarjeta cancelado, no se ha cobrado nada.');
+  }
 
   function mostrarMasTestimonios() {
     document.getElementById('testiGrid').classList.add('testi-expanded');
@@ -13903,7 +13949,7 @@
     "Colores y estilo a tu medida": ["Colors i estil a mida", "Colors and style your way"],
     "Tu menú siempre actualizado": ["El teu menú sempre actualitzat", "Your menu always up to date"],
     // SaaS: TPV e integraciones
-    "Modo prueba: ningún cobro es real.": ["Mode de prova: cap cobrament és real.", "Test mode: no charge is real."],
+    "Tarjeta funciona con Stripe en modo prueba: ningún cobro con tarjeta es real todavía.": ["La targeta funciona amb Stripe en mode de prova: cap cobrament amb targeta és real encara.", "Card works with Stripe in test mode: no card charge is real yet."],
     "Abrir caja": ["Obre la caixa", "Open till"],
     "Cobrar": ["Cobra", "Charge"],
     "Sincroniza ventas de tu terminal.": ["Sincronitza vendes del teu terminal.", "Sync sales from your terminal."],
