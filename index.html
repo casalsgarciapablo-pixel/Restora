@@ -1116,7 +1116,7 @@
         <div class="flex-1 px-8 py-7 min-w-0 relative">
           <div class="flex items-start justify-between flex-wrap gap-3">
             <div>
-              <h2 class="dash-welcome-title">¡Bienvenido, Restora!</h2>
+              <h2 class="dash-welcome-title">¡Bienvenido, La Brasería!</h2>
               <p class="dash-welcome-sub">Información y actividad de tu restaurante en tiempo real.</p>
             </div>
             <span class="dash-range-btn">
@@ -4378,6 +4378,7 @@
     // patch de diferencias respecto a esto (ver syncAccountToServer), no el bloque entero.
     if (currentAccount) { asegurarIdsSync(currentAccount.data); currentAccount.baseline = clonarProfundo(currentAccount.data); }
     purgarDatosBancariosHeredados();
+    corregirNombreRestauranteEnServidor();
     resetNavVisibility();
     comprobarSnapshotOfflinePendiente();
     actualizarIndicadorOffline();
@@ -4405,6 +4406,19 @@
       } catch (e) {}
     }
     saveCurrentAccountData(currentAccount.data);
+  }
+
+  // Sube al servidor la columna restaurant_name cuando se ha quedado atrás respecto al perfil: es la
+  // que leen la carta por QR y la página de reservas, así que mientras esté mal el cliente ve un
+  // nombre que el dueño ya había cambiado.
+  function corregirNombreRestauranteEnServidor() {
+    const acc = currentAccount;
+    if (!acc || !acc.baseline) return;
+    if (!reconciliarNombreRestaurante(acc)) return;
+    // Esa columna solo viaja acompañando a un patch (p_restaurant_name). Si lo único que ha cambiado
+    // es ella, se deja el perfil viejo en la baseline para forzar un patch que la arrastre.
+    acc.baseline.perfil = Object.assign({}, acc.baseline.perfil || {}, { nombre: ' pendiente' });
+    saveCurrentAccountData(acc.data);
   }
 
   function goToLanding() {
@@ -4439,13 +4453,50 @@
     goToLanding();
   }
 
+  // ---- Nombre del restaurante: una sola fuente de verdad ----
+  // Conviven dos sitios donde vive el nombre: perfil.nombre (dentro del bloque `data`, que es el campo
+  // que edita el dueño en Configuración) y la columna restaurant_name de Supabase, que es la ÚNICA que
+  // ven las páginas públicas (get_public_menu la devuelve). Si se separan, el cliente que escanea el QR
+  // ve un nombre distinto del que el dueño tiene configurado. Manda siempre perfil.nombre.
+  // Ojo: "Restora" es la plataforma. Nunca debe usarse como nombre de un restaurante.
+  function nombreRestaurante(acc) {
+    acc = acc || currentAccount;
+    if (!acc) return '';
+    const perfil = (acc.data && acc.data.perfil && acc.data.perfil.nombre || '').trim();
+    return perfil || (acc.restaurantName || '').trim();
+  }
+  // Para textos de cara al cliente, donde dejar el hueco vacío quedaría peor que un genérico.
+  function nombreRestaurantePublico(acc, generico) {
+    return nombreRestaurante(acc) || (generico || 'Restaurante');
+  }
+  // Cuentas donde perfil.nombre y la columna se habían separado (cambios de nombre anteriores a que
+  // guardarPerfil las mantuviera a la par). Devuelve true si hay que subir la corrección.
+  function reconciliarNombreRestaurante(acc) {
+    if (!acc || !acc.data || !acc.data.perfil) return false;
+    const perfil = (acc.data.perfil.nombre || '').trim();
+    const columna = (acc.restaurantName || '').trim();
+    if (perfil && perfil !== columna) { acc.restaurantName = perfil; return true; }
+    // Cuenta antigua sin perfil rellenado: se siembra con lo que se puso al registrarse.
+    if (!perfil && columna) { acc.data.perfil.nombre = columna; return true; }
+    return false;
+  }
+
   function guardarPerfil() {
     const acc = getCurrentAccount();
-    acc.data.perfil.nombre = document.getElementById('perfilNombre').value.trim();
+    const nombre = document.getElementById('perfilNombre').value.trim();
+    // Sin nombre, la carta por QR y la página de reservas saldrían con un genérico delante del
+    // cliente. Se avisa aquí en vez de dejar guardar un vacío que solo se nota en la web pública.
+    if (!nombre) {
+      showToast('Pon el nombre de tu restaurante: es el que ven tus clientes en la carta y las reservas.');
+      document.getElementById('perfilNombre').focus();
+      return;
+    }
+    acc.data.perfil.nombre = nombre;
     acc.data.perfil.direccion = document.getElementById('perfilDireccion').value.trim();
     acc.data.perfil.mesas = document.getElementById('perfilMesas').value.trim();
     acc.data.perfil.telefono = document.getElementById('perfilTelefono').value.trim();
-    acc.restaurantName = acc.data.perfil.nombre || acc.restaurantName;
+    // El perfil manda: la columna restaurant_name (la que leen las páginas públicas) lo sigue.
+    acc.restaurantName = nombre;
     if (acc.data.cartaDigital && acc.data.cartaDigital.activada) {
       acc.data.cartaDigital.direccion = acc.data.perfil.direccion;
       acc.data.cartaDigital.telefono = acc.data.perfil.telefono;
@@ -4674,7 +4725,7 @@
     if (w.paso === 1) {
       const nPlatos = (acc.data.menu || []).length;
       cuerpo = `
-        <p class="text-sm text-slate-500 mt-1">Empecemos por lo básico: ¿qué tipo de cocina y ambiente tiene <b>${svgEsc(acc.restaurantName)}</b>?</p>
+        <p class="text-sm text-slate-500 mt-1">Empecemos por lo básico: ¿qué tipo de cocina y ambiente tiene <b>${svgEsc(nombreRestaurantePublico(acc, 'tu restaurante'))}</b>?</p>
         <div class="wiz-chips mt-4">
           ${TIPOS_RESTAURANTE.map(t => `<button type="button" class="wiz-chip ${w.tipo === t ? 'sel' : ''}" onclick="wizSetTipo('${escAttr(t)}')">${TIPO_EMOJI[t] || '🍽️'} ${t}</button>`).join('')}
         </div>
@@ -4931,7 +4982,7 @@
       try {
         const paletaLabel = w.modoColor === 'paleta' ? (PALETAS_CARTA[w.paleta] || PALETAS_CARTA.moderno).label : 'personalizada (' + w.color1 + ' y ' + w.color2 + ')';
         const { data, error } = await supabaseClient.functions.invoke('carta-digital', {
-          body: { restaurantName: acc.restaurantName, tipoRestaurante: w.tipo, paleta: paletaLabel },
+          body: { restaurantName: nombreRestaurante(acc), tipoRestaurante: w.tipo, paleta: paletaLabel },
         });
         if (error || !data || data.error) throw new Error('ia');
         tagline = data.tagline || '';
@@ -5208,8 +5259,9 @@
   }
 
   function applyTopbar(acc) {
-    document.getElementById('topbarNombre').textContent = acc.restaurantName;
-    document.getElementById('avatarInitials').textContent = initials(acc.restaurantName);
+    const n = nombreRestaurante(acc);
+    document.getElementById('topbarNombre').textContent = n;
+    document.getElementById('avatarInitials').textContent = initials(n);
   }
 
   function goSection(name) {
@@ -6477,7 +6529,7 @@
     const estadoDelivery = (k) => !!(ig[k] && ig[k].connected);
     return {
       ahora,
-      restaurantName: acc.restaurantName,
+      restaurantName: nombreRestaurante(acc),
       usuarioActual: staffSession
         ? { tipo: 'trabajador', nombre: staffSession.nombre || '', apartadosPermitidos: staffSession.secciones || [] }
         : { tipo: 'propietario', apartadosPermitidos: 'todos' },
@@ -6992,7 +7044,7 @@
     try {
       const { data, error } = await supabaseClient.functions.invoke('dynamic-task', {
         body: {
-          restaurantName: acc.restaurantName,
+          restaurantName: nombreRestaurante(acc),
           inicio: fmtFechaCorta(inicio),
           fin: fmtFechaCorta(fin),
           kpis, kpisAnterior,
@@ -7079,7 +7131,7 @@
         </button>
         <button type="button" onclick="cargarInformeSemana(new Date('${inicio.toISOString()}'), new Date('${fin.toISOString()}'), true)" class="ml-1 text-xs font-semibold text-accent border border-accent/30 hover:bg-accent/5 transition rounded-full px-3 py-1.5" title="Volver a generar este informe con los datos más recientes">🔄 Regenerar</button>
       </div>
-      <p class="text-center text-sm text-slate-500 mt-2">${fmtFechaCorta(new Date(informe.inicio))} — ${fmtFechaCorta(new Date(informe.fin))} · ${acc.restaurantName || ''}${semanaEnCurso ? ' · <span class="text-accent font-medium">semana en curso, datos hasta hoy</span>' : ''}</p>
+      <p class="text-center text-sm text-slate-500 mt-2">${fmtFechaCorta(new Date(informe.inicio))} — ${fmtFechaCorta(new Date(informe.fin))} · ${svgEsc(nombreRestaurante(acc))}${semanaEnCurso ? ' · <span class="text-accent font-medium">semana en curso, datos hasta hoy</span>' : ''}</p>
       ${informe.generadoEn ? `<p class="informe-no-print text-center text-[11px] text-slate-300 mt-0.5">Generado el ${new Date(informe.generadoEn).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>` : ''}
       <div class="mt-6">${kpiCardsHtml(informe.kpis)}</div>
       <div class="mt-8 text-sm text-slate-600 text-left">${markdownSimpleHtml(informe.contenido)}</div>
@@ -8273,7 +8325,7 @@
     document.getElementById('ticketBody').innerHTML = `
       <div class="text-center">
         ${logo ? `<img src="${logo}" class="w-12 h-12 rounded-lg object-cover mx-auto mb-2">` : ''}
-        <h1 class="text-lg font-bold text-navy">${svgEsc(acc.restaurantName || 'Restaurante')}</h1>
+        <h1 class="text-lg font-bold text-navy">${svgEsc(nombreRestaurantePublico(acc))}</h1>
         <p class="text-xs text-slate-400 mt-1">${fecha.toLocaleDateString('es-ES')} · ${fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</p>
         <p class="text-xs text-slate-400">${svgEsc(p.mesa)}${p.ticketNumero ? ' · Ticket nº ' + p.ticketNumero : ''}</p>
       </div>
@@ -8299,8 +8351,8 @@
     const destino = prompt('¿A qué email se lo enviamos?');
     if (!destino) return;
     const lineas = (p.platos || []).map(pl => pl.cantidad + 'x ' + pl.nombre + ' — ' + fmtMoneda(precioToNumero(pl.precio) * pl.cantidad)).join('%0D%0A');
-    const asunto = encodeURIComponent('Recibo · ' + (acc.restaurantName || 'Restaurante') + (p.ticketNumero ? ' · Ticket nº ' + p.ticketNumero : ''));
-    const cuerpo = encodeURIComponent((acc.restaurantName || 'Restaurante') + '\n' + p.mesa + '\n\n') + lineas + encodeURIComponent('\n\nTotal: ' + fmtMoneda(p.total) + '\nPagado con ' + (p.metodoPago || '') + '\n\nEste recibo no es una factura fiscal certificada.');
+    const asunto = encodeURIComponent('Recibo · ' + nombreRestaurantePublico(acc) + (p.ticketNumero ? ' · Ticket nº ' + p.ticketNumero : ''));
+    const cuerpo = encodeURIComponent(nombreRestaurantePublico(acc) + '\n' + p.mesa + '\n\n') + lineas + encodeURIComponent('\n\nTotal: ' + fmtMoneda(p.total) + '\nPagado con ' + (p.metodoPago || '') + '\n\nEste recibo no es una factura fiscal certificada.');
     window.location.href = 'mailto:' + encodeURIComponent(destino) + '?subject=' + asunto + '&body=' + cuerpo;
   }
   function cerrarTicket() {
@@ -8313,7 +8365,7 @@
     const qrUrl = location.origin + location.pathname + '?cuenta=' + encodeURIComponent(acc.userId) + '&mesa=' + numero;
     const qrImgGrande = 'https://api.qrserver.com/v1/create-qr-code/?size=480x480&data=' + encodeURIComponent(qrUrl);
     document.getElementById('qrPrintBody').innerHTML = `
-      <p style="font-size:13px; font-weight:600; color:#8B93A6; letter-spacing:0.06em; text-transform:uppercase;">${svgEsc(acc.restaurantName || 'Restaurante')}</p>
+      <p style="font-size:13px; font-weight:600; color:#8B93A6; letter-spacing:0.06em; text-transform:uppercase;">${svgEsc(nombreRestaurantePublico(acc))}</p>
       <h1 style="font-size:28px; font-weight:800; color:#0B1B33; margin-top:6px;">${svgEsc(nombreMesa)}</h1>
       <img id="qrPrintImg" width="320" height="320" style="margin:24px auto 0; display:block;">
       <p style="font-size:14px; color:#8B93A6; margin-top:20px;">Escanea el código para ver la carta<br>y pedir desde el móvil.</p>
@@ -10721,7 +10773,7 @@
     if (!acc) return;
     const paquete = {
       exportadoEn: new Date().toISOString(),
-      cuenta: { email: acc.email, restaurante: acc.restaurantName },
+      cuenta: { email: acc.email, restaurante: nombreRestaurante(acc) },
       datos: acc.data,
       nota: 'Copia de tus datos en Restora, generada a petición del titular (arts. 15 y 20 RGPD).',
     };
@@ -10766,7 +10818,7 @@
     if (!acc) return;
     if (staffSession) { alert('Solo el titular de la cuenta puede eliminar el restaurante. Pídeselo a tu encargado.'); return; }
     if (confirm('Antes de borrar, ¿quieres descargar una copia de tus datos?\n\nAceptar: descargar copia primero.\nCancelar: continuar sin copia.')) exportarMisDatos();
-    if (!confirmarEscribiendo('ELIMINAR', 'Vas a borrar definitivamente el restaurante "' + (acc.restaurantName || '') + '" con TODOS sus datos: pedidos, reservas, carta, inventario, personal y fichajes.\n\nEsta acción no se puede deshacer.')) return;
+    if (!confirmarEscribiendo('ELIMINAR', 'Vas a borrar definitivamente el restaurante "' + nombreRestaurante(acc) + '" con TODOS sus datos: pedidos, reservas, carta, inventario, personal y fichajes.\n\nEsta acción no se puede deshacer.')) return;
     try {
       const { error } = await supabaseClient.from('restaurant_data').delete().eq('user_id', acc.userId);
       if (error) throw error;
@@ -10909,7 +10961,8 @@
     const acc = getCurrentAccount();
     if (!acc) return;
     const wl = document.getElementById('dashWelcome');
-    if (wl) wl.textContent = '¡Bienvenido' + (acc.restaurantName ? ', ' + acc.restaurantName : '') + '!';
+    const nombre = nombreRestaurante(acc);
+    if (wl) wl.textContent = '¡Bienvenido' + (nombre ? ', ' + nombre : '') + '!';
     renderDashRangeMenu();
     // Solo pedidos ya COBRADOS: así "Ingresos" (y el resto de gráficos derivados de esta lista) coincide
     // siempre con lo que Caja/TPV dice que se ha cobrado, en vez de incluir pedidos aún en cocina/sin pagar.
@@ -14596,7 +14649,6 @@
     "Sigue bajando": ["Continua baixant", "Keep scrolling"],
     "Tablero de cocina en tiempo real: cada plato pasa de \"en cocina\" a \"listo\" y a \"servido\" con un toque.": ["Tauler de cuina en temps real: cada plat passa de \"a la cuina\" a \"llest\" i a \"servit\" amb un toc.", "Real-time kitchen board: each dish goes from \"cooking\" to \"ready\" to \"served\" with one tap."],
     "Tu cocina, organizada plato a plato.": ["La teva cuina, organitzada plat a plat.", "Your kitchen, organized dish by dish."],
-    "¡Bienvenido, Restora!": ["Benvingut, Restora!", "Welcome, Restora!"],
     // ===== Público/panel (tanda 4): textos de ayuda restantes, páginas de detalle, cookies, reservas =====
     "Restora — Todo tu restaurante, en un solo lugar": ["Restora — Tot el teu restaurant, en un sol lloc", "Restora — Your whole restaurant, in one place"],
     "Ver esta sección en detalle →": ["Veure aquesta secció en detall →", "See this section in detail →"],
