@@ -376,7 +376,10 @@
   .ia-quick-welcome { text-align: center; color: #8B93A6; font-size: 13px; padding: 18px 8px 6px; }
   /* Input animado del Ayudante IA (seccion principal): pildora que se realza y despliega una fila de
      accesos al enfocar, con el placeholder cambiando de pregunta letra a letra. */
-  .ia-input-wrap { border-radius: 28px; background: #fff; border: 1px solid #E3E3EA; overflow: hidden; transition: box-shadow .3s cubic-bezier(.4,0,.2,1), border-color .3s ease; box-shadow: 0 2px 8px rgba(11,27,51,0.06); }
+  /* Un poco más estrecha que la columna del chat, y centrada. En móvil se deja a ancho completo:
+     ahí recortarla solo quitaría sitio para escribir. */
+  .ia-input-wrap { border-radius: 28px; background: #fff; border: 1px solid #E3E3EA; overflow: hidden; transition: box-shadow .3s cubic-bezier(.4,0,.2,1), border-color .3s ease; box-shadow: 0 2px 8px rgba(11,27,51,0.06); width: 88%; margin-left: auto; margin-right: auto; }
+  @media (max-width: 640px) { .ia-input-wrap { width: 100%; } }
   .ia-input-wrap.ia-input-active { box-shadow: 0 10px 30px -8px rgba(11,27,51,0.18); border-color: #d7d9e6; }
   .ia-input-row { display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 16px; }
   .ia-input-field-wrap { position: relative; flex: 1; min-width: 0; }
