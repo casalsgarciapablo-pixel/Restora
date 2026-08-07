@@ -2239,7 +2239,18 @@
                 <div><label class="block text-xs font-medium text-slate-500 mb-1">Nº de mesas</label><input id="perfilMesas" type="text" placeholder="Ej. 12" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
                 <div><label class="block text-xs font-medium text-slate-500 mb-1">Teléfono <span class="text-rose-500">*</span></label><input id="perfilTelefono" type="text" placeholder="Ej. 910 000 000" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
               </div>
-              <p class="text-[11px] text-slate-400"><span class="text-rose-500">*</span> Necesarios para el enlace público de reservas y la facturación.</p>
+              <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-xs font-medium text-slate-500 mb-1">NIF / CIF <span class="text-rose-500">*</span></label><input id="perfilNif" type="text" placeholder="Ej. B12345678" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"></div>
+                <div><label class="block text-xs font-medium text-slate-500 mb-1">IVA aplicado</label>
+                  <select id="perfilIva" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+                    <option value="10">10% — hostelería (general)</option>
+                    <option value="21">21% — general</option>
+                    <option value="4">4% — superreducido</option>
+                    <option value="0">Sin IVA / exento</option>
+                  </select>
+                </div>
+              </div>
+              <p class="text-[11px] text-slate-400"><span class="text-rose-500">*</span> Necesarios para el enlace público de reservas y para que el ticket tenga los datos que exige una factura simplificada (NIF, domicilio e IVA).</p>
             </div>
             <button onclick="guardarPerfil()" class="mt-5 rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Guardar cambios</button>
           </div>
@@ -2683,6 +2694,10 @@
       <input id="signupEmail" type="email" required placeholder="tu@correo.com" onkeydown="if(event.key==='Enter'){event.preventDefault();handleSignup();}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
       <label class="block text-sm font-medium text-navy mb-1.5 mt-4">Crear contraseña</label>
       <input id="signupPassword" type="password" required placeholder="Mínimo 6 caracteres" onkeydown="if(event.key==='Enter'){event.preventDefault();handleSignup();}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+      <label class="flex items-start gap-2.5 mt-4 text-xs text-slate-500 leading-relaxed cursor-pointer">
+        <input id="signupAcepta" type="checkbox" class="mt-0.5 shrink-0">
+        <span>He leído y acepto los <a href="?legal=terminos" onclick="return irALegal('terminos', event)" class="text-accent font-semibold hover:underline">Términos de servicio</a> y la <a href="?legal=privacidad" onclick="return irALegal('privacidad', event)" class="text-accent font-semibold hover:underline">Política de privacidad</a>.</span>
+      </label>
       <p id="authModalError" class="mt-3 text-xs text-rose-600 hidden"></p>
       <button type="button" onclick="handleSignup()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Crear cuenta gratis</button>
       <div class="flex items-center gap-3 my-4"><span class="flex-1 h-px bg-slate-200"></span><span class="text-xs text-slate-400">o</span><span class="flex-1 h-px bg-slate-200"></span></div>
@@ -3883,7 +3898,7 @@
   }
   function defaultAccountData(nombre) {
     return {
-      perfil: { nombre: nombre, direccion: '', mesas: '', telefono: '', horarioConfigurado: false, horario: defaultHorario() },
+      perfil: { nombre: nombre, direccion: '', mesas: '', telefono: '', nif: '', iva: '10', horarioConfigurado: false, horario: defaultHorario() },
       cuenta: { titular: '', telefono: '', idioma: 'es', moneda: 'EUR' },
       mesaEstados: [],
       mesaNombres: [],
@@ -3923,6 +3938,10 @@
     data.perfil.direccion = data.perfil.direccion || '';
     data.perfil.mesas = data.perfil.mesas || '';
     data.perfil.telefono = data.perfil.telefono || '';
+    // Datos que exige una factura simplificada (RD 1619/2012, art. 7): el NIF del expedidor y el
+    // tipo de IVA repercutido. El 10% es el tipo de hostelería, que es el caso normal aquí.
+    data.perfil.nif = data.perfil.nif || '';
+    data.perfil.iva = data.perfil.iva != null && data.perfil.iva !== '' ? String(data.perfil.iva) : '10';
     data.perfil.horarioConfigurado = !!data.perfil.horarioConfigurado;
     data.perfil.horario = data.perfil.horario || defaultHorario();
     DIAS_SEMANA.forEach(d => {
@@ -3970,6 +3989,9 @@
     // Dashboard, el informe semanal y el Ayudante IA siguen contándolas para no falsear el histórico.
     data.reservasHistorico = Array.isArray(data.reservasHistorico) ? data.reservasHistorico : [];
     data.reservasWebUrl = data.reservasWebUrl || '';
+    // Prueba de que se aceptaron términos y privacidad, y cuándo (art. 7.1 RGPD: hay que poder
+    // demostrarlo). Las cuentas anteriores a la casilla no lo tienen y salen como null.
+    data.aceptacionLegal = data.aceptacionLegal || null;
     data.pedidos = Array.isArray(data.pedidos) ? data.pedidos : [];
     data.pedidos.forEach((p, pi) => {
       if (!p.id) p.id = 'ped-' + (p.fecha ? Date.parse(p.fecha) || Date.now() : Date.now()) + '-' + pi;
@@ -4316,13 +4338,18 @@
     const nombre = document.getElementById('signupNombre').value.trim();
     const email = document.getElementById('signupEmail').value.trim().toLowerCase();
     const password = document.getElementById('signupPassword').value;
+    const acepta = document.getElementById('signupAcepta');
     if (!nombre) return authError('Escribe el nombre de tu restaurante.');
     if (!isEmailValido(email)) return authError('Introduce un correo electrónico válido.');
     if (password.length < 6) return authError('La contraseña debe tener al menos 6 caracteres.');
+    // La aceptación tiene que ser un acto expreso y hay que poder demostrar cuándo se produjo: una
+    // casilla premarcada o un "al registrarte aceptas" no valen como consentimiento (art. 7 RGPD).
+    if (!acepta || !acepta.checked) return authError('Para crear la cuenta tienes que aceptar los términos y la política de privacidad.');
     const { data: authData, error } = await supabaseClient.auth.signUp({ email, password });
     if (error) return authError(traducirErrorSupabase(error));
     const userId = authData.user.id;
     const initialData = defaultAccountData(nombre);
+    initialData.aceptacionLegal = { version: LEGAL_ACTUALIZADO, fecha: new Date().toISOString(), via: 'registro' };
     const { error: insertError } = await supabaseClient.from('restaurant_data').insert({ user_id: userId, restaurant_name: nombre, data: initialData });
     if (insertError) return authError('No se pudo crear tu cuenta: ' + insertError.message);
     currentAccount = { userId, email, restaurantName: nombre, data: initialData };
@@ -4344,6 +4371,11 @@
   // en la URL y entra en la app (creando la cuenta si es un usuario nuevo). REQUIERE tener habilitado
   // el proveedor Google en Supabase (Authentication → Providers → Google) con su Client ID y Secret.
   async function handleGoogleLogin() {
+    // Si se está usando desde el formulario de alta, la aceptación se exige igual que en el alta por
+    // correo: entrar con Google no puede ser un atajo para saltarse los términos.
+    const acepta = document.getElementById('signupAcepta');
+    if (acepta && !acepta.checked) return authError('Para crear la cuenta tienes que aceptar los términos y la política de privacidad.');
+    if (acepta) { try { sessionStorage.setItem('restora_acepta_legal', new Date().toISOString()); } catch (e) {} }
     const { error } = await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin + window.location.pathname },
@@ -4408,6 +4440,11 @@
     const { data: row, error } = await supabaseClient.from('restaurant_data').select('*').eq('user_id', user.id).single();
     if (error || !row) {
       const initialData = defaultAccountData('');
+      // Alta por Google: la aceptación se marcó en el formulario antes de salir hacia Google y se
+      // recuperó al volver (ver handleGoogleLogin).
+      let aceptadoEn = '';
+      try { aceptadoEn = sessionStorage.getItem('restora_acepta_legal') || ''; sessionStorage.removeItem('restora_acepta_legal'); } catch (e) {}
+      initialData.aceptacionLegal = { version: LEGAL_ACTUALIZADO, fecha: aceptadoEn || new Date().toISOString(), via: 'google' };
       currentAccount = { userId: user.id, email: user.email, restaurantName: '', data: initialData };
       await supabaseClient.from('restaurant_data').insert({ user_id: user.id, restaurant_name: '', data: initialData });
       return;
@@ -4548,6 +4585,8 @@
     acc.data.perfil.direccion = document.getElementById('perfilDireccion').value.trim();
     acc.data.perfil.mesas = document.getElementById('perfilMesas').value.trim();
     acc.data.perfil.telefono = document.getElementById('perfilTelefono').value.trim();
+    acc.data.perfil.nif = document.getElementById('perfilNif').value.trim().toUpperCase();
+    acc.data.perfil.iva = document.getElementById('perfilIva').value;
     // El perfil manda: la columna restaurant_name (la que leen las páginas públicas) lo sigue.
     acc.restaurantName = nombre;
     if (acc.data.cartaDigital && acc.data.cartaDigital.activada) {
@@ -4570,6 +4609,7 @@
     if (vacio(p.nombre)) faltan.push({ txt: 'Nombre del restaurante', sec: 'restaurante', critico: true });
     if (vacio(p.direccion)) faltan.push({ txt: 'Dirección del local', sec: 'restaurante', critico: true });
     if (vacio(p.telefono)) faltan.push({ txt: 'Teléfono del restaurante', sec: 'restaurante', critico: true });
+    if (vacio(p.nif)) faltan.push({ txt: 'NIF/CIF (obligatorio en el ticket como factura simplificada)', sec: 'restaurante', critico: true });
     if (!p.horarioConfigurado) faltan.push({ txt: 'Horario de apertura (limita las horas del enlace de reservas)', sec: 'restaurante', critico: true });
     if (!(d.mesaEstados || []).length) faltan.push({ txt: 'Mesas del local', sec: 'mesas', critico: true });
     if (vacio(c.titular)) faltan.push({ txt: 'Titular de la cuenta (a quién se atribuyen tus ventas)', sec: 'config', critico: false });
@@ -5330,6 +5370,8 @@
     document.getElementById('perfilDireccion').value = p.direccion || '';
     document.getElementById('perfilMesas').value = p.mesas || '';
     document.getElementById('perfilTelefono').value = p.telefono || '';
+    document.getElementById('perfilNif').value = p.nif || '';
+    document.getElementById('perfilIva').value = p.iva || '10';
     renderHorarioForm();
     renderPerfilChecklist();
     renderCartaDigitalPreview();
@@ -8362,8 +8404,23 @@
     divisionArticulosEnCurso = null;
     await registrarCobroParcial(idx, subtotal, metodo, detalle);
   }
+  // Los precios que se cobran ya llevan el IVA incluido (es como se muestran al cliente), así que la
+  // base se obtiene deshaciendo el tipo: base = total / (1 + tipo/100). Una factura simplificada puede
+  // limitarse a decir "IVA incluido" y el tipo, pero desglosarlo evita que el cliente tenga que fiarse.
+  function desgloseIvaHtml(total, tipo) {
+    const t = parseFloat(tipo);
+    if (!isFinite(t) || t <= 0) return '';
+    const base = total / (1 + t / 100);
+    const cuota = total - base;
+    return `<div class="mt-2 pt-2 border-t border-dashed border-slate-200 text-xs text-slate-500">
+      <div class="flex justify-between py-0.5"><span>Base imponible</span><span>${fmtMoneda(base)}</span></div>
+      <div class="flex justify-between py-0.5"><span>IVA ${t}%</span><span>${fmtMoneda(cuota)}</span></div>
+      <p class="text-[10px] text-slate-400 mt-1">Precios con IVA incluido.</p>
+    </div>`;
+  }
   function mostrarTicket(p) {
     const acc = getCurrentAccount();
+    const perfilFiscal = acc.data.perfil || {};
     const fecha = new Date(p.fechaPago || p.fecha);
     const logo = acc.data.cartaDigital && acc.data.cartaDigital.logo;
     const itemsHtml = (p.platos && p.platos.length)
@@ -8379,11 +8436,14 @@
       <div class="text-center">
         ${logo ? `<img src="${logo}" class="w-12 h-12 rounded-lg object-cover mx-auto mb-2">` : ''}
         <h1 class="text-lg font-bold text-navy">${svgEsc(nombreRestaurantePublico(acc))}</h1>
+        ${perfilFiscal.direccion ? `<p class="text-xs text-slate-400 mt-1">${svgEsc(perfilFiscal.direccion)}</p>` : ''}
+        ${perfilFiscal.nif ? `<p class="text-xs text-slate-400">NIF: ${svgEsc(perfilFiscal.nif)}</p>` : ''}
         <p class="text-xs text-slate-400 mt-1">${fecha.toLocaleDateString('es-ES')} · ${fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</p>
         <p class="text-xs text-slate-400">${svgEsc(p.mesa)}${p.ticketNumero ? ' · Ticket nº ' + p.ticketNumero : ''}</p>
       </div>
       <div class="mt-4 border-t border-b border-dashed border-slate-300 py-3">${itemsHtml}</div>
       ${p.descuento ? `<div class="flex justify-between text-sm text-accent py-1"><span>Descuento ${svgEsc(p.descuento.nombre)} (${p.descuento.pct}%)</span><span>-${fmtMoneda(p.descuento.importe)}</span></div>` : ''}
+      ${desgloseIvaHtml(p.total, perfilFiscal.iva)}
       <div class="flex justify-between mt-3 text-base font-bold text-navy">
         <span>Total</span><span>${fmtMoneda(p.total)}</span>
       </div>
@@ -11930,6 +11990,7 @@
         ? 'Los alérgenos de cada plato aparecen indicados bajo su nombre.'
         : 'Consulta al personal la información de alérgenos de cada plato.'}
         Nuestros platos se elaboran en cocinas donde se manipulan los 14 alérgenos de declaración obligatoria, por lo que <b>no podemos garantizar la ausencia total de trazas</b>. Si tienes alguna alergia o intolerancia, avísanos antes de pedir.</p>
+      <p class="text-[11px] text-slate-500 mt-2"><b>Precios con IVA incluido.</b> Son el importe final que vas a pagar.</p>
     </div>`;
   }
   function renderPublicMenuBody() {
