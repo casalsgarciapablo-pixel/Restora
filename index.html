@@ -3645,7 +3645,8 @@
         // suele ser una reserva antigua que vuelve del servidor, y avisar de ella es puro ruido.
         (currentAccount.data.reservas || []).forEach(r => {
           if (reservasAntes.has(claveReserva(r))) return;
-          if (reservaYaPasada(r)) return;
+          if (!reservaEsFutura(r)) return;
+          if (yaAvisadaReserva(r)) return;
           pushNotification('📅 Nueva reserva · ' + textoReserva(r), null, 'reservas');
         });
         // Mensajes de chat nuevos (de otra persona) → aviso instantáneo sin sonido
@@ -3855,6 +3856,18 @@
   function claveReserva(r) {
     if (!r) return '';
     return [r.fecha || '', r.hora || '', r.cliente || '', r.mesa || ''].join('|');
+  }
+  // Segundo cerrojo, independiente del anterior: de cada reserva se avisa UNA vez por sesión. Si por
+  // cualquier motivo una reserva vuelve a aparecer como nueva (una fusión que la reintroduce, un
+  // cambio de mesa que altera su clave, dos dispositivos archivando a destiempo), ya no vuelve a
+  // sonar. La identidad se toma del id estable, no de la clave, que cambia al editar la reserva.
+  const reservasYaAvisadas = new Set();
+  function yaAvisadaReserva(r) {
+    const id = (r && r.id) || claveReserva(r);
+    if (!id) return false;
+    if (reservasYaAvisadas.has(id)) return true;
+    reservasYaAvisadas.add(id);
+    return false;
   }
   function textoReserva(r) {
     const d = new Date();
@@ -6211,8 +6224,20 @@
   const RESERVAS_HISTORICO_MAX = 500;
   function reservaYaPasada(r) {
     const dt = fechaHoraReserva(r);
-    if (isNaN(dt)) return false; // dato corrupto: mejor conservarlo que perderlo en silencio
-    return (Date.now() - dt) / 60000 >= RESERVA_GRACIA_MIN;
+    if (!isNaN(dt)) return (Date.now() - dt) / 60000 >= RESERVA_GRACIA_MIN;
+    // Respaldo para fechas que Date no supo interpretar (hora rara, formato inesperado): si la cadena
+    // empieza por AAAA-MM-DD y ese día ya pasó, la reserva pasó igual. Se archiva, nunca se borra, así
+    // que en el peor caso el dato sigue estando en el histórico.
+    const f = String((r && r.fecha) || '');
+    return /^\d{4}-\d{2}-\d{2}/.test(f) && f.slice(0, 10) < fechaLocalISO();
+  }
+  // Para AVISAR se exige lo contrario que para archivar: no basta con que no conste como pasada, tiene
+  // que constar como futura. Una reserva cuya fecha no se puede interpretar no se archiva (no queremos
+  // perderla), pero tampoco puede generar avisos: si no sabemos cuándo es, no es una novedad.
+  function reservaEsFutura(r) {
+    const dt = fechaHoraReserva(r);
+    if (isNaN(dt)) return false;
+    return (Date.now() - dt) / 60000 < RESERVA_GRACIA_MIN;
   }
   function archivarReservasPasadas() {
     const acc = getCurrentAccount();
