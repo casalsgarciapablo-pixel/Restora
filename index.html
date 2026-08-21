@@ -2105,7 +2105,16 @@
           <button onclick="openModal('add-reserva')" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-xs font-semibold px-4 py-2">+ Nueva reserva</button>
         </div>
       </div>
-      <div id="reservasTableWrap" class="mt-5 rounded-xl border border-slate-200 overflow-hidden bg-white">
+      <div class="mt-5 flex items-center gap-3">
+        <div class="relative flex-1 max-w-sm">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" aria-hidden="true">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg>
+          </span>
+          <input id="reservasBuscador" type="search" placeholder="Buscar por cliente, teléfono, mesa o fecha" aria-label="Buscar entre las reservas" oninput="filtrarReservas(this.value)" class="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+        </div>
+        <span id="reservasContador" class="text-xs text-slate-400 tabular-nums" aria-live="polite"></span>
+      </div>
+      <div id="reservasTableWrap" class="mt-3 rounded-xl border border-slate-200 overflow-hidden bg-white">
         <table class="w-full text-sm">
           <thead class="bg-slate-50 text-slate-500 text-xs">
             <tr><th class="text-left font-medium px-4 py-2.5">Fecha</th><th class="text-left font-medium px-4 py-2.5">Hora</th><th class="text-left font-medium px-4 py-2.5">Cliente</th><th class="text-left font-medium px-4 py-2.5">Contacto</th><th class="text-left font-medium px-4 py-2.5">Personas</th><th class="text-left font-medium px-4 py-2.5">Mesa</th><th class="text-left font-medium px-4 py-2.5">Canal</th><th class="text-left font-medium px-4 py-2.5">Estado</th><th class="px-4 py-2.5 w-10"></th></tr>
@@ -7480,19 +7489,46 @@
     web: { label: '🌐 Tu web', cls: 'text-sky-600 bg-sky-50' },
     manual: { label: '✏️ Manual', cls: 'text-slate-500 bg-slate-100' },
   };
+  // Texto por el que se está filtrando la tabla de reservas. Vive fuera de la función porque el
+  // repintado llega también desde fuera (tiempo real, archivado automático) y el filtro debe aguantar.
+  let reservasFiltro = '';
+  function filtrarReservas(texto) {
+    reservasFiltro = texto || '';
+    renderReservas();
+  }
+  function reservaCoincideFiltro(r, t) {
+    if (!t) return true;
+    return [r.cliente, r.telefono, r.email, r.mesa, r.fecha, r.hora, r.estado, r.personas]
+      .some(v => String(v == null ? '' : v).toLowerCase().includes(t));
+  }
   function renderReservas() {
     const acc = getCurrentAccount();
     const list = acc.data.reservas;
+    const filtro = reservasFiltro.trim().toLowerCase();
+    const contador = document.getElementById('reservasContador');
     if (!list.length) {
       // Si ya hubo reservas y todas han pasado, se dice explícitamente: ver "Sin reservas todavía"
       // después de haberlas tenido hace pensar que se han perdido.
       const hubo = (acc.data.reservasHistorico || []).length;
       const texto = hubo ? 'No queda ninguna reserva pendiente. Las que ya han pasado se retiran solas de esta lista.' : 'Sin reservas todavía';
       document.getElementById('reservasBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="9">${texto}</td></tr>`;
+      if (contador) contador.textContent = '';
+      return;
+    }
+    // Se filtra conservando la posición original: los botones de cada fila (cambiar mesa, estado,
+    // eliminar) trabajan con el índice dentro de acc.data.reservas, no con el de la lista visible.
+    const visibles = list.map((r, i) => ({ r, i })).filter(x => reservaCoincideFiltro(x.r, filtro));
+    if (contador) contador.textContent = filtro ? visibles.length + ' de ' + list.length : '';
+    if (!visibles.length) {
+      const enHistorico = (acc.data.reservasHistorico || []).filter(r => reservaCoincideFiltro(r, filtro)).length;
+      const pista = enHistorico
+        ? ' Hay ' + enHistorico + ' que ya pasaron: búscalas en Configuración → Datos de un cliente.'
+        : '';
+      document.getElementById('reservasBody').innerHTML = `<tr><td class="px-4 py-3 text-slate-400" colspan="9">Ninguna reserva pendiente coincide con "${svgEsc(reservasFiltro.trim())}".${pista}</td></tr>`;
       return;
     }
     const indicesMesas = Array.from(indicesMesasActivos(acc)).sort((a, b) => a - b);
-    document.getElementById('reservasBody').innerHTML = list.map((r,i) => {
+    document.getElementById('reservasBody').innerHTML = visibles.map(({ r, i }) => {
      try {
       const estadoCls = r.estado === 'Confirmada' ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50';
       const canalInfo = RESERVA_CANAL_INFO[r.canal] || RESERVA_CANAL_INFO.manual;
