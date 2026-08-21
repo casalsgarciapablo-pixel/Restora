@@ -738,8 +738,15 @@
      carta pública o la landing no sabe dónde está. */
   a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible,
   summary:focus-visible, [tabindex]:focus-visible { outline: 2px solid #3D7FFF; outline-offset: 2px; border-radius: 4px; }
-  .pubres-privacidad { margin-top: 14px; font-size: 11.5px; line-height: 1.6; color: #8B93A6; text-align: left; }
-  .pubres-privacidad > summary { cursor: pointer; font-weight: 600; color: #5B6478; list-style: none; }
+  /* Contraste WCAG 2.1 AA (4.5:1) en las páginas que ve el CLIENTE, que son las que cubre la EAA.
+     El gris secundario de la app (#8B93A6) se queda en 3.1:1 sobre blanco y no llega; aquí se sustituye
+     por #5B6478 (5.9:1). El panel interno no se toca: es una herramienta profesional, no un servicio
+     al consumidor, y cambiarle el tono alteraría todo su aspecto. */
+  #publicMenuRoot .text-slate-400, #publicReservaRoot .text-slate-400,
+  #publicMenuRoot .text-slate-300, #publicReservaRoot .text-slate-300 { color: #5B6478 !important; }
+  #publicMenuRoot .pweb-footer, #publicReservaRoot .pweb-footer { color: #6B7280; }
+  .pubres-privacidad { margin-top: 14px; font-size: 11.5px; line-height: 1.6; color: #5B6478; text-align: left; }
+  .pubres-privacidad > summary { cursor: pointer; font-weight: 600; color: #3F4756; list-style: none; }
   .pubres-privacidad > summary::-webkit-details-marker { display: none; }
   .pubres-privacidad > summary::before { content: '▸ '; }
   .pubres-privacidad[open] > summary::before { content: '▾ '; }
@@ -2413,6 +2420,10 @@
               <p class="text-sm font-medium text-navy">Exportar registro horario</p>
               <p class="text-xs text-slate-400 mt-0.5">Fichajes en CSV para la Inspección de Trabajo (conservación obligatoria: 4 años).</p>
             </button>
+            <button onclick="abrirBuscarDatosCliente()" class="w-full text-left rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-3">
+              <p class="text-sm font-medium text-navy">Datos de un cliente</p>
+              <p class="text-xs text-slate-400 mt-0.5">Busca, descarga o borra los datos de un cliente que ejerza sus derechos contigo.</p>
+            </button>
             <button onclick="abrirPreferenciasCookies()" class="w-full text-left rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-3">
               <p class="text-sm font-medium text-navy">Preferencias de cookies</p>
               <p class="text-xs text-slate-400 mt-0.5">Cambia qué almacenamiento no esencial permites en este dispositivo.</p>
@@ -2709,7 +2720,7 @@
       <input id="signupPassword" type="password" required placeholder="Mínimo 6 caracteres" onkeydown="if(event.key==='Enter'){event.preventDefault();handleSignup();}" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
       <label class="flex items-start gap-2.5 mt-4 text-xs text-slate-500 leading-relaxed cursor-pointer">
         <input id="signupAcepta" type="checkbox" class="mt-0.5 shrink-0">
-        <span>He leído y acepto los <a href="?legal=terminos" onclick="return irALegal('terminos', event)" class="text-accent font-semibold hover:underline">Términos de servicio</a> y la <a href="?legal=privacidad" onclick="return irALegal('privacidad', event)" class="text-accent font-semibold hover:underline">Política de privacidad</a>.</span>
+        <span>He leído y acepto los <a href="?legal=terminos" target="_blank" rel="noopener" class="text-accent font-semibold hover:underline">Términos de servicio</a> y la <a href="?legal=privacidad" target="_blank" rel="noopener" class="text-accent font-semibold hover:underline">Política de privacidad</a>.</span>
       </label>
       <p id="authModalError" class="mt-3 text-xs text-rose-600 hidden"></p>
       <button type="button" onclick="handleSignup()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Crear cuenta gratis</button>
@@ -4497,6 +4508,54 @@
     currentAccount = { userId: staffSession.userId, email: staffSession.email, restaurantName: data.restaurant_name || staffSession.restaurantName, data: normalizeAccountData(data.data) };
     enterApp();
     aplicarPermisosStaff();
+    if (comprobarConfidencialidadStaff()) return; // primero la confidencialidad, luego la jornada
+    comprobarPopupJornadaAlEntrar();
+  }
+
+  // ---- Deber de confidencialidad del personal (art. 29 RGPD y art. 5 LOPDGDD) ----
+  // Quien entra como trabajador ve nombres y teléfonos de clientes. El responsable (el restaurante)
+  // tiene que instruirle por escrito y poder acreditarlo. Se pide una sola vez, en su primer acceso,
+  // y queda registrado en su ficha de personal con la fecha.
+  function empleadoStaffActual() {
+    const acc = getCurrentAccount();
+    if (!acc || !staffSession) return -1;
+    return (acc.data.personal || []).findIndex(e =>
+      e && String(e.email || '').toLowerCase() === String(staffSession.email || '').toLowerCase());
+  }
+  function comprobarConfidencialidadStaff() {
+    const acc = getCurrentAccount();
+    const idx = empleadoStaffActual();
+    if (idx === -1) return false;
+    if (acc.data.personal[idx].confidencialidadAceptada) return false;
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Antes de empezar</h3>
+      <p class="mt-1.5 text-sm text-slate-500">En tu trabajo vas a ver datos de clientes: sus nombres, sus teléfonos y lo que anotan al reservar o pedir.</p>
+      <div class="mt-4 rounded-lg bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-600 space-y-2">
+        <p>Me comprometo a <b>usar esos datos solo para hacer mi trabajo</b> y a no compartirlos, copiarlos ni comentarlos fuera del restaurante.</p>
+        <p>Sé que este compromiso <b>sigue vigente aunque deje de trabajar aquí</b>.</p>
+        <p>No compartiré mi código de acceso con nadie.</p>
+      </div>
+      <label class="flex items-start gap-2.5 mt-4 text-sm text-navy cursor-pointer">
+        <input id="staffAceptaConf" type="checkbox" class="mt-0.5 shrink-0">
+        <span>Lo he leído y me comprometo.</span>
+      </label>
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" onclick="aceptarConfidencialidadStaff()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Continuar</button>
+    `;
+    document.getElementById('modalOverlay').classList.add('open');
+    return true;
+  }
+  function aceptarConfidencialidadStaff() {
+    const chk = document.getElementById('staffAceptaConf');
+    if (!chk || !chk.checked) return modalFormError('Marca la casilla para poder continuar.');
+    const acc = getCurrentAccount();
+    const idx = empleadoStaffActual();
+    if (idx !== -1) {
+      acc.data.personal[idx].confidencialidadAceptada = new Date().toISOString();
+      saveCurrentAccountData(acc.data);
+    }
+    closeModal();
     comprobarPopupJornadaAlEntrar();
   }
   function resetNavVisibility() {
@@ -4546,6 +4605,7 @@
     if (currentAccount) { asegurarIdsSync(currentAccount.data); currentAccount.baseline = clonarProfundo(currentAccount.data); }
     purgarDatosBancariosHeredados();
     corregirNombreRestauranteEnServidor();
+    comprobarReaceptacionLegal();
     resetNavVisibility();
     comprobarSnapshotOfflinePendiente();
     actualizarIndicadorOffline();
@@ -4586,6 +4646,51 @@
     // es ella, se deja el perfil viejo en la baseline para forzar un patch que la arrastre.
     acc.baseline.perfil = Object.assign({}, acc.baseline.perfil || {}, { nombre: ' pendiente' });
     saveCurrentAccountData(acc.data);
+  }
+
+  // ---- Re-aceptación cuando cambian los textos legales ----
+  // Un consentimiento se da sobre una versión concreta. Si los Términos o la Privacidad cambian de
+  // fondo, el consentimiento anterior ya no cubre lo nuevo: hay que volver a pedirlo y volver a poder
+  // acreditarlo. Se compara con LEGAL_ACTUALIZADO, que es lo que se guardó al aceptar.
+  // No se pide a los trabajadores: quien contrata el servicio es el titular de la cuenta.
+  function comprobarReaceptacionLegal() {
+    if (staffSession) return;
+    const acc = currentAccount;
+    if (!acc || !acc.data) return;
+    const aceptado = acc.data.aceptacionLegal;
+    // Cuentas anteriores a la casilla de alta: se les pide ahora, no se les presupone nada.
+    if (aceptado && aceptado.version === LEGAL_ACTUALIZADO) return;
+    const esActualizacion = !!(aceptado && aceptado.version);
+    document.getElementById('modalCard').classList.remove('modal-wide');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">${esActualizacion ? 'Hemos actualizado los términos' : 'Términos y privacidad'}</h3>
+      <p class="mt-1.5 text-sm text-slate-500">${esActualizacion
+        ? 'Los Términos de servicio y la Política de privacidad han cambiado desde que los aceptaste. Échales un vistazo y confírmanos que estás de acuerdo.'
+        : 'Tu cuenta se creó antes de que pidiéramos esta confirmación. Revísalos y confírmanos que estás de acuerdo.'}</p>
+      <!-- En pestaña nueva a propósito: navegar dentro cerraría este diálogo y sacaría del panel. -->
+      <div class="mt-4 flex flex-col gap-2">
+        <a href="?legal=terminos" target="_blank" rel="noopener" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-2.5 text-sm font-medium text-navy">Leer los Términos de servicio →</a>
+        <a href="?legal=privacidad" target="_blank" rel="noopener" class="rounded-lg border border-slate-200 hover:border-accent hover:bg-accent/5 transition px-4 py-2.5 text-sm font-medium text-navy">Leer la Política de privacidad →</a>
+      </div>
+      <label class="flex items-start gap-2.5 mt-4 text-sm text-navy cursor-pointer">
+        <input id="reaceptaLegal" type="checkbox" class="mt-0.5 shrink-0">
+        <span>He leído y acepto los Términos de servicio y la Política de privacidad.</span>
+      </label>
+      <p id="modalFormError" class="mt-3 text-xs text-rose-600 hidden"></p>
+      <button type="button" onclick="confirmarReaceptacionLegal()" class="mt-4 w-full rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5 py-2.5">Aceptar y continuar</button>
+    `;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function confirmarReaceptacionLegal() {
+    const chk = document.getElementById('reaceptaLegal');
+    if (!chk || !chk.checked) return modalFormError('Marca la casilla para poder continuar.');
+    const acc = currentAccount;
+    if (acc && acc.data) {
+      acc.data.aceptacionLegal = { version: LEGAL_ACTUALIZADO, fecha: new Date().toISOString(), via: 'actualizacion' };
+      saveCurrentAccountData(acc.data);
+    }
+    closeModal();
+    showToast('Gracias, queda registrado');
   }
 
   function goToLanding() {
@@ -5460,10 +5565,10 @@
     }, 1800000);
     // Al entrar (y cada minuto) se retiran solas las reservas cuya fecha y hora ya han pasado, para que
     // la lista muestre solo lo que queda por atender.
-    try { if (archivarReservasPasadas()) renderReservas(); } catch (e) { console.error('archivarReservasPasadas', e); }
+    try { if (mantenimientoReservas()) renderReservas(); } catch (e) { console.error('mantenimientoReservas', e); }
     actualizarMesasPorReservas();
     if (!window._reservaMesaTimer) window._reservaMesaTimer = setInterval(() => {
-      try { if (archivarReservasPasadas()) renderReservas(); } catch (e) {}
+      try { if (mantenimientoReservas()) renderReservas(); } catch (e) {}
       actualizarMesasPorReservas();
     }, 60000);
     // Refresca la hora de reserva / tiempo ocupada sobre cada mesa cada minuto, aunque su estado no cambie
@@ -6257,9 +6362,46 @@
     // El histórico se recorta por fecha de reserva: se conservan las más recientes.
     hist.sort((a, b) => fechaHoraReserva(a) - fechaHoraReserva(b));
     acc.data.reservasHistorico = hist.slice(-RESERVAS_HISTORICO_MAX);
+    anonimizarReservasAntiguas(acc);
     saveCurrentAccountData(acc.data);
     return true;
   }
+
+  // ---- Limitación del plazo de conservación (art. 5.1.e RGPD) ----
+  // El histórico existe para que el Dashboard y el informe semanal no pierdan el pasado, y para eso
+  // solo hacen falta la fecha y el número de comensales. El nombre, el teléfono y el correo del cliente
+  // dejan de ser necesarios en cuanto la reserva se atendió, así que pasado el plazo se borran y queda
+  // el registro anónimo. Es irreversible a propósito: media anonimización no es anonimización.
+  const RESERVA_ANONIMIZAR_DIAS = 90;
+  const CAMPOS_PERSONALES_RESERVA = ['cliente', 'telefono', 'email', 'notas', 'comentario'];
+  function anonimizarReservasAntiguas(acc) {
+    const hist = (acc && acc.data && acc.data.reservasHistorico) || [];
+    if (!hist.length) return false;
+    const limite = Date.now() - RESERVA_ANONIMIZAR_DIAS * 86400000;
+    let tocadas = 0;
+    hist.forEach(r => {
+      if (!r || r.anonimizada) return;
+      const dt = fechaHoraReserva(r);
+      const ref = isNaN(dt) ? Date.parse(r.archivadaEn || '') : dt.getTime();
+      if (!ref || isNaN(ref) || ref > limite) return;
+      const teniaAlgo = CAMPOS_PERSONALES_RESERVA.some(k => r[k]);
+      CAMPOS_PERSONALES_RESERVA.forEach(k => { delete r[k]; });
+      r.anonimizada = true;
+      if (teniaAlgo) tocadas++;
+    });
+    return tocadas > 0;
+  }
+  // Mantenimiento periódico de reservas: retirar las que ya pasaron y anonimizar las viejas. Se llama
+  // como una sola cosa porque la anonimización tiene que correr aunque hoy no haya nada que archivar.
+  function mantenimientoReservas() {
+    const acc = getCurrentAccount();
+    if (!acc) return false;
+    const archivadas = archivarReservasPasadas();
+    if (archivadas) return true; // ya anonimizó y guardó dentro
+    if (anonimizarReservasAntiguas(acc)) { saveCurrentAccountData(acc.data); }
+    return false; // la lista de trabajo no cambia: solo se limpió el histórico
+  }
+
   // Reservas vigentes + archivadas: lo que deben mirar las estadísticas para no perder el pasado.
   function todasLasReservas(acc) {
     const a = (acc && acc.data && acc.data.reservas) || [];
@@ -10969,6 +11111,90 @@
   function filasACsv(rows) {
     return '﻿' + rows.map(r => r.map(c => '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"').join(';')).join('\r\n');
   }
+
+  // ===================== DERECHOS DE LOS CLIENTES DEL RESTAURANTE =====================
+  // De los datos de sus clientes el responsable es el restaurante, no Restora. Si alguien le escribe
+  // pidiendo saber qué tienen suyo o que se lo borren, hasta ahora no había ninguna forma de buscarlo:
+  // la obligación era suya y la herramienta no existía. Esto la da.
+  let clienteBusquedaResultado = [];
+  function abrirBuscarDatosCliente() {
+    clienteBusquedaResultado = [];
+    document.getElementById('modalCard').classList.add('modal-wide');
+    renderBuscarDatosCliente();
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function renderBuscarDatosCliente(termino) {
+    const t = (termino || '').trim();
+    const filas = clienteBusquedaResultado.map((x, i) => `
+      <div class="flex items-start justify-between gap-3 py-2.5 border-b border-slate-100 last:border-0">
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-navy truncate">${svgEsc(x.r.cliente || '(sin nombre)')}</p>
+          <p class="text-xs text-slate-500 mt-0.5">${svgEsc(x.r.fecha || '')} ${svgEsc(x.r.hora || '')} · ${svgEsc(x.r.personas || '?')} pers. · ${svgEsc(x.r.mesa || 'sin mesa')}</p>
+          <p class="text-xs text-slate-400">${[x.r.telefono, x.r.email].filter(Boolean).map(svgEsc).join(' · ') || 'sin contacto'}</p>
+        </div>
+        <span class="text-[11px] font-semibold shrink-0 rounded-full px-2 py-1 ${x.donde === 'activa' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}">${x.donde === 'activa' ? 'Pendiente' : 'Histórico'}</span>
+      </div>`).join('');
+    document.getElementById('modalBody').innerHTML = `
+      <h3 class="text-xl font-bold text-navy">Datos de un cliente</h3>
+      <p class="mt-1.5 text-sm text-slate-500">Busca por nombre, teléfono o correo para responder a quien te pida ver o borrar sus datos. Tú eres el responsable de los datos de tus clientes, así que estas peticiones te llegan a ti.</p>
+      <div class="flex gap-2 mt-4">
+        <input id="clienteBuscaInput" type="text" value="${escAttr(t)}" placeholder="Nombre, teléfono o correo" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarDatosCliente();}" class="flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+        <button type="button" onclick="buscarDatosCliente()" class="rounded-full bg-navydeep hover:bg-navy transition text-white text-sm font-semibold px-5">Buscar</button>
+      </div>
+      ${t && !clienteBusquedaResultado.length ? `<p class="mt-4 text-sm text-slate-400">No hay ninguna reserva que coincida con "${svgEsc(t)}".</p>` : ''}
+      ${clienteBusquedaResultado.length ? `
+        <p class="mt-4 text-xs font-semibold text-slate-400">${clienteBusquedaResultado.length} reserva(s) encontradas</p>
+        <div class="mt-1 border border-slate-200 rounded-lg px-3 max-h-64 overflow-y-auto">${filas}</div>
+        <div class="grid grid-cols-2 gap-2 mt-4">
+          <button type="button" onclick="exportarDatosCliente()" class="rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Descargar sus datos</button>
+          <button type="button" onclick="borrarDatosCliente()" class="rounded-full border border-rose-200 text-rose-600 hover:bg-rose-50 transition text-sm font-semibold px-5 py-2.5">Borrar sus datos</button>
+        </div>
+        <p class="mt-2 text-[11px] text-slate-400">Borrar elimina su nombre y su contacto. La reserva sigue contando en tus estadísticas, pero ya sin identificar a nadie.</p>
+      ` : ''}
+      <button type="button" onclick="closeModal(); document.getElementById('modalCard').classList.remove('modal-wide');" class="mt-5 w-full rounded-full bg-slate-100 hover:bg-slate-200 transition text-navy text-sm font-semibold px-5 py-2.5">Cerrar</button>
+    `;
+  }
+  function buscarDatosCliente() {
+    const acc = getCurrentAccount();
+    const t = (document.getElementById('clienteBuscaInput').value || '').trim().toLowerCase();
+    if (!t) { clienteBusquedaResultado = []; renderBuscarDatosCliente(''); return; }
+    const coincide = (r) => [r.cliente, r.telefono, r.email].some(v => String(v || '').toLowerCase().includes(t));
+    clienteBusquedaResultado = []
+      .concat((acc.data.reservas || []).filter(coincide).map(r => ({ r, donde: 'activa' })))
+      .concat((acc.data.reservasHistorico || []).filter(coincide).map(r => ({ r, donde: 'historico' })));
+    renderBuscarDatosCliente(t);
+  }
+  // Derecho de acceso (art. 15): copia de lo que el restaurante tiene de esa persona.
+  function exportarDatosCliente() {
+    if (!clienteBusquedaResultado.length) return;
+    const acc = getCurrentAccount();
+    const paquete = {
+      generadoEn: new Date().toISOString(),
+      responsable: nombreRestaurante(acc),
+      nota: 'Datos personales asociados a este cliente en las reservas del restaurante (art. 15 RGPD).',
+      reservas: clienteBusquedaResultado.map(x => x.r),
+    };
+    descargarArchivo(JSON.stringify(paquete, null, 2), 'datos-cliente-' + fechaLocalISO() + '.json', 'application/json');
+    showToast('Datos del cliente descargados');
+  }
+  // Derecho de supresión (art. 17): se borra lo que identifica a la persona, no el registro entero.
+  // Eliminar la reserva completa falsearía las estadísticas del restaurante sin necesidad.
+  function borrarDatosCliente() {
+    if (!clienteBusquedaResultado.length) return;
+    const nombres = Array.from(new Set(clienteBusquedaResultado.map(x => x.r.cliente).filter(Boolean))).join(', ');
+    if (!confirm('Se van a borrar el nombre y el contacto de ' + clienteBusquedaResultado.length + ' reserva(s)' + (nombres ? ' de ' + nombres : '') + '.\n\nEl registro se conserva sin identificar a nadie, para no falsear tus estadísticas. Esta acción no se puede deshacer.')) return;
+    const acc = getCurrentAccount();
+    clienteBusquedaResultado.forEach(x => {
+      CAMPOS_PERSONALES_RESERVA.forEach(k => { delete x.r[k]; });
+      x.r.anonimizada = true;
+    });
+    saveCurrentAccountData(acc.data);
+    clienteBusquedaResultado = [];
+    renderReservas();
+    renderBuscarDatosCliente('');
+    showToast('Datos del cliente eliminados');
+  }
+
   // Derecho de acceso y portabilidad (arts. 15 y 20 RGPD): copia completa y legible por máquina.
   function exportarMisDatos() {
     const acc = getCurrentAccount();
@@ -12823,16 +13049,22 @@
       if (key === publicResFechaSel) cls += ' sel';
       else if (key === hoyKey) cls += ' hoy';
       if (deshabilitado) cls += ' off';
-      return `<button type="button" ${deshabilitado ? 'disabled' : `onclick="publicResElegirDia('${key}')"`} class="${cls}">${d.getDate()}</button>`;
+      // Un lector de pantalla solo oiría el número ("14") sin saber de qué mes es ni si se puede
+      // elegir: el aria-label dice la fecha entera y el motivo de estar bloqueado, y aria-pressed
+      // anuncia cuál está seleccionada.
+      const etiqueta = d.getDate() + ' de ' + MESES_ES[d.getMonth()] + ' de ' + d.getFullYear()
+        + (deshabilitado ? (d < hoy ? ', fecha pasada' : ', cerrado') : '');
+      return `<button type="button" ${deshabilitado ? 'disabled' : `onclick="publicResElegirDia('${key}')"`} aria-label="${escAttr(etiqueta)}" aria-pressed="${key === publicResFechaSel ? 'true' : 'false'}" class="${cls}">${d.getDate()}</button>`;
     }).join('');
+    const tituloMes = MESES_ES[mes.getMonth()] + ' ' + mes.getFullYear();
     wrap.innerHTML = `
-      <div class="pubcal-wrap">
+      <div class="pubcal-wrap" role="group" aria-label="Elegir el día de la reserva">
       <div class="flex items-center justify-between mb-1.5">
-        <button type="button" onclick="publicResCalMoverMes(-1)" ${!puedeRetroceder ? 'disabled' : ''} class="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-navy hover:bg-slate-100 transition disabled:opacity-30 disabled:pointer-events-none"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg></button>
-        <p class="text-xs font-semibold text-navy capitalize">${MESES_ES[mes.getMonth()]} ${mes.getFullYear()}</p>
-        <button type="button" onclick="publicResCalMoverMes(1)" class="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-navy hover:bg-slate-100 transition"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>
+        <button type="button" onclick="publicResCalMoverMes(-1)" ${!puedeRetroceder ? 'disabled' : ''} aria-label="Mes anterior" class="w-6 h-6 rounded-full flex items-center justify-center text-slate-500 hover:text-navy hover:bg-slate-100 transition disabled:opacity-30 disabled:pointer-events-none"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg></button>
+        <p class="text-xs font-semibold text-navy capitalize" aria-live="polite">${tituloMes}</p>
+        <button type="button" onclick="publicResCalMoverMes(1)" aria-label="Mes siguiente" class="w-6 h-6 rounded-full flex items-center justify-center text-slate-500 hover:text-navy hover:bg-slate-100 transition"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>
       </div>
-      <div class="pubcal-grid pubcal-dow">${DIAS_SEMANA_CORTO.map(d => `<span>${d}</span>`).join('')}</div>
+      <div class="pubcal-grid pubcal-dow" aria-hidden="true">${DIAS_SEMANA_CORTO.map(d => `<span>${d}</span>`).join('')}</div>
       <div class="pubcal-grid">${celdasHtml}</div>
       </div>
     `;
@@ -12902,11 +13134,11 @@
     if (fechaConsultada !== publicResFechaSel) return;
     if (publicResHoraSel && (!slots.includes(publicResHoraSel) || ocupadas.includes(publicResHoraSel))) publicResHoraSel = null;
     wrap.innerHTML = slots.length
-      ? `<div class="pubcal-horas">${slots.map(v => ocupadas.includes(v)
-          ? `<button type="button" disabled class="pubcal-hora full" title="Esa hora ya está completa">${v}</button>`
-          : `<button type="button" onclick="publicResElegirHora('${v}')" class="pubcal-hora ${publicResHoraSel === v ? 'sel' : ''}">${v}</button>`
+      ? `<div class="pubcal-horas" role="group" aria-label="Elegir la hora de la reserva">${slots.map(v => ocupadas.includes(v)
+          ? `<button type="button" disabled class="pubcal-hora full" aria-label="${v}, completo" title="Esa hora ya está completa">${v}</button>`
+          : `<button type="button" onclick="publicResElegirHora('${v}')" aria-label="Reservar a las ${v}" aria-pressed="${publicResHoraSel === v ? 'true' : 'false'}" class="pubcal-hora ${publicResHoraSel === v ? 'sel' : ''}">${v}</button>`
         ).join('')}</div>`
-      : `<p class="text-xs text-slate-400 py-1">Sin horas disponibles ese día.</p>`;
+      : `<p class="text-xs text-slate-500 py-1">Sin horas disponibles ese día.</p>`;
     if (avisoEl) {
       if (publicReservaHorarioConfigurado) { avisoEl.textContent = 'Horario ese día: ' + apertura + ' - ' + cierre + '.'; avisoEl.classList.remove('hidden'); }
       else avisoEl.classList.add('hidden');
