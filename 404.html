@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Página no encontrada · Restora</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* Página 404 autónoma: no comparte código con index.html a propósito, porque el servidor la sirve
+     sola y tiene que verse bien aunque el resto de la aplicación no llegue a cargar. Los colores y la
+     tipografía son los mismos que usa el resto (navy #0B1B33, acento #3D7FFF, Manrope). */
+  :root {
+    --fondo: #eef0f6;
+    --tarjeta: #ffffff;
+    --navy: #0B1B33;
+    --texto: #5B6478;
+    --tenue: #8B93A6;
+    --borde: #E7E7EE;
+    --acento: #3D7FFF;
+    --acento-claro: #6FA8FF;
+    --suave: #F5F7FA;
+  }
+  /* El panel de Restora deja elegir modo oscuro. Se respeta aquí, pero solo si la persona aceptó la
+     categoría "Preferencias" en el aviso de cookies: sin ese permiso no se lee nada del dispositivo. */
+  html.oscuro {
+    --fondo: #0B1B33;
+    --tarjeta: #12233F;
+    --navy: #F1F4FB;
+    --texto: #A9B4C8;
+    --tenue: #8592A8;
+    --borde: #24374F;
+    --suave: #1A2C49;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    background: var(--fondo);
+    font-family: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color: var(--texto);
+    -webkit-font-smoothing: antialiased;
+    display: flex; align-items: center; justify-content: center;
+    padding: 32px 20px;
+    min-height: 100vh;
+  }
+  /* Mismo resplandor difuso que la portada, para que la página no parezca de otro sitio. */
+  .fondo-glow {
+    position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0;
+  }
+  .fondo-glow span {
+    position: absolute; border-radius: 9999px; filter: blur(90px); opacity: .5;
+  }
+  .fondo-glow span:nth-child(1) { width: 420px; height: 420px; top: -140px; left: -100px; background: rgba(111,168,255,.38); }
+  .fondo-glow span:nth-child(2) { width: 360px; height: 360px; bottom: -150px; right: -90px; background: rgba(124,147,255,.30); }
+  html.oscuro .fondo-glow span { opacity: .22; }
+
+  .tarjeta {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 520px;
+    background: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: 22px;
+    padding: 44px 36px 36px;
+    text-align: center;
+    box-shadow: 0 1px 2px rgba(22,22,29,.05), 0 18px 50px -22px rgba(11,27,51,.28);
+  }
+  .marca { display: inline-flex; align-items: center; gap: 9px; margin-bottom: 26px; text-decoration: none; }
+  .marca-mark {
+    width: 30px; height: 30px; border-radius: 9px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800; color: #fff;
+    background: linear-gradient(135deg, var(--acento-claro), var(--acento));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 4px 10px -4px rgba(61,127,255,.55);
+  }
+  .marca-nombre { font-size: 20px; font-weight: 900; letter-spacing: -.03em; color: var(--navy); }
+
+  .codigo {
+    font-size: 74px; line-height: 1; font-weight: 900; letter-spacing: -.05em;
+    background: linear-gradient(135deg, var(--acento-claro), var(--acento));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin: 0 0 6px;
+  }
+  h1 { font-size: 22px; font-weight: 800; letter-spacing: -.02em; color: var(--navy); margin: 0 0 10px; }
+  p { font-size: 14.5px; line-height: 1.65; margin: 0; }
+
+  .acciones { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 26px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 999px; font-size: 14px; font-weight: 600;
+    padding: 11px 22px; text-decoration: none; border: 1px solid transparent;
+    transition: background-color .15s ease, border-color .15s ease, transform .1s ease;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-pri { background: var(--navy); color: var(--tarjeta); box-shadow: 0 8px 22px -8px rgba(11,27,51,.5); }
+  .btn-pri:hover { opacity: .9; }
+  .btn-sec { background: var(--suave); color: var(--navy); border-color: var(--borde); }
+  .btn-sec:hover { border-color: var(--tenue); }
+
+  .pista { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--borde); font-size: 12.5px; color: var(--tenue); }
+  .pista a { color: var(--acento); text-decoration: none; font-weight: 600; }
+  .pista a:hover { text-decoration: underline; }
+
+  a:focus-visible, .btn:focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; }
+
+  @media (max-width: 480px) {
+    .tarjeta { padding: 34px 22px 28px; border-radius: 18px; }
+    .codigo { font-size: 60px; }
+    .acciones .btn { flex: 1 1 100%; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .tarjeta { animation: entrar .5s cubic-bezier(.2,.8,.3,1) both; }
+    @keyframes entrar { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+</head>
+<body>
+<div class="fondo-glow" aria-hidden="true"><span></span><span></span></div>
+
+<main class="tarjeta">
+  <a class="marca" href="/">
+    <span class="marca-mark" aria-hidden="true">R</span>
+    <span class="marca-nombre">Restora</span>
+  </a>
+
+  <p class="codigo">404</p>
+  <h1>Esta página no existe</h1>
+  <p>El enlace que has seguido está roto o la página ya no está aquí. No es culpa tuya.</p>
+
+  <div class="acciones">
+    <a class="btn btn-pri" href="/">Ir al inicio</a>
+    <a class="btn btn-sec" href="/?legal=aviso-legal">Aviso legal</a>
+  </div>
+
+  <p class="pista">
+    ¿Intentabas ver la carta de un restaurante? Vuelve a escanear el código QR de tu mesa: los enlaces
+    llevan datos que no se pueden escribir a mano.<br>
+    ¿Eras tú quien gestiona el restaurante? <a href="/">Entra en tu panel</a>.
+  </p>
+</main>
+
+<script>
+  // Modo oscuro coherente con el resto de la aplicación. Solo se lee la preferencia si la persona
+  // aceptó la categoría "Preferencias" en el aviso de cookies; si no hay consentimiento, esta página
+  // no toca el almacenamiento y se queda en claro. Todo va en try/catch porque en una ventana privada
+  // el simple acceso a localStorage puede lanzar.
+  (function aplicarTemaGuardado() {
+    try {
+      var consent = JSON.parse(localStorage.getItem('restora_cookie_consent') || 'null');
+      if (!consent || !consent.cats || !consent.cats.preferencias) return;
+      if (localStorage.getItem('restora_tema') === 'oscuro') {
+        document.documentElement.classList.add('oscuro');
+      }
+    } catch (e) {}
+  })();
+</script>
+</body>
+</html>
