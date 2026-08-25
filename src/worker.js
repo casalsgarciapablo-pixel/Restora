@@ -23,6 +23,9 @@ export default {
       // pasar la petición a los archivos estáticos, que devolverán el 404 normal.
       console.error('sitemap/robots', e);
     }
+    // Ultimo recurso: si el binding de assets no estuviera disponible, mejor un aviso claro que un
+    // error 500 sin explicacion.
+    if (!env || !env.ASSETS) return new Response("Assets no disponibles", { status: 500 });
     return env.ASSETS.fetch(request);
   },
 };
