@@ -4,12 +4,17 @@
   "observability": {
     "enabled": true
   },
+  // El Worker solo intercepta /sitemap.xml y /robots.txt; todo lo demás cae en los archivos estáticos
+  // a través del binding ASSETS, así que el sitio se comporta igual que antes.
+  "main": "src/worker.js",
   // not_found_handling: sin esto Cloudflare devuelve su propia página de error genérica en cualquier
   // ruta que no exista. Con "404-page" sirve nuestro 404.html con el código 404 correcto (importante:
   // "single-page-application" NO vale aquí, porque devolvería index.html con estado 200 y los
   // buscadores indexarían rutas inexistentes como si fueran páginas buenas).
+  // Qué NO se publica está en .assetsignore, al lado de este archivo.
   "assets": {
     "directory": ".",
+    "binding": "ASSETS",
     "not_found_handling": "404-page"
   },
   "compatibility_flags": [

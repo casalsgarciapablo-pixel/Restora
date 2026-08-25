@@ -1,0 +1,9 @@
+# Cloudflare publica como asset TODO lo que hay en la carpeta, así que sin esta lista quedaban
+# descargables por cualquiera el plan de negocio, el SQL de la base de datos y el código de las
+# funciones de Stripe. Aquí solo debe quedar lo que es de verdad una página web.
+src/
+supabase/
+*.md
+*.sql
+wrangler.jsonc
+.assetsignore
