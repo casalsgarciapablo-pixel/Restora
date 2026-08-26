@@ -314,8 +314,7 @@
   @keyframes heroIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
   #landingRoot .hero-title { animation: heroIn .7s cubic-bezier(.2,.8,.3,1) both; }
   #landingRoot .hero-sub { animation: heroIn .7s .12s cubic-bezier(.2,.8,.3,1) both; }
-  #landingRoot .hero-cta { animation: heroIn .7s .2s cubic-bezier(.2,.8,.3,1) both; }
-  #landingRoot .hero-mock-wrap { animation: heroIn .8s .3s cubic-bezier(.2,.8,.3,1) both; }
+  #landingRoot .hero-mock-wrap { animation: heroIn .8s .22s cubic-bezier(.2,.8,.3,1) both; }
   #heroChartRev svg { max-height: none !important; height: 100%; min-height: 200px; }
   /* Tablero de cocina (KDS) por pestañas */
   .pedidos-tab { display: inline-flex; align-items: center; gap: 7px; background: #F5F7FA; border: none; border-radius: 999px; padding: 8px 13px; font-size: 13px; font-weight: 600; color: #8B93A6; cursor: pointer; transition: color .15s ease, background-color .15s ease, box-shadow .15s ease; }
@@ -458,7 +457,7 @@
   @keyframes chipFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
   #landingRoot .float-chip { animation: chipFloat 4.5s ease-in-out infinite; }
   @media (prefers-reduced-motion: reduce) {
-    #landingRoot .hero-glow path, #landingRoot .hero-title, #landingRoot .hero-sub, #landingRoot .hero-cta, #landingRoot .hero-mock-wrap, #landingRoot .float-chip { animation: none !important; }
+    #landingRoot .hero-glow path, #landingRoot .hero-title, #landingRoot .hero-sub, #landingRoot .hero-mock-wrap, #landingRoot .float-chip { animation: none !important; }
   }
 
   /* ============ SaaS design system: neutral ink, hairline borders, layered depth (landing untouched) ============ */
@@ -1027,10 +1026,6 @@
 
   @media (max-width: 480px) {
     .hero-title { font-size: 28px !important; }
-    /* En móvil los dos botones se apilan y ocupan el ancho: en pantalla estrecha uno junto al otro
-       quedan demasiado justos para pulsarlos con el pulgar. */
-    #landingRoot .hero-cta { flex-direction: column; }
-    #landingRoot .hero-cta .landing-cta-btn { width: 100%; padding-left: 20px; padding-right: 20px; }
     #landingRoot h2 { font-size: 1.5rem !important; }
     #landingRoot .grad-cta h3 { font-size: 1.5rem !important; }
     #landingRoot .px-6 { padding-left: 16px !important; padding-right: 16px !important; }
@@ -1092,19 +1087,12 @@
 
   <!-- Hero -->
   <section id="inicio" class="relative">
-  <div class="max-w-4xl mx-auto text-center pt-16 pb-12 px-6 relative z-10">
+  <div class="max-w-4xl mx-auto text-center pt-16 pb-20 px-6 relative z-10">
     <h1 class="hero-title text-[56px] leading-[1.1] font-extrabold tracking-tight text-navy">Menos Caos. Más <span class="text-accent">Servicio.</span></h1>
     <p class="hero-sub mt-6 text-2xl text-slate-500">
       <span class="block">El software que tu equipo va a amar.</span>
       <span class="block">Y el único que <span class="text-accent font-medium italic">necesitarás jamás</span>.</span>
     </p>
-    <!-- La llamada a la acción va AQUÍ, antes de la maqueta del producto: si va debajo hay que
-         recorrer toda la captura para encontrarla y no se ve sin hacer scroll. -->
-    <div class="hero-cta flex items-center justify-center gap-4 flex-wrap mt-9">
-      <a href="javascript:void(0)" onclick="openModal('signup')" class="landing-cta-btn primary">Prueba gratis</a>
-      <a href="javascript:void(0)" onclick="openModal('signup')" class="landing-cta-btn ghost">Agendar una demo</a>
-    </div>
-    <p class="hero-cta mt-4 text-sm text-slate-400">14 días gratis · Sin tarjeta · Sin permanencia</p>
   </div>
 
   <!-- Product mock window -->
@@ -1223,6 +1211,10 @@
       </span>
     </div>
     <div style="width:82%; margin:14px auto 0; height:50px; background:linear-gradient(to bottom, rgba(15,23,42,0.12), rgba(15,23,42,0)); border-radius:0 0 1rem 1rem; filter:blur(8px); pointer-events:none;"></div>
+    <div class="flex items-center justify-center gap-4 flex-wrap mt-9">
+      <a href="javascript:void(0)" onclick="openModal('signup')" class="landing-cta-btn primary">Prueba gratis</a>
+      <a href="javascript:void(0)" onclick="openModal('signup')" class="landing-cta-btn ghost">Agendar una demo</a>
+    </div>
   </div>
   </section>
 </div>
@@ -14433,7 +14425,6 @@
     "¿No tienes cuenta?": ["No tens compte?", "Don't have an account?"],
     "Regístrate": ["Registra't", "Sign up"],
     "Prueba Restora gratis": ["Prova Restora gratis", "Try Restora for free"],
-    "14 días gratis · Sin tarjeta · Sin permanencia": ["14 dies gratis · Sense targeta · Sense permanència", "14 days free · No card · No lock-in"],
     "14 días gratis, sin tarjeta. Configura tu restaurante en minutos.": ["14 dies gratis, sense targeta. Configura el teu restaurant en minuts.", "14 days free, no card. Set up your restaurant in minutes."],
     "Nombre del restaurante": ["Nom del restaurant", "Restaurant name"],
     "Crear contraseña": ["Crea una contrasenya", "Create password"],
