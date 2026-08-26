@@ -1973,27 +1973,23 @@
 
       <div class="mt-4 grid grid-cols-1 dash-rev-grid gap-4 items-stretch">
         <div class="dash-rev-main rounded-2xl border border-slate-200 bg-white overflow-hidden">
-          <!-- Cabecera: título a la izquierda y distintivo de tendencia a la derecha, como el
-               CardHeader + CardAction del componente de referencia. -->
-          <div class="flex items-start justify-between flex-wrap gap-3 px-5 pt-5">
-            <p class="text-sm font-semibold text-navy">Ingresos</p>
-            <div class="flex items-center gap-3">
-              <div class="dash-seg" id="dashRevSeg">
-                <button data-p="dia" class="active" onclick="setDashRevPeriodo('dia')">Día</button>
-                <button data-p="semana" onclick="setDashRevPeriodo('semana')">Semana</button>
-                <button data-p="mes" onclick="setDashRevPeriodo('mes')">Mes</button>
-                <button data-p="anio" onclick="setDashRevPeriodo('anio')">Año</button>
+          <div class="flex items-start justify-between flex-wrap gap-3 px-5 pt-6">
+            <div>
+              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Ingresos</p>
+              <div class="flex items-center gap-2.5 mt-2">
+                <p id="dashRevValue" class="text-[26px] font-bold text-navy tracking-tight tabular-nums leading-none">0€</p>
+                <span id="dashRevTrend" class="kpi-trend hidden"></span>
               </div>
-              <span id="dashRevTrend" class="kpi-trend hidden"></span>
+              <p id="dashRevSubtitle" class="text-xs text-slate-400 mt-1.5">Ingresos de hoy, hora a hora</p>
+            </div>
+            <div class="dash-seg" id="dashRevSeg">
+              <button data-p="dia" class="active" onclick="setDashRevPeriodo('dia')">Día</button>
+              <button data-p="semana" onclick="setDashRevPeriodo('semana')">Semana</button>
+              <button data-p="mes" onclick="setDashRevPeriodo('mes')">Mes</button>
+              <button data-p="anio" onclick="setDashRevPeriodo('anio')">Año</button>
             </div>
           </div>
-          <!-- ChartStatFlow: etiqueta pequeña encima de la cifra. Ambas siguen al puntero. -->
-          <div class="px-5 pt-3">
-            <p id="dashRevSubtitle" class="text-xs font-medium text-slate-400 leading-none">Media</p>
-            <p id="dashRevValue" class="text-[26px] font-bold text-navy tracking-tight tabular-nums leading-none mt-1.5">0€</p>
-          </div>
-          <!-- Sin padding lateral: el área sangra de borde a borde, como con margin 0 en el original. -->
-          <div id="dashRevArea" class="pb-3 pt-3" style="position:relative"></div>
+          <div id="dashRevArea" class="px-5 pb-5 pt-4" style="position:relative"></div>
         </div>
         <div class="dash-rev-side rounded-2xl border border-slate-200 bg-white p-5 pt-6">
           <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Pedidos por canal</p>
@@ -11647,30 +11643,6 @@
     }
     return d;
   }
-  // Curva cardinal, la misma que visx dibuja con curveCardinal.tension(t). A diferencia de
-  // smoothPath(), que pone los controles a media distancia manteniendo la altura de cada extremo (y
-  // deja mesetas junto a cada punto), aquí cada control sigue la pendiente entre el punto anterior y
-  // el siguiente, así que la línea fluye. k = (1 - tensión) / 6 es la constante que usa d3.
-  function cardinalPath(pts, tension) {
-    const n = pts.length;
-    if (!n) return '';
-    if (n === 1) return `M ${pts[0][0]} ${pts[0][1]}`;
-    if (n === 2) return `M ${pts[0][0]} ${pts[0][1]} L ${pts[1][0]} ${pts[1][1]}`;
-    const k = (1 - (tension == null ? 0.65 : tension)) / 6;
-    const r = (v) => Math.round(v * 100) / 100;
-    let d = `M ${r(pts[0][0])} ${r(pts[0][1])}`;
-    for (let i = 0; i < n - 1; i++) {
-      const p0 = pts[i - 1] || pts[i];
-      const p1 = pts[i];
-      const p2 = pts[i + 1];
-      const p3 = pts[i + 2] || p2;
-      d += ` C ${r(p1[0] + k * (p2[0] - p0[0]))} ${r(p1[1] + k * (p2[1] - p0[1]))}`
-        + `, ${r(p2[0] - k * (p3[0] - p1[0]))} ${r(p2[1] - k * (p3[1] - p1[1]))}`
-        + `, ${r(p2[0])} ${r(p2[1])}`;
-    }
-    return d;
-  }
-
   function pedidosPorDia(pedidos) {
     const map = new Map();
     pedidos.forEach(p => {
@@ -11723,44 +11695,6 @@
     const html = `<svg id="${elId}" viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-height:290px">
       <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${opts.color}" stop-opacity="0.20"/><stop offset="100%" stop-color="${opts.color}" stop-opacity="0"/></linearGradient></defs>
       ${grid}<path class="dash-area-anim" d="${area}" fill="url(#${gid})"/><path class="dash-line-anim" pathLength="1" d="${line}" fill="none" stroke="${opts.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${dots}${xlabels}<g class="dash-hover-g"></g>
-    </svg>`;
-    return { html, hover: { pts, labels: data.map(d => d.label), values: data.map(d => d.value), fmt: opts.fmt, geo: { W, H, padT, plotH: ph, color: opts.color } } };
-  }
-
-  // Área en versión "tarjeta de estadística": sin rejilla ni eje vertical, sangrando de lado a lado y
-  // con la curva suavizada. La lectura exacta no se pierde, se mueve al hover: el puntero marca el
-  // punto y la cifra grande de la cabecera pasa a mostrar ese valor (ver renderRevenueCard).
-  // Convive con svgArea() en vez de sustituirla porque la maqueta de la landing sigue usando aquella.
-  function svgAreaStat(data, opts, elId) {
-    // 680x272 es 2.5:1, el aspectRatio del componente. Los márgenes son 0 salvo el par de píxeles que
-    // necesita el trazo para no cortarse contra el borde: el área llega arriba, abajo y a los lados.
-    const W = 680, H = 272, padT = 3, padB = 2;
-    const ph = H - padT - padB;
-    const max = niceCeil(Math.max.apply(null, data.map(d => d.value).concat(1)));
-    const n = data.length;
-    const X = i => n === 1 ? W / 2 : (i / (n - 1)) * W;
-    const Y = v => padT + ph - (v / max) * ph;
-    const pts = data.map((d, i) => [X(i), Y(d.value)]);
-    const line = cardinalPath(pts, 0.65);
-    // El relleno se cierra por la base. La curva cardinal puede rebasar un pelo por debajo del cero
-    // entre dos puntos bajos; recortando el área con un clip se queda dentro de la zona del gráfico.
-    const area = line + ` L ${W} ${padT + ph} L 0 ${padT + ph} Z`;
-    // Sin eje horizontal: en el componente el gráfico no lleva ejes ni rejilla. De qué tramo es cada
-    // punto lo dice la etiqueta de la cabecera al pasar el puntero por encima.
-    const uid = Math.random().toString(36).slice(2, 7);
-    const html = `<svg id="${elId}" viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-height:300px">
-      <defs>
-        <linearGradient id="g${uid}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="${opts.color}" stop-opacity="0.45"/>
-          <stop offset="100%" stop-color="${opts.color}" stop-opacity="0"/>
-        </linearGradient>
-        <clipPath id="c${uid}"><rect x="0" y="0" width="${W}" height="${padT + ph}"/></clipPath>
-      </defs>
-      <g clip-path="url(#c${uid})">
-        <path class="dash-area-anim" d="${area}" fill="url(#g${uid})"/>
-        <path class="dash-line-anim" pathLength="1" d="${line}" fill="none" stroke="${opts.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </g>
-      <g class="dash-hover-g"></g>
     </svg>`;
     return { html, hover: { pts, labels: data.map(d => d.label), values: data.map(d => d.value), fmt: opts.fmt, geo: { W, H, padT, plotH: ph, color: opts.color } } };
   }
@@ -12050,31 +11984,20 @@
       const rect = svg.getBoundingClientRect(), aRect = area.getBoundingClientRect();
       const sx = rect.width / geo.W, sy = rect.height / geo.H;
       tip.innerHTML = `<div class="dt-val">${state.fmt(state.values[idx])}</div><div class="dt-lab">${svgEsc(state.labels[idx])}</div>`;
-      // El globo va centrado sobre el punto (translate -50%). En gráficos que sangran hasta el borde
-      // el primer y el último punto lo dejarían medio fuera de la tarjeta, así que se acota al ancho
-      // disponible en vez de dejar que se recorte.
-      const mitad = tip.offsetWidth / 2;
-      const izq = rect.left - aRect.left + p[0] * sx;
-      tip.style.left = Math.max(mitad + 6, Math.min(aRect.width - mitad - 6, izq)) + 'px';
+      tip.style.left = (rect.left - aRect.left + p[0] * sx) + 'px';
       tip.style.top = (rect.top - aRect.top + p[1] * sy) + 'px';
       tip.classList.add('show');
-      // Enganche opcional para que la tarjeta que contiene el gráfico reaccione al hover (lo usa la
-      // tarjeta de Ingresos para mostrar arriba el valor del punto señalado).
-      if (typeof state.onHover === 'function') state.onHover(idx);
     });
-    svg.addEventListener('mouseleave', () => {
-      tip.classList.remove('show');
-      hoverG.innerHTML = '';
-      if (typeof state.onLeave === 'function') state.onLeave();
-    });
+    svg.addEventListener('mouseleave', () => { tip.classList.remove('show'); hoverG.innerHTML = ''; });
   }
 
-  // Periodos que admite el selector de la tarjeta de Ingresos. Antes cada uno llevaba un subtítulo
-  // descriptivo; ahora ese hueco lo ocupa la etiqueta del ChartStatFlow, que cambia con el puntero.
-  const DASH_REV_PERIODOS = ['dia', 'semana', 'mes', 'anio'];
+  const DASH_REV_SUB = {
+    dia: 'Ingresos de hoy, hora a hora', semana: 'Ingresos de cada día de la semana',
+    mes: 'Ingresos de cada semana del mes', anio: 'Ingresos de cada mes del año',
+  };
   let dashRevPeriodo = 'dia';
   function setDashRevPeriodo(p) {
-    if (!DASH_REV_PERIODOS.includes(p)) return;
+    if (!DASH_REV_SUB[p]) return;
     dashRevPeriodo = p;
     document.querySelectorAll('#dashRevSeg button').forEach(b => b.classList.toggle('active', b.dataset.p === p));
     renderRevenueCard();
@@ -12088,36 +12011,13 @@
     if (!pedidos) pedidos = pedidosEnRango(todosPagados);
     const data = ingresosPorPeriodo(pedidos, dashRevPeriodo);
     const total = data.reduce((a, b) => a + b.value, 0);
-    const hv = document.getElementById('dashRevValue');
-    const sub = document.getElementById('dashRevSubtitle');
-    // En reposo la tarjeta muestra la MEDIA de los tramos con la etiqueta "Media", igual que el
-    // componente de referencia (revenueStats.average con la etiqueta "Avg"). El total del periodo
-    // sigue estando en la tarjeta de KPI de Ingresos, arriba del Dashboard.
-    const media = data.length ? total / data.length : 0;
-    // Tendencia en reposo: el periodo actual contra el inmediatamente anterior. La referencia sale de
-    // lo que se está DIBUJANDO (último cobro visible), para que hable del mismo periodo que la gráfica.
-    const tendenciaBase = compararConPeriodoAnterior(todosPagados, dashRevPeriodo, fechaReferencia(pedidos));
-    const enReposo = () => {
-      if (hv) hv.textContent = fmtEur0(media);
-      if (sub) sub.textContent = 'Media';
-      setTrend('dashRevTrend', tendenciaBase);
-    };
-    enReposo();
+    const hv = document.getElementById('dashRevValue'); if (hv) hv.textContent = fmtEur0(total);
+    // La referencia sale de lo que se está DIBUJANDO (último cobro visible), para que el porcentaje
+    // hable del mismo periodo que muestra la gráfica.
+    setTrend('dashRevTrend', compararConPeriodoAnterior(todosPagados, dashRevPeriodo, fechaReferencia(pedidos)));
+    const sub = document.getElementById('dashRevSubtitle'); if (sub) sub.textContent = DASH_REV_SUB[dashRevPeriodo];
     if (!data.length) { mountChart('dashRevArea', svgEmpty('Aún no hay pedidos registrados')); return; }
-    const grafico = svgAreaStat(data, { color: '#3D7FFF', fmt: fmtEur0 }, 'dashRevSvg');
-    // StatCardHoverBridge: al señalar un punto, la etiqueta, la cifra y el distintivo pasan a hablar
-    // de ese punto. La tendencia de un punto es su variación respecto al tramo anterior; el primero
-    // no tiene con qué compararse y por eso se queda sin distintivo.
-    grafico.hover.onHover = (i) => {
-      if (hv) hv.textContent = fmtEur0(data[i].value);
-      if (sub) sub.textContent = data[i].label;
-      const previo = i > 0 ? data[i - 1].value : 0;
-      setTrend('dashRevTrend', (i > 0 && previo > 0)
-        ? { pct: (data[i].value - previo) / previo * 100, desc: 'Frente a ' + data[i - 1].label + ': ' + fmtMoneda(previo) + '.' }
-        : INSUFICIENTE);
-    };
-    grafico.hover.onLeave = enReposo;
-    mountChart('dashRevArea', grafico);
+    mountChart('dashRevArea', svgArea(data, { color: '#3D7FFF', fmt: fmtEur0 }, 'dashRevSvg'));
   }
   function renderAllDashboardCharts(pedidos, reservas) {
     const acc = getCurrentAccount();
@@ -14741,7 +14641,7 @@
     // SaaS: dashboard grafico
     "Ingresos por día": ["Ingressos per dia", "Revenue by day"],
     "Evolución diaria de tus ingresos": ["Evolució diària dels teus ingressos", "Daily revenue trend"],
-    "Media": ["Mitjana", "Avg"],
+    "Ingresos de hoy, hora a hora": ["Ingressos d'avui, hora a hora", "Today's revenue, hour by hour"],
     "Platos más vendidos": ["Plats més venuts", "Best-selling dishes"],
     "Ranking por unidades vendidas": ["Rànquing per unitats venudes", "Ranked by units sold"],
     "Pedidos por canal": ["Comandes per canal", "Orders by channel"],
