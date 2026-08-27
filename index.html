@@ -1964,24 +1964,11 @@
       </div>
 
       <div class="mt-4 grid grid-cols-1 dash-rev-grid gap-4 items-stretch">
-        <div class="dash-rev-main rounded-2xl border border-slate-200 bg-white overflow-hidden">
-          <div class="flex items-start justify-between flex-wrap gap-3 px-5 pt-6">
-            <div>
-              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Ingresos</p>
-              <div class="flex items-center gap-2.5 mt-2">
-                <p id="dashRevValue" class="text-[26px] font-bold text-navy tracking-tight tabular-nums leading-none">0€</p>
-                <span id="dashRevTrend" class="kpi-trend hidden"></span>
-              </div>
-              <p id="dashRevSubtitle" class="text-xs text-slate-400 mt-1.5">Ingresos de hoy, hora a hora</p>
-            </div>
-            <div class="dash-seg" id="dashRevSeg">
-              <button data-p="dia" class="active" onclick="setDashRevPeriodo('dia')">Día</button>
-              <button data-p="semana" onclick="setDashRevPeriodo('semana')">Semana</button>
-              <button data-p="mes" onclick="setDashRevPeriodo('mes')">Mes</button>
-              <button data-p="anio" onclick="setDashRevPeriodo('anio')">Año</button>
-            </div>
-          </div>
-          <div id="dashRevArea" class="px-5 pb-5 pt-4" style="position:relative"></div>
+        <!-- Tarjeta de Ingresos. La pinta el componente de Bklit (React), que se carga desde
+             restora-revenue-card.js la primera vez que se abre el Dashboard. Si ese archivo no
+             llegara a cargar, renderRevenueCard() deja aquí el gráfico de siempre. -->
+        <div class="dash-rev-main restora-revenue-card rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          <div id="dashRevCard" class="min-h-[300px]"></div>
         </div>
         <div class="dash-rev-side rounded-2xl border border-slate-200 bg-white p-5 pt-6">
           <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Pedidos por canal</p>
@@ -11897,7 +11884,7 @@
         const b = horas.find(x => t >= x.ini && t < x.fin);
         if (b) b.value += p.total || 0;
       });
-      return horas.map(x => ({ label: x.label, value: x.value }));
+      return horas.map(x => ({ date: x.ini, label: x.label, value: x.value }));
     }
     if (periodo === 'semana') {
       // Los 7 días de la semana (lunes a domingo) que contiene la fecha de referencia
@@ -11913,7 +11900,7 @@
         const b = dias.find(x => t >= x.ini && t < x.fin);
         if (b) b.value += p.total || 0;
       });
-      return dias.map(x => ({ label: x.label, value: x.value }));
+      return dias.map(x => ({ date: x.ini, label: x.label, value: x.value }));
     }
     if (periodo === 'mes') {
       // Las semanas del mes de referencia (1-7, 8-14, 15-21, 22-28, 29-fin)
@@ -11932,17 +11919,17 @@
         const b = semanas.find(x => t >= x.ini && t < x.fin);
         if (b) b.value += p.total || 0;
       });
-      return semanas.map(x => ({ label: x.label, value: x.value }));
+      return semanas.map(x => ({ date: x.ini, label: x.label, value: x.value }));
     }
     // Año: los 12 meses del año de referencia
     const y = ref.getFullYear();
-    const meses = DASH_MESES.map((nombre, i) => ({ mes: i, label: nombre, value: 0 }));
+    const meses = DASH_MESES.map((nombre, i) => ({ mes: i, date: new Date(y, i, 1).getTime(), label: nombre, value: 0 }));
     pedidos.forEach(p => {
       const d = new Date(fechaEfectivaPedido(p));
       if (d.getFullYear() !== y) return;
       meses[d.getMonth()].value += p.total || 0;
     });
-    return meses.map(x => ({ label: x.label, value: x.value }));
+    return meses.map(x => ({ date: x.date, label: x.label, value: x.value }));
   }
 
   function mountChart(containerId, result) {
@@ -11983,15 +11970,14 @@
     svg.addEventListener('mouseleave', () => { tip.classList.remove('show'); hoverG.innerHTML = ''; });
   }
 
-  const DASH_REV_SUB = {
-    dia: 'Ingresos de hoy, hora a hora', semana: 'Ingresos de cada día de la semana',
-    mes: 'Ingresos de cada semana del mes', anio: 'Ingresos de cada mes del año',
-  };
+  // Periodos que admite la tarjeta de Ingresos. Sus subtítulos descriptivos desaparecieron con la
+  // cabecera antigua: ahora ese hueco lo ocupa la etiqueta del ChartStatFlow, que sigue al puntero.
+  const DASH_REV_PERIODOS = ['dia', 'semana', 'mes', 'anio'];
   let dashRevPeriodo = 'dia';
   function setDashRevPeriodo(p) {
-    if (!DASH_REV_SUB[p]) return;
+    if (!DASH_REV_PERIODOS.includes(p)) return;
     dashRevPeriodo = p;
-    document.querySelectorAll('#dashRevSeg button').forEach(b => b.classList.toggle('active', b.dataset.p === p));
+    // El botón activo lo marca el propio componente React a partir de la prop periodo.
     renderRevenueCard();
   }
   function renderRevenueCard(pedidos) {
@@ -12002,14 +11988,44 @@
     const todosPagados = acc.data.pedidos.filter(p => p.estado === 'Pagado');
     if (!pedidos) pedidos = pedidosEnRango(todosPagados);
     const data = ingresosPorPeriodo(pedidos, dashRevPeriodo);
-    const total = data.reduce((a, b) => a + b.value, 0);
-    const hv = document.getElementById('dashRevValue'); if (hv) hv.textContent = fmtEur0(total);
+    const contenedor = document.getElementById('dashRevCard');
+    if (!contenedor) return;
+    if (!data.length) { mountChart('dashRevCard', svgEmpty('Aún no hay pedidos registrados')); return; }
     // La referencia sale de lo que se está DIBUJANDO (último cobro visible), para que el porcentaje
     // hable del mismo periodo que muestra la gráfica.
-    setTrend('dashRevTrend', compararConPeriodoAnterior(todosPagados, dashRevPeriodo, fechaReferencia(pedidos)));
-    const sub = document.getElementById('dashRevSubtitle'); if (sub) sub.textContent = DASH_REV_SUB[dashRevPeriodo];
-    if (!data.length) { mountChart('dashRevArea', svgEmpty('Aún no hay pedidos registrados')); return; }
-    mountChart('dashRevArea', svgArea(data, { color: '#3D7FFF', fmt: fmtEur0 }, 'dashRevSvg'));
+    const tendencia = compararConPeriodoAnterior(todosPagados, dashRevPeriodo, fechaReferencia(pedidos));
+    const total = data.reduce((a, b) => a + b.value, 0);
+    cargarTarjetaIngresos().then((api) => {
+      api.mount(contenedor, {
+        series: data,
+        // El componente muestra la media de los tramos, con la etiqueta "Media" (revenueStats.average).
+        average: total / data.length,
+        trend: tendencia && !tendencia.insuficiente ? tendencia.pct : null,
+        currency: monedaActual(),
+        periodo: dashRevPeriodo,
+        onPeriodoChange: setDashRevPeriodo,
+      });
+    }).catch(() => {
+      // Sin el componente React (archivo no disponible, red caída) se dibuja el área de siempre, para
+      // que el Dashboard nunca se quede con un hueco donde debería haber ingresos.
+      mountChart('dashRevCard', svgArea(data, { color: '#3D7FFF', fmt: fmtEur0 }, 'dashRevSvg'));
+    });
+  }
+  // La tarjeta de Ingresos es un componente React empaquetado aparte (~490 KB). Se carga solo cuando
+  // se abre el Dashboard y una única vez: cargarlo con el resto de la página penalizaría también a
+  // quien solo entra a ver la carta por QR.
+  let tarjetaIngresosPromesa = null;
+  function cargarTarjetaIngresos() {
+    if (window.RestoraRevenueCard) return Promise.resolve(window.RestoraRevenueCard);
+    if (tarjetaIngresosPromesa) return tarjetaIngresosPromesa;
+    tarjetaIngresosPromesa = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'restora-revenue-card.js';
+      s.onload = () => window.RestoraRevenueCard ? resolve(window.RestoraRevenueCard) : reject(new Error('sin API'));
+      s.onerror = () => { tarjetaIngresosPromesa = null; reject(new Error('no se pudo cargar')); };
+      document.head.appendChild(s);
+    });
+    return tarjetaIngresosPromesa;
   }
   function renderAllDashboardCharts(pedidos, reservas) {
     const acc = getCurrentAccount();

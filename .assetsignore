@@ -3,6 +3,7 @@
 # funciones de Stripe. Aquí solo debe quedar lo que es de verdad una página web.
 src/
 supabase/
+restora-app/
 *.md
 *.sql
 wrangler.jsonc
